@@ -726,7 +726,8 @@ var render = function render(gameboy, memoryBytes) {
   tick = tick + 1;
 
   const next = () => {
-    gameboy.execute_opcode();
+    gameboy.execute_opcodes(2000);
+    renderTiles(gameboy);
     requestAnimationFrame(() => render(gameboy, memoryBytes));
   };
 
@@ -769,8 +770,6 @@ var render = function render(gameboy, memoryBytes) {
       c: gameboy.get_flag_c()
     }
   };
-
-  gameboy.set_c(99);
 
   ReactDOM.render(
     React.createElement(Debugger, {
