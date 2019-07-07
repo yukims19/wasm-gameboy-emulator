@@ -634,9 +634,7 @@ pub enum Pixel {
 pub struct Canvas {
     width: u8,
     height: u8,
-    pixels: Vec<Pixel>,
     registers: Registers,
-    background1: Vec<u8>,
     memory: Vec<u8>, //consist of 256*256 pixels or 32*32 tiles
                      //only 160*144 pixels can be displayed on screen
 }
@@ -770,7 +768,7 @@ impl Canvas {
     }
 
     pub fn pixels(&self) -> *const Pixel {
-        let pixel_byte_vec = self.memory[0x8000..0x8800].to_vec();
+        let pixel_byte_vec = self.memory[0x8000..0x9800].to_vec();
         let pixels = Canvas::tile(pixel_byte_vec);
 
         pixels.as_ptr()
@@ -780,14 +778,23 @@ impl Canvas {
         self.memory.as_ptr()
     }
 
-    pub fn background1(&self) -> *const u8 {
-        self.background1.as_ptr()
+    pub fn background_map_1(&self) -> *const u8 {
+        let background_map_1 = self.memory[0x9800..0x9c00].to_vec();
+        background_map_1.as_ptr()
     }
 
     pub fn execute_opcode(&mut self) {
         let instruction = self.memory[self.registers.pc as usize];
         self.registers
             .execute_instruction(instruction, &mut self.memory);
+    }
+
+    pub fn execute_opcodes(&mut self, count: u8) {
+        for x in 0..count {
+            let instruction = self.memory[self.registers.pc as usize];
+            self.registers
+                .execute_instruction(instruction, &mut self.memory);
+        }
     }
 
     pub fn new() -> Canvas {
@@ -815,7 +822,7 @@ impl Canvas {
         };
 
         let boot_rom_content = include_bytes!("boot-rom.gb");
-        //        let cartridge_content = include_bytes!("mario.gb");
+        let cartridge_content = include_bytes!("mario.gb");
 
         let full_memory_capacity = 0xffff;
 
@@ -853,9 +860,7 @@ impl Canvas {
         Canvas {
             width,
             height,
-            pixels,
             registers,
-            background1: full_memory[9800..0x9bff].to_vec(),
             memory: full_memory,
         }
     }
