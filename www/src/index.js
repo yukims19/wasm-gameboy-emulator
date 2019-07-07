@@ -119,6 +119,7 @@ var renderCharRamTiles = function renderCharRamTiles(gameboy) {
 
 var renderBackground1 = function renderBackground1(gameboy, fullMemory) {
   const tiles = getTiles(gameboy);
+
   var backgroundMap1Ptr = gameboy.background_map_1();
   const backgroundMap1 = new Uint8Array(
     memory.buffer,
