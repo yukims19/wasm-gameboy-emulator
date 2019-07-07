@@ -679,15 +679,15 @@ const Debugger = props => {
       <HexViewer
         name={interestingRanges.bootRom.desc}
         fullMemory={props.fullMemory}
-    range={[0x00, 0x02ff]}
+        range={[0x00, 0x02ff]}
         registers={props.registers}
       />
 
       <HexViewer
-    name={"nintendo-logo-from-bootrom"}
-    fullMemory={props.fullMemory}
-    range={[0x00A8, 0x00D7]}
-    registers={props.registers}
+        name={"nintendo-logo-from-bootrom"}
+        fullMemory={props.fullMemory}
+        range={[0x00a8, 0x00d7]}
+        registers={props.registers}
       />
 
       <HexViewer
@@ -769,8 +769,6 @@ var render = function render(gameboy, memoryBytes) {
       c: gameboy.get_flag_c()
     }
   };
-
-  gameboy.set_c(99);
 
   ReactDOM.render(
     React.createElement(Debugger, {

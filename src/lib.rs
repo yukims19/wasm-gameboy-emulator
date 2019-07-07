@@ -810,23 +810,30 @@ impl Canvas {
         };
 
         let boot_rom_content = include_bytes!("boot-rom.gb");
-        let cartridge_content = include_bytes!("pokemon.gb").to_vec();
+        //        let cartridge_content = include_bytes!("mario.gb");
 
         let full_memory_capacity = 0xffff;
 
         let head = boot_rom_content;
-        let body = &cartridge_content[0x100..(cartridge_content.len())];
+        //let body = &cartrage_content[0x100..(cartrage_content.len())];
+        let cartrage_header = vec![
+            0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0c,
+            0x00, 0x0d, 0x00, 0x08, 0x11, 0x1f, 0x88, 0x89, 0x00, 0x0e, 0xdc, 0xcc, 0x6e, 0xe6,
+            0xdd, 0xdd, 0xd9, 0x99, 0xbb, 0xbb, 0x67, 0x63, 0x6e, 0x0e, 0xec, 0xcc, 0xdd, 0xdc,
+            0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e,
+        ];
 
         // let y = boot_rom_content.to_vec().append(x.to_vec());
 
         let mut full_memory: Vec<u8> = Vec::with_capacity(full_memory_capacity);
 
         full_memory.extend_from_slice(head);
-        full_memory.extend_from_slice(body);
-        // full_memory.resize_with(full_memory_capacity, || 0);
-        // for (idx, cartrage_value) in cartrage_header.iter().enumerate() {
-        //     full_memory[0x104 + idx] = cartrage_value.clone();
-        // }
+        //full_memory.extend_from_slice(body);
+
+        full_memory.resize_with(full_memory_capacity, || 0);
+        for (idx, cartrage_value) in cartrage_header.iter().enumerate() {
+            full_memory[0x104 + idx] = cartrage_value.clone();
+        }
 
         // //TODO: IMPORTANT! here pretending vertical-blank period
         full_memory[0xff44] = 0x90;
