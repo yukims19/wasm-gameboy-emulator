@@ -636,6 +636,7 @@ pub struct Canvas {
     height: u8,
     pixels: Vec<Pixel>,
     registers: Registers,
+    background1: Vec<u8>,
     memory: Vec<u8>, //consist of 256*256 pixels or 32*32 tiles
                      //only 160*144 pixels can be displayed on screen
 }
@@ -779,6 +780,10 @@ impl Canvas {
         self.memory.as_ptr()
     }
 
+    pub fn background1(&self) -> *const u8 {
+        self.background1.as_ptr()
+    }
+
     pub fn execute_opcode(&mut self) {
         let instruction = self.memory[self.registers.pc as usize];
         self.registers
@@ -786,8 +791,8 @@ impl Canvas {
     }
 
     pub fn new() -> Canvas {
-        let width = 160;
-        let height = 144;
+        let width = 255;
+        let height = 255;
 
         let flag = Flag {
             z: false,
@@ -850,6 +855,7 @@ impl Canvas {
             height,
             pixels,
             registers,
+            background1: full_memory[9800..0x9bff].to_vec(),
             memory: full_memory,
         }
     }
