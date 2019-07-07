@@ -770,7 +770,7 @@ impl Canvas {
     }
 
     pub fn pixels(&self) -> *const Pixel {
-        let pixel_byte_vec = self.memory[0x8000..0x8800].to_vec();
+        let pixel_byte_vec = self.memory[0x8000..0x9800].to_vec();
         let pixels = Canvas::tile(pixel_byte_vec);
 
         pixels.as_ptr()
@@ -780,14 +780,22 @@ impl Canvas {
         self.memory.as_ptr()
     }
 
-    pub fn background1(&self) -> *const u8 {
-        self.background1.as_ptr()
-    }
+    // pub fn background1(&self) -> *const u8 {
+    //     self.background1.as_ptr()
+    // }
 
     pub fn execute_opcode(&mut self) {
         let instruction = self.memory[self.registers.pc as usize];
         self.registers
             .execute_instruction(instruction, &mut self.memory);
+    }
+
+    pub fn execute_opcodes(&mut self, count: u8) {
+        for x in 0..count {
+            let instruction = self.memory[self.registers.pc as usize];
+            self.registers
+                .execute_instruction(instruction, &mut self.memory);
+        }
     }
 
     pub fn new() -> Canvas {
@@ -815,7 +823,7 @@ impl Canvas {
         };
 
         let boot_rom_content = include_bytes!("boot-rom.gb");
-        //        let cartridge_content = include_bytes!("mario.gb");
+        let cartridge_content = include_bytes!("mario.gb");
 
         let full_memory_capacity = 0xffff;
 
