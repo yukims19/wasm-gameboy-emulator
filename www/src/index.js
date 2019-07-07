@@ -13,22 +13,28 @@ var ReactDOM = require("react-dom");
 var PIXEL_SIZE = 5; // px
 
 var gameboyCanvas = Canvas.new();
-var width = gameboyCanvas.width();
-var height = gameboyCanvas.height();
+var background_width = gameboyCanvas.background_width();
+var background_height = gameboyCanvas.background_height();
+var screen_width = gameboyCanvas.screen_width();
+var screen_height = gameboyCanvas.screen_height();
 
-var canvas = document.getElementById("gameboy-canvas");
+var backgroundCanvas = document.getElementById("gameboy-background-canvas");
+var screenCanvas = document.getElementById("gameboy-screen-canvas");
+
 var tbody = document.getElementById("gameboy-table");
 var pcCounter = document.getElementById("pc-counter");
 
-canvas.height = PIXEL_SIZE * height;
-canvas.width = PIXEL_SIZE * width;
+backgroundCanvas.height = PIXEL_SIZE * background_height;
+backgroundCanvas.width = PIXEL_SIZE * background_width;
+screenCanvas.height = PIXEL_SIZE * screen_height;
+screenCanvas.width = PIXEL_SIZE * screen_width;
 
-var ctx = canvas.getContext("2d");
+var ctx = backgroundCanvas.getContext("2d");
 
 ctx.imageSmoothingEnabled = false;
 
 var getIndex = function getIndex(row, column) {
-  return row * width + column;
+  return row * background_width + column;
 };
 
 var counter = 0;
@@ -82,7 +88,11 @@ var drawTiles = function drawTiles(tile, x, y) {
 
 const getTiles = gameboy => {
   var pixelsPtr = gameboy.pixels();
-  var pixels = new Uint8Array(memory.buffer, pixelsPtr, width * height);
+  var pixels = new Uint8Array(
+    memory.buffer,
+    pixelsPtr,
+    background_width * background_height
+  );
   var tiles = [];
   var sliceIdx = 0;
   while (sliceIdx < pixels.length) {
@@ -99,7 +109,7 @@ var renderCharRamTiles = function renderCharRamTiles(gameboy) {
   tiles.forEach(function(ele, i) {
     drawTiles(ele, x, y);
     x = x + 8 * PIXEL_SIZE;
-    if (x >= canvas.width) {
+    if (x >= backgroundCanvas.width) {
       x = 0;
       y = y + 8 * PIXEL_SIZE;
     } else {
@@ -113,14 +123,14 @@ var renderBackground1 = function renderBackground1(gameboy, fullMemory) {
   const backgroundMap1 = new Uint8Array(
     memory.buffer,
     backgroundMap1Ptr,
-    width * height
+    background_width * background_height
   );
   let x = 0;
   let y = 0;
   backgroundMap1.forEach(function(ele, idx) {
     drawTiles(tiles[ele], x, y);
     x = x + 8 * PIXEL_SIZE;
-    if (x >= canvas.width) {
+    if (x >= backgroundCanvas.width) {
       //console.log("exeed");
       x = 0;
       y = y + 8 * PIXEL_SIZE;

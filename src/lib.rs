@@ -632,8 +632,10 @@ pub enum Pixel {
 
 #[wasm_bindgen]
 pub struct Canvas {
-    width: u8,
-    height: u8,
+    background_width: u8,
+    background_height: u8,
+    screen_width: u8,
+    screen_height: u8,
     registers: Registers,
     memory: Vec<u8>, //consist of 256*256 pixels or 32*32 tiles
                      //only 160*144 pixels can be displayed on screen
@@ -641,12 +643,19 @@ pub struct Canvas {
 
 #[wasm_bindgen]
 impl Canvas {
-    pub fn width(&self) -> u8 {
-        self.width
+    pub fn background_width(&self) -> u8 {
+        self.background_width
     }
 
-    pub fn height(&self) -> u8 {
-        self.height
+    pub fn screen_width(&self) -> u8 {
+        self.screen_width
+    }
+
+    pub fn background_height(&self) -> u8 {
+        self.background_height
+    }
+    pub fn screen_height(&self) -> u8 {
+        self.screen_height
     }
 
     pub fn get_a(&self) -> u8 {
@@ -798,8 +807,10 @@ impl Canvas {
     }
 
     pub fn new() -> Canvas {
-        let width = 255;
-        let height = 255;
+        let background_width = 255;
+        let background_height = 255;
+        let screen_width = 160;
+        let screen_height = 144;
 
         let flag = Flag {
             z: false,
@@ -858,8 +869,10 @@ impl Canvas {
         let pixels = Canvas::tile(pixel_byte_vec);
 
         Canvas {
-            width,
-            height,
+            background_width,
+            background_height,
+            screen_width,
+            screen_height,
             registers,
             memory: full_memory,
         }
