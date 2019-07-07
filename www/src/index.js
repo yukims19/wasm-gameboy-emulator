@@ -679,8 +679,15 @@ const Debugger = props => {
       <HexViewer
         name={interestingRanges.bootRom.desc}
         fullMemory={props.fullMemory}
-        range={interestingRanges.bootRom.range}
+    range={[0x00, 0x02ff]}
         registers={props.registers}
+      />
+
+      <HexViewer
+    name={"nintendo-logo-from-bootrom"}
+    fullMemory={props.fullMemory}
+    range={[0x00A8, 0x00D7]}
+    registers={props.registers}
       />
 
       <HexViewer
