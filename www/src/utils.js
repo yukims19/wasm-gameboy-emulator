@@ -53,4 +53,9 @@ const interestingRanges = {
   interruptVectors: { range: [0x0000, 0x00ff], desc: "Interrupt vectors" }
 };
 
-export { compareUint8Array, interestingRanges, toHex };
+const areTypedArraysEqual = (a, b) => {
+  if (a.byteLength !== b.byteLength) return false;
+  return a.every((val, i) => val === b[i]);
+};
+
+export { areTypedArraysEqual, compareUint8Array, interestingRanges, toHex };

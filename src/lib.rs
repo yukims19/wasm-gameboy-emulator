@@ -630,12 +630,57 @@ pub enum Pixel {
     Black = 3,
 }
 
+pub fn pixel_to_rgba(pixel: Pixel) -> [u8; 4] {
+    match pixel {
+        Pixel::White => [255, 255, 255, 255],
+        Pixel::LightGray => [191, 191, 191, 255],
+        Pixel::DarkGray => [64, 64, 64, 255],
+        Pixel::Black => [0, 0, 0, 255],
+    }
+}
+
+#[wasm_bindgen]
+pub fn pixels_to_image_data(pixels_as_byte_vec: Vec<u8>) -> Vec<u8> {
+    let new_image_data = {
+        let len = pixels_as_byte_vec.len();
+        let bpp = 4;
+        let size = len * bpp;
+        let mut image_data: Vec<u8> = Vec::with_capacity(size as usize);
+
+        for idx in (0..pixels_as_byte_vec.len()).step_by(2) {
+            // Consume two bytes each iteration, and produce
+            // 8 pixels of data.
+            let low_bits = BitVec::from_bytes(&[pixels_as_byte_vec[idx]]);
+            let high_bits = BitVec::from_bytes(&[pixels_as_byte_vec[idx + 1]]);
+
+            for pixel_index in 0..8 {
+                let [r, g, b, a] = match (low_bits[pixel_index], high_bits[pixel_index]) {
+                    (false, false) => [255, 255, 255, 255],
+                    (false, true) => [191, 191, 191, 255],
+                    (true, false) => [64, 64, 64, 255],
+                    (true, true) => [0, 0, 0, 255],
+                };
+
+                image_data.push(r);
+                image_data.push(g);
+                image_data.push(b);
+                image_data.push(a);
+            }
+        }
+
+        image_data
+    };
+
+    return new_image_data.to_vec();
+}
+
 #[wasm_bindgen]
 pub struct Canvas {
     background_width: u8,
     background_height: u8,
     screen_width: u8,
     screen_height: u8,
+    image_data: Vec<u8>,
     registers: Registers,
     memory: Vec<u8>, //consist of 256*256 pixels or 32*32 tiles
                      //only 160*144 pixels can be displayed on screen
@@ -854,9 +899,9 @@ impl Canvas {
         self.memory.as_ptr()
     }
 
-    pub fn background_map_1(&self) -> *const u8 {
-        let background_map_1 = self.memory[0x9800..0x9c00].to_vec();
-        background_map_1.as_ptr()
+    pub fn background_map_1(&self) -> Vec<u8> {
+        let background_map_1 = self.memory[0x9800..0x9c00].to_vec().clone();
+        background_map_1
     }
 
     pub fn execute_opcode(&mut self) {
@@ -866,7 +911,7 @@ impl Canvas {
     }
 
     pub fn execute_opcodes(&mut self, count: u8) {
-        for x in 0..count {
+        for _ in 0..count {
             let instruction = self.memory[self.registers.pc as usize];
             self.registers
                 .execute_instruction(instruction, &mut self.memory);
@@ -902,6 +947,9 @@ impl Canvas {
         let boot_rom_content = include_bytes!("boot-rom.gb");
         let cartridge_content = include_bytes!("mario.gb");
 
+        let head = boot_rom_content;
+        let body = &cartridge_content[0x100..(cartridge_content.len())];
+
         let full_memory_capacity = 0xffff;
 
         let head = boot_rom_content;
@@ -920,10 +968,11 @@ impl Canvas {
         full_memory.extend_from_slice(head);
         full_memory.extend_from_slice(body);
 
-        // full_memory.resize_with(full_memory_capacity, || 0);
-        // for (idx, cartrage_value) in cartrage_header.iter().enumerate() {
-        //     full_memory[0x104 + idx] = cartrage_value.clone();
-        // }
+        full_memory.resize_with(full_memory_capacity, || 0);
+
+        for (idx, cartrage_value) in cartrage_header.iter().enumerate() {
+            full_memory[0x104 + idx] = cartrage_value.clone();
+        }
 
         // //TODO: IMPORTANT! here pretending vertical-blank period
         full_memory[0xff44] = 0x90;
@@ -932,6 +981,8 @@ impl Canvas {
 
         // let pixels = Canvas::tile(&full_memory[0x8000..0x8fff]);
         let pixel_byte_vec = full_memory[0x8000..0x8800].to_vec();
+        let image_data = pixels_to_image_data(pixel_byte_vec.clone());
+
         // let pixels = Canvas::tile(cartrage_header);
         let pixels = Canvas::tile(pixel_byte_vec);
 
@@ -941,6 +992,7 @@ impl Canvas {
             screen_width,
             screen_height,
             registers,
+            image_data,
             memory: full_memory,
         }
     }
@@ -980,6 +1032,14 @@ impl Canvas {
         tile_vec
     }
 
+    pub fn char_map_to_image_data(&mut self) -> Vec<u8> {
+        let pixels_vec = self.memory[0x8000..0x8800].to_vec();
+        let new_image_data = pixels_to_image_data(pixels_vec);
+
+        self.image_data = new_image_data.clone();
+
+        new_image_data
+    }
     // pub fn render(&self) -> String {
     //     self.to_string()
     // }
@@ -1017,8 +1077,10 @@ impl Canvas {
 
 #[wasm_bindgen]
 pub fn init() {
-    console_log::init_with_level(Level::Debug);
-    info!("WASM Gameboy Emulator initialized")
+    match console_log::init_with_level(Level::Debug) {
+        Ok(_value) => info!("WASM Gameboy Emulator initialized"),
+        Err(_err) => println!("Failed to initialize console logger"),
+    }
 }
 
 #[wasm_bindgen]
