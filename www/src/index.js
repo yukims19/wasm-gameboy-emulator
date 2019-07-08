@@ -10,7 +10,7 @@ import { compareUint8Array, interestingRanges, toHex } from "./utils.js";
 
 var ReactDOM = require("react-dom");
 
-var PIXEL_SIZE = 5; // px
+var PIXEL_SIZE = 2; // px
 
 var gameboyCanvas = Canvas.new();
 var background_width = gameboyCanvas.background_width();
@@ -19,17 +19,18 @@ var screen_width = gameboyCanvas.screen_width();
 var screen_height = gameboyCanvas.screen_height();
 
 var backgroundCanvas = document.getElementById("gameboy-background-canvas");
-//var screenCanvas = document.getElementById("gameboy-screen-canvas");
+var screenCanvas = document.getElementById("gameboy-screen-canvas");
 
 var tbody = document.getElementById("gameboy-table");
 var pcCounter = document.getElementById("pc-counter");
 
 backgroundCanvas.height = PIXEL_SIZE * background_height;
 backgroundCanvas.width = PIXEL_SIZE * background_width;
-// screenCanvas.height = PIXEL_SIZE * screen_height;
-// screenCanvas.width = PIXEL_SIZE * screen_width;
+screenCanvas.height = PIXEL_SIZE * screen_height;
+screenCanvas.width = PIXEL_SIZE * screen_width;
 
 var ctx = backgroundCanvas.getContext("2d");
+var ctxScreen = screenCanvas.getContext("2d");
 
 ctx.imageSmoothingEnabled = false;
 
@@ -43,10 +44,21 @@ const drawScreen = () => {
   var x = gameboyCanvas.get_scroll_x();
   var y = gameboyCanvas.get_scroll_y();
 
-  console.log("Drawing screen boundry", x, y);
+  //  console.log("Drawing screen boundry", x, y);
 
-  ctx.strokeStyle = "red";
-  ctx.strokeRect(x, y, PIXEL_SIZE * screen_width, PIXEL_SIZE * screen_width);
+  // ctx.strokeStyle = "red";
+  // ctx.strokeRect(x, y, PIXEL_SIZE * screen_width, PIXEL_SIZE * screen_width);
+  ctxScreen.drawImage(
+    backgroundCanvas,
+    x,
+    y,
+    PIXEL_SIZE * screen_width,
+    PIXEL_SIZE * screen_width,
+    0,
+    0,
+    PIXEL_SIZE * screen_width,
+    PIXEL_SIZE * screen_width
+  );
 };
 
 var drawTiles = function drawTiles(tile, x, y) {
@@ -85,12 +97,12 @@ var drawTiles = function drawTiles(tile, x, y) {
     //     PIXEL_SIZE,
     //     ctx.fillStyle
     // );
-    ctx.strokeStyle = "grey";
-    ctx.strokeRect(col + colIdx * PIXEL_SIZE, row, PIXEL_SIZE, PIXEL_SIZE);
+    // ctx.strokeStyle = "grey";
+    // ctx.strokeRect(col + colIdx * PIXEL_SIZE, row, PIXEL_SIZE, PIXEL_SIZE);
 
-    if (colIdx % 8 === 0) {
-      ctx.strokeRect(col + colIdx * PIXEL_SIZE, row, PIXEL_SIZE, PIXEL_SIZE);
-    }
+    // if (colIdx % 8 === 0) {
+    //   ctx.strokeRect(col + colIdx * PIXEL_SIZE, row, PIXEL_SIZE, PIXEL_SIZE);
+    // }
 
     ctx.fillRect(col + colIdx * PIXEL_SIZE, row, PIXEL_SIZE, PIXEL_SIZE);
     colIdx++;
@@ -750,8 +762,7 @@ var render = function render(gameboy, memoryBytes) {
 
   const next = () => {
     gameboy.execute_opcodes(1000);
-    //renderBackgroundMap1(gameboy);
-    //drawScreen();
+    renderBackgroundMap1(gameboy);
     requestAnimationFrame(() => render(gameboy, memoryBytes));
   };
 
