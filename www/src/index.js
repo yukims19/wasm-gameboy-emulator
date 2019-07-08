@@ -19,15 +19,15 @@ var screen_width = gameboyCanvas.screen_width();
 var screen_height = gameboyCanvas.screen_height();
 
 var backgroundCanvas = document.getElementById("gameboy-background-canvas");
-var screenCanvas = document.getElementById("gameboy-screen-canvas");
+//var screenCanvas = document.getElementById("gameboy-screen-canvas");
 
 var tbody = document.getElementById("gameboy-table");
 var pcCounter = document.getElementById("pc-counter");
 
 backgroundCanvas.height = PIXEL_SIZE * background_height;
 backgroundCanvas.width = PIXEL_SIZE * background_width;
-screenCanvas.height = PIXEL_SIZE * screen_height;
-screenCanvas.width = PIXEL_SIZE * screen_width;
+// screenCanvas.height = PIXEL_SIZE * screen_height;
+// screenCanvas.width = PIXEL_SIZE * screen_width;
 
 var ctx = backgroundCanvas.getContext("2d");
 
@@ -38,6 +38,16 @@ var getIndex = function getIndex(row, column) {
 };
 
 var counter = 0;
+
+const drawScreen = () => {
+  var x = gameboyCanvas.get_scroll_x();
+  var y = gameboyCanvas.get_scroll_y();
+
+  console.log("Drawing screen boundry", x, y);
+
+  ctx.strokeStyle = "red";
+  ctx.strokeRect(x, y, PIXEL_SIZE * screen_width, PIXEL_SIZE * screen_width);
+};
 
 var drawTiles = function drawTiles(tile, x, y) {
   //console.log("drawTiles:", tile, x, y);
@@ -75,6 +85,7 @@ var drawTiles = function drawTiles(tile, x, y) {
     //     PIXEL_SIZE,
     //     ctx.fillStyle
     // );
+    ctx.strokeStyle = "grey";
     ctx.strokeRect(col + colIdx * PIXEL_SIZE, row, PIXEL_SIZE, PIXEL_SIZE);
 
     if (colIdx % 8 === 0) {
@@ -117,7 +128,7 @@ var renderCharRamTiles = function renderCharRamTiles(gameboy) {
   });
 };
 
-var renderBackground1 = function renderBackground1(gameboy, fullMemory) {
+var renderBackgroundMap1 = function renderBackgroundMap1(gameboy, fullMemory) {
   const tiles = getTiles(gameboy);
 
   var backgroundMap1Ptr = gameboy.background_map_1();
@@ -137,6 +148,7 @@ var renderBackground1 = function renderBackground1(gameboy, fullMemory) {
       y = y + 8 * PIXEL_SIZE;
     }
   });
+  drawScreen();
 };
 
 const cellColor = (memoryIdx, pc, sp, hoveredMemoryIdx) => {
@@ -262,9 +274,11 @@ const HexViewer = props => {
 
   return (
     <table id="memory-view">
-      <thead onClick={() => setVisible(!visible)}>
+      <thead>
         <tr>
-          <th colSpan={16}>{name}</th>
+          <th colSpan={16} onClick={() => setVisible(!visible)}>
+            {name}
+          </th>
           <th colSpan={20}>
             Range:{" "}
             <input
@@ -686,6 +700,13 @@ const Debugger = props => {
       />
 
       <HexViewer
+        name={"LCD"}
+        fullMemory={props.fullMemory}
+        range={[0xff40, 0xff50]}
+        registers={props.registers}
+      />
+
+      <HexViewer
         name={"nintendo-logo-from-bootrom"}
         fullMemory={props.fullMemory}
         range={[0x00a8, 0x00d7]}
@@ -729,7 +750,8 @@ var render = function render(gameboy, memoryBytes) {
 
   const next = () => {
     gameboy.execute_opcodes(1000);
-    //renderCharRamTiles(gameboy);
+    //renderBackgroundMap1(gameboy);
+    //drawScreen();
     requestAnimationFrame(() => render(gameboy, memoryBytes));
   };
 
@@ -788,7 +810,7 @@ var render = function render(gameboy, memoryBytes) {
       opLog: opLog,
       registers: registers,
       onDraw: () => renderCharRamTiles(gameboy),
-      onDrawBackground: () => renderBackground1(gameboy, memoryBytes)
+      onDrawBackground: () => renderBackgroundMap1(gameboy, memoryBytes)
     }),
     domContainer
   );
