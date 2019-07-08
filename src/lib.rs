@@ -660,7 +660,53 @@ impl Canvas {
     }
 
     pub fn get_lcd(&self) -> u8 {
-        self.memory[0xff47]
+        self.memory[0xff40]
+    }
+
+    pub fn is_lcd_display_enable(&self) -> bool {
+        self.memory[0xff40] & 0x80 == 0x80
+    }
+
+    pub fn window_tile_map(&self) -> *const u8 {
+        if self.memory[0xff40] & 0x40 == 0x40 {
+            let window_tile_map = self.memory[0x9c00..0xa000].to_vec();
+            window_tile_map.as_ptr()
+        } else {
+            let window_tile_map = self.memory[0x9800..0x9c00].to_vec();
+            window_tile_map.as_ptr()
+        }
+    }
+
+    pub fn is_window_display_enable(&self) -> bool {
+        self.memory[0xff40] & 0x20 == 0x20
+    }
+
+    pub fn bg_window_tile_data(&self) -> *const u8 {
+        if self.memory[0xff40] & 0x10 == 0x10 {
+            let bg_window_tile_data = self.memory[0x8000..0x9000].to_vec();
+            bg_window_tile_data.as_ptr()
+        } else {
+            let bg_window_tile_data = self.memory[0x8800..0x9800].to_vec();
+            bg_window_tile_data.as_ptr()
+        }
+    }
+
+    pub fn bg_tile_map(&self) -> *const u8 {
+        if self.memory[0xff40] & 0x08 == 0x08 {
+            let bg_tile_map = self.memory[0x9c00..0xa000].to_vec();
+            bg_tile_map.as_ptr()
+        } else {
+            let bg_tile_map = self.memory[0x9800..0x9c00].to_vec();
+            bg_tile_map.as_ptr()
+        }
+    }
+
+    pub fn is_sprite_display_enable(&self) -> bool {
+        self.memory[0xff40] & 0x02 == 0x02
+    }
+
+    pub fn is_bg_display_enable(&self) -> bool {
+        self.memory[0xff40] & 0x01 == 0x01
     }
 
     pub fn get_scroll_y(&self) -> u8 {
@@ -669,6 +715,14 @@ impl Canvas {
 
     pub fn get_scroll_x(&self) -> u8 {
         self.memory[0xff43]
+    }
+
+    pub fn get_window_y(&self) -> u8 {
+        self.memory[0xff4a]
+    }
+
+    pub fn get_window_x(&self) -> u8 {
+        self.memory[0xff4b]
     }
 
     pub fn get_a(&self) -> u8 {
