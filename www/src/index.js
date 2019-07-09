@@ -107,6 +107,10 @@ const updateCharMapCanvas = gameboy => {
 
 const drawScreen = () => {
   clearContext(screenCanvas);
+  const isLcdEnable = gameboyInst.is_lcd_display_enable();
+  if (!isLcdEnable) {
+    return;
+  }
 
   var x = gameboyInst.get_scroll_x();
   var y = gameboyInst.get_scroll_y();
