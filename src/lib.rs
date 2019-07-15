@@ -12,6 +12,20 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+pub struct Channel {
+    sweep_time: f32,
+    is_sweep_increase: bool,
+    sweep_shift_num: u8,
+    wave_duty_pct: f32,
+    sound_length_sec: f32,
+    volume: u8,
+    is_envelop_increase: bool,
+    envelop_shift_num: u8,
+    frequency: f32,
+    is_restart: bool,
+    is_use_length: bool,
+}
+
 struct Flag {
     z: bool, //(0x80) if zero
     n: bool, //(0x40) if subtraction
@@ -703,6 +717,67 @@ impl Canvas {
     pub fn screen_height(&self) -> u8 {
         self.screen_height
     }
+
+    pub fn square1(&self) -> Channel {
+        let sweep_time_raw = self.memory[0xff10] & 0b01110000u8;
+        let sweep_time = match sweep_time_raw {
+            0b00000000 => 0.0,
+            0b00010000 => 7.8,
+            0b00100000 => 15.6,
+            0b00110000 => 23.4,
+            0b01000000 => 31.3,
+            0b01010000 => 39.1,
+            0b01100000 => 46.9,
+            0b01110000 => 54.7,
+            _ => panic!("Improper sweep_time. Check memory 0xff10"),
+        };
+
+        let is_sweep_increase = self.memory[0xff10] & 0b00001000u8 == 0b00001000u8;
+        let sweep_shift_num = self.memory[0xff10] & 0b00000111u8;
+
+        let wave_duty_raw = self.memory[0xff11] & 0b11000000u8;
+        let wave_duty_pct = match sweep_time_raw {
+            0b00000000 => 12.5,
+            0b01000000 => 25.0,
+            0b10000000 => 50.0,
+            0b11000000 => 75.0,
+            _ => panic!("Improper wave_duty. Check memory 0xff11"),
+        };
+
+        let sound_length_raw = self.memory[0xff11] & 0b00111111u8;
+        let sound_length_sec = (64.0 - sound_length_raw as f32) * (1.0 / 256.0);
+        let volume = (self.memory[0xff12] & 0b11110000u8) >> 4;
+        let is_envelop_increase = self.memory[0xff12] & 0b00001000u8 == 0b00001000u8;
+        let envelop_shift_num = self.memory[0xff12] & 0b00000111u8;
+        //        let frequency = self.memory[0xff13] + self.memory[0xff14] & 0b00000111u8;
+        let is_restart = self.memory[0xff14] & 0b10000000u8 == 0b10000000u8;
+        let is_use_length = self.memory[0xff14] & 0b01000000u8 == 0b01000000u8;
+
+        Channel {
+            sweep_time,
+            is_sweep_increase,
+            sweep_shift_num,
+            wave_duty_pct,
+            sound_length_sec,
+            volume,
+            is_envelop_increase,
+            envelop_shift_num,
+            frequency: 440.0,
+            is_restart,
+            is_use_length,
+        }
+    }
+    // pub fn is_sound_on(&self) -> bool {
+    //     self.memory[0x0008] > 0
+    // }
+
+    // pub fn can_play_boot_sound_1(&self) -> bool {
+    //     self.registers.h == 0x62
+    // }
+
+    // pub fn can_play_boot_sound_2(&self) -> bool {
+    //     self.registers.h == 0x64
+    // }
 
     pub fn get_lcd(&self) -> u8 {
         self.memory[0xff40]
