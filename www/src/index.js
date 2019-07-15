@@ -13,6 +13,7 @@ import {
   toHex
 } from "./utils.js";
 import { Debugger } from "./debugControls.js";
+import { square1 } from "./channels.jsx";
 
 var ReactDOM = require("react-dom");
 
@@ -168,6 +169,106 @@ const renderBackgroundMap1AsImageData = (gameboy, fullMemory) => {
   drawScreen();
 };
 
+const playSound = gameboy => {
+  console.log("playSound");
+  // if (gameboy.can_play_boot_sound_1) {
+  //   var audio = new Audio("audio_file.mp3");
+  //   audio.play();
+  // }
+
+  // if (gameboy.can_play_boot_sound_1) {
+  //   var audio = new Audio("audio_file.mp3");
+  //   audio.play();
+  // }
+
+  var audioCtx = new AudioContext();
+  function playSweep() {
+    let soundLength = 0.045;
+    const osc1 = square1(audioCtx, 132);
+    const osc2 = square1(audioCtx, 1551);
+    let sweepEnv = audioCtx.createGain();
+    sweepEnv.gain.cancelScheduledValues(audioCtx.currentTime);
+    sweepEnv.gain.setValueAtTime(0, audioCtx.currentTime);
+    sweepEnv.gain.linearRampToValueAtTime(1.5, audioCtx.currentTime + 1);
+    sweepEnv.gain.linearRampToValueAtTime(
+      1,
+      audioCtx.currentTime + 1 + 3 * (1 / 64)
+    );
+    sweepEnv.gain.linearRampToValueAtTime(
+      0.5,
+      audioCtx.currentTime + 1 + 3 * (1 / 64) * 2
+    );
+    sweepEnv.gain.linearRampToValueAtTime(
+      0,
+      audioCtx.currentTime + 1 + 3 * (1 / 64) * 3
+    );
+    osc1.connect(sweepEnv).connect(audioCtx.destination);
+    osc1.start(audioCtx.currentTime + 1);
+    osc1.stop(audioCtx.currentTime + 1 + 3 * (1 / 64) * 3);
+
+    const secondFStartT = audioCtx.currentTime + 1 + 3 * (1 / 64) * 3;
+    let sweepEnv2 = audioCtx.createGain();
+    sweepEnv2.gain.cancelScheduledValues(secondFStartT);
+    sweepEnv2.gain.setValueAtTime(0, secondFStartT);
+    sweepEnv2.gain.linearRampToValueAtTime(1.5, secondFStartT);
+    sweepEnv2.gain.linearRampToValueAtTime(1.4, secondFStartT + 3 * (1 / 64));
+    sweepEnv2.gain.linearRampToValueAtTime(
+      1.3,
+      secondFStartT + 3 * (1 / 64) * 2
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(
+      1.2,
+      secondFStartT + 3 * (1 / 64) * 3
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(
+      1.1,
+      secondFStartT + 3 * (1 / 64) * 4
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(1, secondFStartT + 3 * (1 / 64) * 5);
+    sweepEnv2.gain.linearRampToValueAtTime(
+      0.9,
+      secondFStartT + 3 * (1 / 64) * 6
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(
+      0.8,
+      secondFStartT + 3 * (1 / 64) * 7
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(
+      0.7,
+      secondFStartT + 3 * (1 / 64) * 8
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(
+      0.6,
+      secondFStartT + 3 * (1 / 64) * 9
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(
+      0.5,
+      secondFStartT + 3 * (1 / 64) * 10
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(
+      0.4,
+      secondFStartT + 3 * (1 / 64) * 11
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(
+      0.3,
+      secondFStartT + 3 * (1 / 64) * 12
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(
+      0.2,
+      secondFStartT + 3 * (1 / 64) * 13
+    );
+    sweepEnv2.gain.linearRampToValueAtTime(
+      0.1,
+      secondFStartT + 3 * (1 / 64) * 14
+    );
+    osc2.connect(sweepEnv2).connect(audioCtx.destination);
+    osc2.start(secondFStartT);
+    osc2.stop(secondFStartT + 3 * (1 / 64) * 15);
+  }
+
+  playSweep();
+};
+
 var domContainer = document.querySelector("#memory-viewer");
 
 // TODO: Move this into the Rust side
@@ -257,6 +358,9 @@ var render = function render(gameboy) {
       onDrawBackground: () => {
         // updateCharMapCanvas(gameboy);
         renderBackgroundMap1AsImageData(gameboy, memoryBytes);
+      },
+      onPlaySound: () => {
+        playSound(gameboy);
       }
     }),
     domContainer
