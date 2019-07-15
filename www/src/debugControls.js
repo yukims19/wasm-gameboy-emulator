@@ -6,10 +6,10 @@ const cellColor = (memoryIdx, pc, sp, hoveredMemoryIdx) => {
   return memoryIdx === pc
     ? "green"
     : memoryIdx === sp
-      ? "lightblue"
-      : memoryIdx === hoveredMemoryIdx
-        ? "gray"
-        : "white";
+    ? "lightblue"
+    : memoryIdx === hoveredMemoryIdx
+    ? "gray"
+    : "white";
 };
 
 // memoryStart/End will be aligned to 16-bit boundaries
@@ -425,7 +425,8 @@ const Controls = props => {
     tick,
     onDraw,
     onClear,
-    onDrawBackground
+    onDrawBackground,
+    onPlaySound
   } = props;
   const pcValue = fullMemory[pc];
 
@@ -440,6 +441,7 @@ const Controls = props => {
       <thead>
         <tr>
           <th>
+            <button onClick={onPlaySound}>Sound</button>
             <button onClick={onDraw}>Draw</button>
             {toggleButton}
             {stepButton}
@@ -511,6 +513,11 @@ const OpLogViewer = props => {
 };
 
 const Debugger = props => {
+  if (props.fullMemory[0xff13] !== 0) {
+    console.log("frequency changing");
+    console.log(props.fullMemory[0xff13].toString(2));
+  }
+
   return (
     <div style={{ display: "flex", alignContent: "stretch", flexWrap: "wrap" }}>
       <div
@@ -525,6 +532,7 @@ const Debugger = props => {
           onDraw={props.onDraw}
           onClear={props.onDraw}
           onDrawBackground={props.onDrawBackground}
+          onPlaySound={props.onPlaySound}
           onStep={props.onStep}
           onTogglePlay={props.onTogglePlay}
           isPlaying={props.isPlaying}
@@ -548,6 +556,13 @@ const Debugger = props => {
         name={interestingRanges.bootRom.desc}
         fullMemory={props.fullMemory}
         range={[0x00, 0x02ff]}
+        registers={props.registers}
+      />
+
+      <HexViewer
+        name={"Sound Controller"}
+        fullMemory={props.fullMemory}
+        range={[0xff10, 0xff3f]}
         registers={props.registers}
       />
 
