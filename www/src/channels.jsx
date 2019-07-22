@@ -108,3 +108,56 @@ export const square1 = (audioCtx, frequency) => {
   osc.frequency.value = frequency * 1.28;
   return osc;
 };
+
+export const playSquare = (audioCtx, square1) => {
+  console.log("sq");
+  let sweep_time = square1.sweep_time();
+  let is_sweep_increase = square1.is_sweep_increase();
+  let sweep_shift_num = square1.sweep_shift_num();
+  let wave_duty_pct = square1.wave_duty_pct();
+  let sound_length_sec = square1.sound_length_sec();
+  let volume = square1.volume() / 10;
+  let is_envelop_increase = square1.is_envelop_increase();
+  let envelop_shift_num = square1.envelop_shift_num();
+  let fr = square1.fr();
+  let frequency = square1.frequency();
+  let is_restart = square1.is_restart();
+  let is_use_length = square1.is_use_length();
+
+  console.log(
+    ">>>>",
+    sweep_time,
+    is_sweep_increase,
+    sweep_shift_num,
+    wave_duty_pct,
+    sound_length_sec,
+    volume,
+    is_envelop_increase,
+    envelop_shift_num,
+    fr,
+    frequency,
+    is_restart,
+    is_use_length
+  );
+  const osc1 = audioCtx.createOscillator();
+  osc1.type = "square";
+
+  osc1.frequency.value = frequency * 8;
+  let sweepEnv = audioCtx.createGain();
+  let currentTime = audioCtx.currentTime;
+  sweepEnv.gain.cancelScheduledValues(currentTime);
+  sweepEnv.gain.setValueAtTime(volume, currentTime);
+  while (volume >= 0 && volume <= 1.5) {
+    sweepEnv.gain.setValueAtTime(
+      volume,
+      (currentTime = currentTime + (1 / 64) * envelop_shift_num)
+    );
+    volume = is_envelop_increase ? volume + 0.1 : volume - 0.1;
+  }
+
+  //TODO: need to implement sweep_shifts
+  osc1.connect(sweepEnv).connect(audioCtx.destination);
+  osc1.start(audioCtx.currentTime);
+  osc1.stop(audioCtx.currentTime + 1);
+};
+
