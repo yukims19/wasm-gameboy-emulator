@@ -560,6 +560,13 @@ const Debugger = props => {
       />
 
       <HexViewer
+        name={"Sound on/off"}
+        fullMemory={props.fullMemory}
+        range={[0xff20, 0xff30]}
+        registers={props.registers}
+      />
+
+      <HexViewer
         name={"Sound Controller"}
         fullMemory={props.fullMemory}
         range={[0xff10, 0xff3f]}
