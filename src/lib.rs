@@ -823,17 +823,22 @@ impl Canvas {
             is_use_length,
         }
     }
-    // pub fn is_sound_on(&self) -> bool {
-    //     self.memory[0x0008] > 0
-    // }
 
-    // pub fn can_play_boot_sound_1(&self) -> bool {
-    //     self.registers.h == 0x62
-    // }
-
-    // pub fn can_play_boot_sound_2(&self) -> bool {
-    //     self.registers.h == 0x64
-    // }
+    pub fn is_sound_all_on(&self) -> bool {
+        self.memory[0xff26] & 0b10000000 == 0b10000000
+    }
+    pub fn is_sound_4_on(&self) -> bool {
+        self.memory[0xff26] & 0b00001000 == 0b0000
+    }
+    pub fn is_sound_3_on(&self) -> bool {
+        self.memory[0xff26] & 0b00000100 == 0b00000100
+    }
+    pub fn is_sound_2_all_on(&self) -> bool {
+        self.memory[0xff26] & 0b00000010 == 0b10000010
+    }
+    pub fn is_sound_1_on(&self) -> bool {
+        self.memory[0xff26] & 0b00000001 == 0b10000001
+    }
 
     pub fn get_lcd(&self) -> u8 {
         self.memory[0xff40]
