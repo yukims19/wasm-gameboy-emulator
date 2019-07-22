@@ -12,6 +12,7 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+#[wasm_bindgen]
 pub struct Channel {
     sweep_time: f32,
     is_sweep_increase: bool,
@@ -21,9 +22,61 @@ pub struct Channel {
     volume: u8,
     is_envelop_increase: bool,
     envelop_shift_num: u8,
+    fr: u16,
     frequency: f32,
     is_restart: bool,
     is_use_length: bool,
+}
+
+#[wasm_bindgen]
+impl Channel {
+    pub fn sweep_time(&self) -> f32 {
+        self.sweep_time
+    }
+
+    pub fn is_sweep_increase(&self) -> bool {
+        self.is_sweep_increase
+    }
+
+    pub fn sweep_shift_num(&self) -> u8 {
+        self.sweep_shift_num
+    }
+
+    pub fn wave_duty_pct(&self) -> f32 {
+        self.wave_duty_pct
+    }
+
+    pub fn sound_length_sec(&self) -> f32 {
+        self.sound_length_sec
+    }
+
+    pub fn volume(&self) -> u8 {
+        self.volume
+    }
+
+    pub fn is_envelop_increase(&self) -> bool {
+        self.is_envelop_increase
+    }
+
+    pub fn envelop_shift_num(&self) -> u8 {
+        self.envelop_shift_num
+    }
+
+    pub fn fr(&self) -> u16 {
+        self.fr
+    }
+
+    pub fn frequency(&self) -> f32 {
+        self.frequency
+    }
+
+    pub fn is_restart(&self) -> bool {
+        self.is_restart
+    }
+
+    pub fn is_use_length(&self) -> bool {
+        self.is_use_length
+    }
 }
 
 struct Flag {
@@ -749,7 +802,9 @@ impl Canvas {
         let volume = (self.memory[0xff12] & 0b11110000u8) >> 4;
         let is_envelop_increase = self.memory[0xff12] & 0b00001000u8 == 0b00001000u8;
         let envelop_shift_num = self.memory[0xff12] & 0b00000111u8;
-        //        let frequency = self.memory[0xff13] + self.memory[0xff14] & 0b00000111u8;
+        let frequency_raw =
+            (self.memory[0xff13] as u16) << 3 | (self.memory[0xff14] & 0b00000111u8) as u16;
+        let frequency = 131072.0 / (2048.0 - frequency_raw as f32);
         let is_restart = self.memory[0xff14] & 0b10000000u8 == 0b10000000u8;
         let is_use_length = self.memory[0xff14] & 0b01000000u8 == 0b01000000u8;
 
@@ -762,7 +817,8 @@ impl Canvas {
             volume,
             is_envelop_increase,
             envelop_shift_num,
-            frequency: 440.0,
+            fr: frequency_raw,
+            frequency,
             is_restart,
             is_use_length,
         }
