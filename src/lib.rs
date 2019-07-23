@@ -749,6 +749,7 @@ pub struct Canvas {
     screen_height: u8,
     image_data: Vec<u8>,
     registers: Registers,
+    total_cycle_num: usize,
     memory: Vec<u8>, //consist of 256*256 pixels or 32*32 tiles
                      //only 160*144 pixels can be displayed on screen
 }
@@ -769,6 +770,74 @@ impl Canvas {
 
     pub fn screen_height(&self) -> u8 {
         self.screen_height
+    }
+
+    fn add_cycles(&mut self, instruction: u8) {
+        let cycle = match instruction {
+            0x031 => 12,
+            0x0AF => 4,
+            0x021 => 12,
+            0x077 => 8,
+            0x011 => 12,
+            0x00E => 8,
+            0x03E => 8,
+            0x006 => 8,
+            0x002e => 8,
+            0x001e => 8,
+            0x0016 => 8,
+            0x07B => 4,
+            0x07C => 4,
+            0x07D => 4,
+            0x078 => 4,
+            0x01A => 8,
+            0x04F => 4,
+            0x067 => 4,
+            0x057 => 4,
+            0x032 => 8,
+            0x022 => 8,
+            0x0f0 => 12,
+            0x0E2 => 8,
+            0x0E0 => 12,
+            0x0CB => // match self.following_byte(pointer, memory) {
+                // 0x07c => {
+                //     if self.h & 0x80 == 0x00 {
+                //         flag_z = true;
+                //     }
+                //     self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                // }
+                // 0x011 =>
+                    8,
+                // other => println!("Unrecogized opcode (CB: {:x})", other),
+            0x017 => 4,
+            0x020 => 8,
+            0x028 => 8,
+            0x018 => 8,
+            0x00C => 4,
+            0x004 => 4,
+            0x0CD => 12,
+            0x0C9 => 8,
+            0x0C5 => 16,
+            0x0C1 => 12,
+            0x005 => 4,
+            0x00D => 4,
+            0x01D => 4,
+            0x03D => 4,
+            0x015 => 4,
+            0x013 => 8,
+            0x023 => 8,
+            0x024 => 4,
+            0x0FE => 8,
+            0x0BE => 8,
+            0x0EA => 16,
+            0x090 => 4,
+            0x086 => 8,
+            other => {
+                println!("Cycle calc - No opcode found for {:x}", other);
+                std::process::exit(1)
+            }
+        };
+
+        self.total_cycle_num += cycle as usize;
     }
 
     pub fn square1(&self) -> Channel {
@@ -1044,6 +1113,7 @@ impl Canvas {
         let instruction = self.memory[self.registers.pc as usize];
         self.registers
             .execute_instruction(instruction, &mut self.memory);
+        self.add_cycles(instruction);
     }
 
     pub fn execute_opcodes(&mut self, count: u8) {
@@ -1051,6 +1121,7 @@ impl Canvas {
             let instruction = self.memory[self.registers.pc as usize];
             self.registers
                 .execute_instruction(instruction, &mut self.memory);
+            self.add_cycles(instruction);
         }
     }
 
@@ -1116,6 +1187,7 @@ impl Canvas {
             registers,
             image_data,
             memory: full_memory,
+            total_cycle_num: 0,
         }
     }
 
