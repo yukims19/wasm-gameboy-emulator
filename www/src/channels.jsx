@@ -161,3 +161,58 @@ export const playSquare = (audioCtx, square1) => {
   osc1.stop(audioCtx.currentTime + 1);
 };
 
+/* export const playSquare1 = (audioCtx, square1, f) => {
+ *   console.log("s1");
+ *   let soundLength = 0.045;
+ *   const osc1 = audioCtx.createOscillator();
+ *   osc1.type = "square";
+ *   console.log(square1.fr(), square1.frequency());
+ *   osc1.frequency.value = f * 8; //square1.frequency() * 10;
+ *   let sweepEnv = audioCtx.createGain();
+ *   sweepEnv.gain.cancelScheduledValues(audioCtx.currentTime);
+ *   sweepEnv.gain.setValueAtTime(0, audioCtx.currentTime);
+ *   sweepEnv.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 1);
+ *   sweepEnv.gain.linearRampToValueAtTime(
+ *     0.15,
+ *     audioCtx.currentTime + 1 + 3 * (1 / 64)
+ *   );
+ *   sweepEnv.gain.linearRampToValueAtTime(
+ *     0.15,
+ *     audioCtx.currentTime + 1 + 3 * (1 / 64) * 2
+ *   );
+ *   sweepEnv.gain.linearRampToValueAtTime(
+ *     0,
+ *     audioCtx.currentTime + 1 + 3 * (1 / 64) * 3
+ *   );
+ *   osc1.connect(sweepEnv).connect(audioCtx.destination);
+ *   osc1.start(audioCtx.currentTime + 1);
+ *   osc1.stop(audioCtx.currentTime + 1 + 3 * (1 / 64) * 2);
+ * };
+ *
+ * export const playSquare2 = (audioCtx, square1, f) => {
+ *   console.log("s2");
+ *   const osc2 = audioCtx.createOscillator();
+ *   osc2.type = "square";
+ *   console.log(square1.fr(), square1.frequency());
+ *   osc2.frequency.value = f * 8; //square1.frequency() * 10;
+ *   const secondFStartT = audioCtx.currentTime + 1 + 3 * (1 / 64) * 2;
+ *   let sweepEnv2 = audioCtx.createGain();
+ *   sweepEnv2.gain.cancelScheduledValues(secondFStartT);
+ *   sweepEnv2.gain.setValueAtTime(1.5, secondFStartT);
+ *
+ *   var volumn = 1.5;
+ *   var envelopStep = 3;
+ *
+ *   console.log("while");
+ *   while (volumn >= 0 && volumn <= 1.5) {
+ *     sweepEnv2.gain.setValueAtTime(
+ *       volumn,
+ *       secondFStartT + (1 / 64) * envelopStep
+ *     );
+ *     volumn = volumn - 0.1;
+ *   }
+ *
+ *   osc2.connect(sweepEnv2).connect(audioCtx.destination);
+ *   osc2.start(secondFStartT);
+ *   osc2.stop(secondFStartT + 3 * (1 / 64) * 15);
+ * }; */
