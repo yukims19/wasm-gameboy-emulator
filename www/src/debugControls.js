@@ -528,11 +528,6 @@ const OpLogViewer = props => {
 };
 
 const Debugger = props => {
-  if (props.fullMemory[0xff13] !== 0) {
-    console.log("frequency changing");
-    console.log(props.fullMemory[0xff13].toString(2));
-  }
-
   return (
     <div style={{ display: "flex", alignContent: "stretch", flexWrap: "wrap" }}>
       <div
