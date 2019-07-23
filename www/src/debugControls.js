@@ -423,6 +423,9 @@ const Controls = props => {
     onTogglePlay,
     isPlaying,
     tick,
+    cycleTotal,
+    timer,
+    cpuClock,
     onDraw,
     onClear,
     onDrawBackground,
@@ -456,6 +459,18 @@ const Controls = props => {
         <tr>
           <th>Tick:</th>
           <th>{tick}</th>
+        </tr>
+        <tr>
+          <th>Cycle Totoal:</th>
+          <th>{cycleTotal}</th>
+        </tr>
+        <tr>
+          <th>Timer:</th>
+          <th>{timer}</th>
+        </tr>
+        <tr>
+          <th>CPU Clock:</th>
+          <th>{cpuClock}</th>
         </tr>
       </thead>
       <thead>
@@ -539,6 +554,9 @@ const Debugger = props => {
           pc={props.pc}
           nextPc={props.nextPc}
           tick={props.tick}
+          cycleTotal={props.cycleTotal}
+          timer={props.timer}
+          cpuClock={props.cpuClock}
         />
 
         <CPUViewer

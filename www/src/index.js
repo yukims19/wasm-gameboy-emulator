@@ -263,6 +263,9 @@ var render = function render(gameboy) {
       nextPc: nextPc,
       opLog: opLog,
       registers: registers,
+      cycleTotal: cycleTotal,
+      timer: timer,
+      cpuClock,
       onDraw: () => {
         updateCharMapCanvas(gameboy);
       },
