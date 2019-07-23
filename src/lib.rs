@@ -750,6 +750,8 @@ pub struct Canvas {
     image_data: Vec<u8>,
     registers: Registers,
     total_cycle_num: usize,
+    timer: usize,
+    cpu_clock: usize,
     memory: Vec<u8>, //consist of 256*256 pixels or 32*32 tiles
                      //only 160*144 pixels can be displayed on screen
 }
@@ -770,6 +772,60 @@ impl Canvas {
 
     pub fn screen_height(&self) -> u8 {
         self.screen_height
+    }
+
+    //Timer
+    pub fn total_cycle(&self) -> usize {
+        self.total_cycle_num
+    }
+
+    pub fn timer_counter_memory(&self) -> u8 {
+        self.memory[0xff05]
+    }
+
+    pub fn timer(&mut self) -> usize {
+        self.timer = self.total_cycle_num / self.timer_frequency();
+        self.timer
+    }
+
+    pub fn cpu_clock(&mut self) -> usize {
+        self.cpu_clock = self.timer / self.timer_cycle_to_cpu_clock();
+        self.cpu_clock
+    }
+
+    pub fn timer_cycle_to_cpu_clock(&self) -> usize {
+        let cpu_clock_speed = 4194304;
+        let frequency = self.timer_frequency();
+
+        cpu_clock_speed / frequency
+    }
+
+    pub fn is_timer_enabled(&self) -> bool {
+        self.memory[0xff07] & 0b00000100u8 == 0b00000100u8
+    }
+
+    pub fn timer_frequency(&self) -> usize {
+        let timer_frequency = match self.memory[0xff07] & 0b00000011u8 {
+            0 => 4096,
+            1 => 262144,
+            2 => 65536,
+            3 => 16384,
+            _ => 0,
+        };
+
+        timer_frequency
+    }
+
+    fn add_time_counter(&mut self) {
+        if self.memory[0xff05] == 255 {
+            self.memory[0xff05] = self.memory[0xff06]
+        } else {
+            self.memory[0xff05] += 1
+        }
+    }
+
+    pub fn get_divide_register(&self) -> u8 {
+        self.memory[0xff04]
     }
 
     fn add_cycles(&mut self, instruction: u8) {
@@ -1188,6 +1244,8 @@ impl Canvas {
             image_data,
             memory: full_memory,
             total_cycle_num: 0,
+            timer: 0,
+            cpu_clock: 0,
         }
     }
 

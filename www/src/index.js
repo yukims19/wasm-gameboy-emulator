@@ -243,6 +243,9 @@ var render = function render(gameboy) {
     }
   };
 
+  const cycleTotal = gameboy.total_cycle();
+  const timer = gameboy.timer();
+  const cpuClock = gameboy.cpu_clock();
   // A debugging handle to play with in the console
   window.fullMemory = () => memoryBytes;
 
