@@ -774,6 +774,37 @@ impl Canvas {
         self.screen_height
     }
 
+    //Intrupts
+    // fn do_interupt(&self) -> bool {
+    //     let has_request = self.memory[0xff0f] & 0b00010111 != 0;
+    //     let interupt_enabled = self.memory[0xffff] > 0;
+
+    //     interupt_enabled && has_request
+    // }
+
+    // fn set_timer_interupt_register(&mut self) {
+    //     self.memory[0xff0f] = self.memory[0xff0f] | 0b00000100u8;
+    //     /*
+    //        Bit 0: V-Blank  Interrupt Request (INT 40h)  (1=Request)
+    //        Bit 1: LCD STAT Interrupt Request (INT 48h)  (1=Request)
+    //        Bit 2: Timer    Interrupt Request (INT 50h)  (1=Request)
+    //        Bit 3: Serial   Interrupt Request (INT 58h)  (1=Request)
+    //        Bit 4: Joypad   Interrupt Request (INT 60h)  (1=Request)
+    //     */
+    // }
+
+    // fn execute_interuption(&self) {
+    //     let interupt_register = self.memory[0xff0f];
+    //     if ((interupt_register & 0b00000001u8) == 0b00000001u8) {
+    //         //v_blank
+    //         self.memory[0x040]
+    //     }
+    //     // lcd => self.memory[0x048],
+    //     // timer => self.memory[0x50],
+    //     // serial => self.memory[0x58],
+    //     // joypad => self.memory[0x60],
+    // }
+
     //Timer
     pub fn total_cycle(&self) -> usize {
         self.total_cycle_num
