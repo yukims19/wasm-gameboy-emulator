@@ -1,6 +1,7 @@
 import {
   Canvas,
   Pixel,
+  FmOsc,
   init as initEmulation,
   opcode_name
 } from "wasm-gameboy-emulator/wasm_gameboy_emulator";
@@ -14,6 +15,80 @@ import {
 } from "./utils.js";
 import { Debugger } from "./debugControls.js";
 import { square1, playSquare, playSquare1, playSquare2 } from "./channels.jsx";
+
+import("wasm-gameboy-emulator/wasm_gameboy_emulator");
+
+let fmOsc = new FmOsc();
+
+const setSound = square1 => {
+  let volume = 1.5; //square1.volume() / 10;
+  let is_envelop_increase = square1.is_envelop_increase();
+  let envelop_shift_num = square1.envelop_shift_num();
+
+  console.log(volume, is_envelop_increase, envelop_shift_num);
+
+  const play_button = document.getElementById("play");
+  play_button.addEventListener("click", event => {
+    if (fmOsc === null) {
+      console.log("playsound");
+      fmOsc = new FmOsc();
+      fmOsc.set_primary_frequency(1551);
+      fmOsc.set_gain(volume);
+      const fm_amount = document.getElementById("fm_amount");
+      fm_amount.addEventListener("input", event => {
+        if (fmOsc) {
+          fmOsc.set_gain_shift(volume, 3, is_envelop_increase);
+          const volume = fmOsc.volume();
+          const frequency = fmOsc.frequency();
+          console.log("fm:", volume);
+          console.log("fm2:", frequency);
+        }
+      });
+    } else {
+      fmOsc.free();
+      fmOsc = null;
+    }
+  });
+};
+
+// .then(rust_module => {
+//   let fm = null;
+
+//   const play_button = document.getElementById("play");
+//   play_button.addEventListener("click", event => {
+//     if (fm === null) {
+//       fm = new rust_module.FmOsc();
+//       fm.set_primary_frequency(1551);
+//       // fm.set_fm_frequency(0);
+//       // fm.set_fm_amount(0);
+//       fm.set_gain(0.8);
+//     } else {
+//       fm.free();
+//       fm = null;
+//     }
+//   });
+
+// const primary_slider = document.getElementById("primary_input");
+// primary_slider.addEventListener("input", event => {
+//   if (fm) {
+//     fm.set_note(parseInt(event.target.value));
+//   }
+// });
+
+// const fm_freq = document.getElementById("fm_freq");
+// fm_freq.addEventListener("input", event => {
+//   if (fm) {
+//     fm.set_fm_frequency(parseFloat(event.target.value));
+//   }
+// });
+
+// const fm_amount = document.getElementById("fm_amount");
+// fm_amount.addEventListener("input", event => {
+//   if (fm) {
+//     fm.set_fm_amount(parseFloat(event.target.value));
+//   }
+// });
+// })
 
 var ReactDOM = require("react-dom");
 

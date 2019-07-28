@@ -1,46 +1,85 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <title>Libations</title>
-        <style>
-         body {
-             position: absolute;
-             top: 0;
-             left: 0;
-             width: 100%;
-             height: 100%;
-         }
-         table {
-             border: 1px solid orange;
-             font-family: monospace;
-         }
+  <head>
+    <meta charset="utf-8" />
+    <title>Libations</title>
+    <style>
+      body {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      table {
+        border: 1px solid orange;
+        font-family: monospace;
+      }
 
-         tr {
-             margin: 10px;
-         }
+      tr {
+        margin: 10px;
+      }
 
-         td {
-             padding: 0px 8px;
-         }
-         td:hover {
-             background: #cfcfcf;
-         }
-         #gameboy-screen-canvas {
-             border: 2px solid red;
-         }
-        </style>
+      td {
+        padding: 0px 8px;
+      }
+      td:hover {
+        background: #cfcfcf;
+      }
+      #gameboy-screen-canvas {
+        border: 2px solid red;
+      }
+    </style>
+  </head>
+  <body>
+    <input id="play" type="button" value="⏯" />
+    (headphone users, please make sure your volume is not too loud!)
 
-    </head>
-    <body>
-        <canvas id="gameboy-background-canvas"></canvas>
-        <canvas id="gameboy-screen-canvas"></canvas>
-        <canvas id="char-map-actual-canvas" style="display:none;"></canvas>
-        <canvas id="char-map-debug-canvas"></canvas>
-        <div id="pc-counter"></div>
-        <div id="memory-viewer"></div>
+    <div>
+      Primary frequency:
+      <input
+        type="range"
+        min="30"
+        max="80"
+        value="50"
+        style="width: 400px"
+        id="primary_input"
+      />
+    </div>
 
-        <!-- Note: when deploying, replace "development.js" with "production.min.js". -->
-        <script src="./bootstrap.js"></script>
-    </body>
+    <div>
+      Modulation frequency:
+      <input
+        type="range"
+        min="0"
+        max="3"
+        value="0"
+        step="0.05"
+        style="width: 400px"
+        id="fm_freq"
+      />
+    </div>
+
+    <div>
+      Modulation amount:
+      <input
+        type="range"
+        min="0"
+        max="3"
+        value="0"
+        step="0.05"
+        style="width: 400px"
+        id="fm_amount"
+      />
+    </div>
+    <canvas id="gameboy-background-canvas"></canvas>
+    <canvas id="gameboy-screen-canvas"></canvas>
+    <canvas id="char-map-actual-canvas" style="display:none;"></canvas>
+    <canvas id="char-map-debug-canvas"></canvas>
+    <div id="pc-counter"></div>
+    <div id="memory-viewer"></div>
+
+    <!-- Note: when deploying, replace "development.js" with "production.min.js". -->
+    <script src="./bootstrap.js"></script>
+  </body>
 </html>
