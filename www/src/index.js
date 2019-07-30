@@ -21,11 +21,12 @@ import("wasm-gameboy-emulator/wasm_gameboy_emulator");
 let fmOsc = new FmOsc();
 
 const setSound = square1 => {
-  let volume = 1.5; //square1.volume() / 10;
+  var volume = new Float32Array(1); //square1.volume() / 10;
+  volume[0] = 0.8;
   let is_envelop_increase = square1.is_envelop_increase();
   let envelop_shift_num = square1.envelop_shift_num();
 
-  console.log(volume, is_envelop_increase, envelop_shift_num);
+  console.log(volume[0], is_envelop_increase, envelop_shift_num);
 
   const play_button = document.getElementById("play");
   play_button.addEventListener("click", event => {
@@ -33,15 +34,19 @@ const setSound = square1 => {
       console.log("playsound");
       fmOsc = new FmOsc();
       fmOsc.set_primary_frequency(1551);
-      fmOsc.set_gain(volume);
+      fmOsc.set_gain(volume[0]);
       const fm_amount = document.getElementById("fm_amount");
       fm_amount.addEventListener("input", event => {
         if (fmOsc) {
-          fmOsc.set_gain_shift(volume, 3, is_envelop_increase);
-          const volume = fmOsc.volume();
-          const frequency = fmOsc.frequency();
-          console.log("fm:", volume);
-          console.log("fm2:", frequency);
+          const shiftNum = 3;
+          console.log(
+            `GainShift volume=${volume}, shiftNum=${shiftNum}, is_envelop_increase=${is_envelop_increase}`
+          );
+          fmOsc.set_gain_shift(0.8, shiftNum, is_envelop_increase);
+          const fmVolume = fmOsc.volume();
+          const fmFrequency = fmOsc.frequency();
+          console.log("fm:", fmVolume);
+          console.log("fm2:", fmFrequency);
         }
       });
     } else {

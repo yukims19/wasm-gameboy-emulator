@@ -7,6 +7,8 @@ use bit_vec::BitVec;
 use wasm_bindgen::prelude::*;
 use web_sys::{AudioContext, OscillatorType};
 
+const MAX_GAMEBOY_VOLUME: u8 = 0xf;
+
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
 #[cfg(feature = "wee_alloc")]
@@ -133,27 +135,43 @@ impl FmOsc {
     }
 
     #[wasm_bindgen]
-    pub fn set_gain_shift(&mut self, volume: f32, shift_num: u8, is_increase: bool) {
-        //TODO: shift sound
+    pub fn set_gain_shift(&mut self, original_volume_float: f32, shift_num: u8, is_increase: bool) {
         let current_time = self.ctx.current_time();
+        let one64th = (1.0 / 64.0);
+        let shift_length = (one64th) as f64 * shift_num as f64;
+        let original_volume = (original_volume_float * 10.0) as u8;
 
+        // for shift_offset in 1..(MAX_GAMEBOY_VOLUME - (original_volume as u8 * 10)) as u8 {
+        //     let at_time = current_time + (shift_offset as f64 * shift_length);
+        //     let volume = if is_increase {
+        //         original_volume + (shift_offset as f32 / 10.0)
+        //     } else {
+        //         original_volume - (shift_offset as f32 / 10.0)
+        //     };
+        //     self.gain.gain().set_value_at_time(volume, at_time);
+        // }
+
+        //TODO: passing original_volume from JS would not work
         if is_increase {
-            for x in 1..20 {
-                if (0.0 + (0.1 * (x - 1) as f32) > 0.0) {
-                    self.gain.gain().set_value_at_time(
-                        0.0 + (0.1 * x as f32),
-                        current_time + (1.0 / 64.0) * x as f64 * shift_num as f64,
-                    );
-                }
+            let steps_to_max = (MAX_GAMEBOY_VOLUME - (original_volume as u8 * 10));
+            for shift_offset in 1..steps_to_max as u8 {
+                let at_time = current_time + (shift_offset as f64 * shift_length);
+                let volume = (original_volume + (shift_offset)) as f32 / 10.0;
+
+                self.gain.gain().set_value_at_time(volume, at_time);
             }
         } else {
-            for x in 1..20 {
-                if (1.5 - (0.1 * (x - 1) as f32) > 0.0) {
-                    self.gain.gain().set_value_at_time(
-                        1.5 - (0.1 * x as f32),
-                        current_time + (1.0 / 64.0) * x as f64 * shift_num as f64,
-                    );
-                }
+            let steps_to_min = original_volume as u8 + 1;
+            for shift_offset in 1..steps_to_min {
+                let at_time = current_time + (shift_offset as f64 * shift_length);
+                let volume = (original_volume - (shift_offset)) as f32 / 10.0;
+
+                info!(
+                    "volume={:?} original_volume={:?} shift_offset={:?}",
+                    volume, original_volume, shift_offset
+                );
+
+                self.gain.gain().set_value_at_time(volume, at_time);
             }
         }
 
