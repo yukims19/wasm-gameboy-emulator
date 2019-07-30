@@ -16,6 +16,10 @@
         font-family: monospace;
       }
 
+      th {
+        padding: 5px 10px;
+      }
+
       tr {
         margin: 10px;
       }
@@ -23,15 +27,24 @@
       td {
         padding: 0px 8px;
       }
+
       td:hover {
         background: #cfcfcf;
       }
       #gameboy-screen-canvas {
         border: 2px solid red;
       }
+
+      .channel .binary-val {
+        letter-spacing: 4px;
+      }
+      .channel .binary-val i {
+        color: #cfcfcf;
+      }
     </style>
   </head>
   <body>
+    <div id="sound-container"></div>
     <input id="play" type="button" value="⏯" />
     (headphone users, please make sure your volume is not too loud!)
 

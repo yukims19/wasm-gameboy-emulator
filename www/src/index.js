@@ -14,6 +14,7 @@ import {
   toHex
 } from "./utils.js";
 import { Debugger } from "./debugControls.js";
+import { SoundDebugger } from "./soundDebugger.js";
 import { square1, playSquare, playSquare1, playSquare2 } from "./channels.jsx";
 
 import("wasm-gameboy-emulator/wasm_gameboy_emulator");
@@ -250,17 +251,21 @@ const renderBackgroundMap1AsImageData = (gameboy, fullMemory) => {
 };
 
 const playSound = gameboy => {
-  //TODO:Need to fix sound on/off timing
-  if (gameboy.is_sound_all_on()) {
-    playSquare(audioCtx, gameboy.square1());
-  } else if (gameboy.is_sound_1_on()) {
-    console.log("sound 1 on");
-  } else {
-    console.log(".");
-  }
+  // //TODO:Need to fix sound on/off timing
+  // if (
+  //   gameboy.is_sound_all_on() // && gameboy.square1().fr() !== 0
+  // ) {
+  //   const audioCtx = new AudioContext();
+  //   playSquare(audioCtx, gameboy.square1());
+  // } else if (gameboy.is_sound_1_on()) {
+  //   console.log("sound 1 on");
+  // } else {
+  //   console.log(".");
+  // }
 };
 
 var domContainer = document.querySelector("#memory-viewer");
+var soundContainer = document.getElementById("sound-container");
 
 // TODO: Move this into the Rust side
 let tick = -1;
@@ -273,6 +278,8 @@ var render = function render(gameboy) {
   var memoryBytes = new Uint8Array(memory.buffer, memoryPtr, 65535);
 
   tick = tick + 1;
+
+  setSound(gameboy.square1());
 
   const next = () => {
     gameboy.execute_opcodes(1000);
@@ -326,8 +333,16 @@ var render = function render(gameboy) {
   const cycleTotal = gameboy.total_cycle();
   const timer = gameboy.timer();
   const cpuClock = gameboy.cpu_clock();
+
   // A debugging handle to play with in the console
   window.fullMemory = () => memoryBytes;
+
+  ReactDOM.render(
+    React.createElement(SoundDebugger, {
+      fullMemory: memoryBytes
+    }),
+    soundContainer
+  );
 
   ReactDOM.render(
     React.createElement(Debugger, {
