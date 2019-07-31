@@ -15,6 +15,7 @@ import {
 } from "./utils.js";
 import { Debugger } from "./debugControls.js";
 import { SoundDebugger } from "./soundDebugger.js";
+import { BreakPointDebugger } from "./breakPointDebugger.js";
 import { square1, playSquare, playSquare1, playSquare2 } from "./channels.jsx";
 
 import("wasm-gameboy-emulator/wasm_gameboy_emulator");
@@ -266,12 +267,14 @@ const playSound = gameboy => {
 
 var domContainer = document.querySelector("#memory-viewer");
 var soundContainer = document.getElementById("sound-container");
+var breakPointContainer = document.getElementById("break-point-container");
 
 // TODO: Move this into the Rust side
 let tick = -1;
 let isPlaying = false;
 const opLogMaxLength = 16;
 const opLog = [];
+const breakPointArray = [];
 
 var render = function render(gameboy) {
   var memoryPtr = gameboyInst.memory();
@@ -311,6 +314,28 @@ var render = function render(gameboy) {
     isPlaying = !isPlaying;
     next();
   };
+
+  const setBreakPoint = pcVal => {
+    const val = parseInt(pcVal, 16);
+    if (!breakPointArray.includes(val)) {
+      breakPointArray.push(val);
+    }
+    console.log("set", pcVal, val, breakPointArray);
+  };
+
+  const removeBreakPoint = pcVal => {
+    const val = parseInt(pcVal, 16);
+    if (breakPointArray.includes(val)) {
+      const idx = breakPointArray.indexOf(val);
+      breakPointArray.splice(idx, 1);
+    }
+    console.log("remove", pcVal, val, breakPointArray);
+  };
+
+  if (breakPointArray.includes(pc)) {
+    console.log(">>>>>", pc, breakPointArray);
+    isPlaying = false;
+  }
 
   const registers = {
     a: gameboy.get_a(),
@@ -368,6 +393,14 @@ var render = function render(gameboy) {
       is_use_length
     }),
     soundContainer
+  );
+
+  ReactDOM.render(
+    React.createElement(BreakPointDebugger, {
+      setBreakPoint,
+      removeBreakPoint
+    }),
+    breakPointContainer
   );
 
   ReactDOM.render(
