@@ -3,7 +3,21 @@ import { compareUint8Array, interestingRanges, toHex } from "./utils.js";
 import React, { useState } from "react";
 
 const SoundDebugger = props => {
-  const { fullMemory } = props;
+  const {
+    fullMemory,
+    sweep_time,
+    is_sweep_increase,
+    sweep_shift_num,
+    wave_duty_pct,
+    sound_length_sec,
+    volume,
+    is_envelop_increase,
+    envelop_shift_num,
+    fr,
+    frequency,
+    is_restart,
+    is_use_length
+  } = props;
 
   const numToEightBitsBinary = num => {
     const str = num.toString(2);
@@ -75,6 +89,57 @@ const SoundDebugger = props => {
               <br></br>
               {numToEightBitsBinary(fullMemory[hexToNum("ff14")])}
             </th>
+          </tr>
+        </tbody>
+      </table>
+      <table className="channle-summary">
+        <tbody>
+          <tr>
+            <th>sweep_time:</th> <th>{sweep_time}</th>
+          </tr>
+          <tr>
+            <th>is_sweep_increase</th>
+            <th> {is_sweep_increase ? "true" : "false"}</th>
+          </tr>
+          <tr>
+            <th>sweep_shift_num </th>
+            <th> {sweep_shift_num}</th>
+          </tr>
+          <tr>
+            <th>wave_duty_pct</th>
+            <th>{wave_duty_pct}</th>
+          </tr>
+          <tr>
+            <th>sound_length_sec</th>
+            <th>{sound_length_sec}</th>
+          </tr>
+          <tr>
+            <th>volume</th>
+            <th> {volume}</th>
+          </tr>
+          <tr>
+            <th>is_envelop_increase</th>
+            <th> {is_envelop_increase ? "true" : "false"}</th>
+          </tr>
+          <tr>
+            <th>envelop_shift_num</th>
+            <th> {envelop_shift_num}</th>
+          </tr>
+          <tr>
+            <th>frequency(raw)</th>
+            <th>{fr}</th>
+          </tr>
+          <tr>
+            <th>frequency</th>
+            <th>{frequency}</th>
+          </tr>
+          <tr>
+            <th>is_restart</th>
+            <th>{is_restart ? "true" : "false"}</th>
+          </tr>
+          <tr>
+            <th>is_use_length</th>
+            <th>{is_use_length ? "true" : "false"}</th>
           </tr>
         </tbody>
       </table>

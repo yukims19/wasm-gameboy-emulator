@@ -337,9 +337,35 @@ var render = function render(gameboy) {
   // A debugging handle to play with in the console
   window.fullMemory = () => memoryBytes;
 
+  const square1 = gameboy.square1();
+  let sweep_time = square1.sweep_time();
+  let is_sweep_increase = square1.is_sweep_increase();
+  let sweep_shift_num = square1.sweep_shift_num();
+  let wave_duty_pct = square1.wave_duty_pct();
+  let sound_length_sec = square1.sound_length_sec();
+  let volume = square1.volume() / 10;
+  let is_envelop_increase = square1.is_envelop_increase();
+  let envelop_shift_num = square1.envelop_shift_num();
+  let fr = square1.fr();
+  let frequency = square1.frequency();
+  let is_restart = square1.is_restart();
+  let is_use_length = square1.is_use_length();
+
   ReactDOM.render(
     React.createElement(SoundDebugger, {
-      fullMemory: memoryBytes
+      fullMemory: memoryBytes,
+      sweep_time,
+      is_sweep_increase,
+      sweep_shift_num,
+      wave_duty_pct,
+      sound_length_sec,
+      volume,
+      is_envelop_increase,
+      envelop_shift_num,
+      fr,
+      frequency,
+      is_restart,
+      is_use_length
     }),
     soundContainer
   );
