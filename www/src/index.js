@@ -1,5 +1,5 @@
 import {
-  Canvas,
+  Gameboy,
   Pixel,
   FmOsc,
   init as initEmulation,
@@ -103,7 +103,7 @@ const config = {
 };
 
 initEmulation();
-const gameboyInst = Canvas.new();
+const gameboyInst = Gameboy.new();
 
 const makeCanvas = (canvasSelector, options) => {
   console.log("Making canvas from ", canvasSelector);

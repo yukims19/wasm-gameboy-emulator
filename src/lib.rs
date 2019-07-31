@@ -933,7 +933,7 @@ pub fn pixels_to_image_data(pixels_as_byte_vec: Vec<u8>) -> Vec<u8> {
 }
 
 #[wasm_bindgen]
-pub struct Canvas {
+pub struct Gameboy {
     background_width: u8,
     background_height: u8,
     screen_width: u8,
@@ -948,7 +948,7 @@ pub struct Canvas {
 }
 
 #[wasm_bindgen]
-impl Canvas {
+impl Gameboy {
     pub fn background_width(&self) -> u8 {
         self.background_width
     }
@@ -1373,7 +1373,7 @@ impl Canvas {
 
     pub fn pixels(&self) -> *const Pixel {
         let pixel_byte_vec = self.memory[0x8000..0x9800].to_vec();
-        let pixels = Canvas::tile(pixel_byte_vec);
+        let pixels = Gameboy::tile(pixel_byte_vec);
 
         pixels.as_ptr()
     }
@@ -1403,7 +1403,7 @@ impl Canvas {
         }
     }
 
-    pub fn new() -> Canvas {
+    pub fn new() -> Gameboy {
         let background_width = 255;
         let background_height = 255;
         let screen_width = 160;
@@ -1455,9 +1455,9 @@ impl Canvas {
         let pixel_byte_vec = full_memory[0x8000..0x8800].to_vec();
         let image_data = pixels_to_image_data(pixel_byte_vec.clone());
 
-        let pixels = Canvas::tile(pixel_byte_vec);
+        let pixels = Gameboy::tile(pixel_byte_vec);
 
-        Canvas {
+        Gameboy {
             background_width,
             background_height,
             screen_width,
@@ -1496,7 +1496,7 @@ impl Canvas {
 
         while idx < byte_vec.len() {
             for i in (idx..idx + 16).step_by(2) {
-                let row = Canvas::tile_row(byte_vec[i], byte_vec[i + 1]);
+                let row = Gameboy::tile_row(byte_vec[i], byte_vec[i + 1]);
                 tile.extend(row);
             }
             idx = idx + 16;
