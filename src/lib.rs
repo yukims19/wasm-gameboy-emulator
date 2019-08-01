@@ -943,6 +943,8 @@ pub struct Gameboy {
     total_cycle_num: usize,
     timer: usize,
     cpu_clock: usize,
+    is_running: bool,
+    break_points: Vec<u16>,
     memory: Vec<u8>, //consist of 256*256 pixels or 32*32 tiles
                      //only 160*144 pixels can be displayed on screen
 }
@@ -963,6 +965,36 @@ impl Gameboy {
 
     pub fn screen_height(&self) -> u8 {
         self.screen_height
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.is_running
+    }
+
+    pub fn toggle_is_running(&mut self) {
+        info!("toggle running{:?}", self.is_running);
+        self.is_running = !self.is_running;
+    }
+
+    pub fn stop_running(&mut self) {
+        self.is_running = false
+    }
+
+    pub fn start_running(&mut self) {
+        info!("start running");
+        self.is_running = true
+    }
+
+    pub fn set_break_point(&mut self, point: u16) {
+        if !self.break_points.contains(&point) {
+            self.break_points.push(point);
+        }
+        info!("add- break points{:?}", self.break_points);
+    }
+
+    pub fn remove_break_point(&mut self, point: u16) {
+        self.break_points.retain(|&x| x != point);
+        info!("remove- break points{:?}", self.break_points);
     }
 
     //Intrupts
@@ -1400,6 +1432,10 @@ impl Gameboy {
             self.registers
                 .execute_instruction(instruction, &mut self.memory);
             self.add_cycles(instruction);
+
+            if self.break_points.contains(&self.registers.pc) {
+                self.is_running = false;
+            }
         }
     }
 
@@ -1467,6 +1503,8 @@ impl Gameboy {
             memory: full_memory,
             total_cycle_num: 0,
             timer: 0,
+            is_running: false,
+            break_points: vec![],
             cpu_clock: 0,
         }
     }

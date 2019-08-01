@@ -269,28 +269,29 @@ var domContainer = document.querySelector("#memory-viewer");
 var soundContainer = document.getElementById("sound-container");
 var breakPointContainer = document.getElementById("break-point-container");
 
-// TODO: Move this into the Rust side
 let tick = -1;
-let isPlaying = false;
 const opLogMaxLength = 16;
 const opLog = [];
-const breakPointArray = [];
+var isRunning = false;
 
 var render = function render(gameboy) {
   var memoryPtr = gameboyInst.memory();
   var memoryBytes = new Uint8Array(memory.buffer, memoryPtr, 65535);
-
+  isRunning = gameboyInst.is_running();
   tick = tick + 1;
 
   setSound(gameboy.square1());
 
   const next = () => {
-    gameboy.execute_opcodes(1000);
-    updateCharMapCanvas(gameboy);
-    renderBackgroundMap1AsImageData(gameboy, memoryBytes);
-    playSound(gameboy);
+    console.log("next", gameboy.is_running());
+    if (gameboy.is_running()) {
+      gameboy.execute_opcodes(1000);
+      updateCharMapCanvas(gameboy);
+      renderBackgroundMap1AsImageData(gameboy, memoryBytes);
+      playSound(gameboy);
 
-    requestAnimationFrame(() => render(gameboy, memoryBytes));
+      requestAnimationFrame(() => render(gameboy, memoryBytes));
+    }
   };
 
   var pc = gameboy.get_pc();
@@ -310,32 +311,6 @@ var render = function render(gameboy) {
   var nextPc = gameboy.get_pc();
 
   const onStep = () => next();
-  const onTogglePlay = () => {
-    isPlaying = !isPlaying;
-    next();
-  };
-
-  const setBreakPoint = pcVal => {
-    const val = parseInt(pcVal, 16);
-    if (!breakPointArray.includes(val)) {
-      breakPointArray.push(val);
-    }
-    console.log("set", pcVal, val, breakPointArray);
-  };
-
-  const removeBreakPoint = pcVal => {
-    const val = parseInt(pcVal, 16);
-    if (breakPointArray.includes(val)) {
-      const idx = breakPointArray.indexOf(val);
-      breakPointArray.splice(idx, 1);
-    }
-    console.log("remove", pcVal, val, breakPointArray);
-  };
-
-  if (breakPointArray.includes(pc)) {
-    console.log(">>>>>", pc, breakPointArray);
-    isPlaying = false;
-  }
 
   const registers = {
     a: gameboy.get_a(),
@@ -397,18 +372,23 @@ var render = function render(gameboy) {
 
   ReactDOM.render(
     React.createElement(BreakPointDebugger, {
-      setBreakPoint,
-      removeBreakPoint
+      setBreakPoint: point => gameboy.set_break_point(point),
+      removeBreakPoint: point => gameboy.remove_break_point(point)
     }),
     breakPointContainer
   );
 
+  const onTogglePlay = () => {
+    gameboy.toggle_is_running();
+    next();
+  };
+
   ReactDOM.render(
     React.createElement(Debugger, {
       tick: tick,
-      isPlaying: isPlaying,
+      isPlaying: gameboy.is_running(),
       onStep: onStep,
-      onTogglePlay: onTogglePlay,
+      onTogglePlay,
       fullMemory: memoryBytes,
       gameboy: gameboy,
       from: 0,
@@ -438,9 +418,7 @@ var render = function render(gameboy) {
     domContainer
   );
 
-  if (isPlaying) {
-    next();
-  }
+  next();
 };
 
 requestAnimationFrame(() => render(gameboyInst));
