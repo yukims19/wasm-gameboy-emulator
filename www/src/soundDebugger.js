@@ -50,7 +50,7 @@ const SoundDebugger = props => {
             <th>{numToHex(fullMemory[hexToNum("ff10")])}</th>
             <th className="binary-val">
               <i>-PPPNSSS</i>
-              <br></br>
+              <br />
               {numToEightBitsBinary(fullMemory[hexToNum("ff10")])}
             </th>
           </tr>
@@ -59,7 +59,7 @@ const SoundDebugger = props => {
             <th>{numToHex(fullMemory[hexToNum("ff11")])}</th>
             <th className="binary-val">
               <i>DDLLLLLL</i>
-              <br></br>
+              <br />
               {numToEightBitsBinary(fullMemory[hexToNum("ff11")])}
             </th>
           </tr>
@@ -68,7 +68,7 @@ const SoundDebugger = props => {
             <th>{numToHex(fullMemory[hexToNum("ff12")])}</th>
             <th className="binary-val">
               <i>VVVVAPPP</i>
-              <br></br>
+              <br />
               {numToEightBitsBinary(fullMemory[hexToNum("ff12")])}
             </th>
           </tr>
@@ -77,7 +77,7 @@ const SoundDebugger = props => {
             <th>{numToHex(fullMemory[hexToNum("ff13")])}</th>
             <th className="binary-val">
               <i>FFFFFFFF</i>
-              <br></br>
+              <br />
               {numToEightBitsBinary(fullMemory[hexToNum("ff13")])}
             </th>
           </tr>
@@ -86,7 +86,7 @@ const SoundDebugger = props => {
             <th>{numToHex(fullMemory[hexToNum("ff14")])}</th>
             <th className="binary-val">
               <i>TL---FFF</i>
-              <br></br>
+              <br />
               {numToEightBitsBinary(fullMemory[hexToNum("ff14")])}
             </th>
           </tr>
