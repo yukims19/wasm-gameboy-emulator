@@ -1428,6 +1428,12 @@ impl Gameboy {
     }
 
     pub fn execute_opcodes(&mut self, count: u8) {
+        let pre_ff10 = self.memory[0xff10];
+        let pre_ff11 = self.memory[0xff11];
+        let pre_ff12 = self.memory[0xff12];
+        let pre_ff13 = self.memory[0xff13];
+        let pre_ff14 = self.memory[0xff14];
+
         for _ in 0..count {
             let instruction = self.memory[self.registers.pc as usize];
             self.registers
@@ -1437,7 +1443,39 @@ impl Gameboy {
             if self.break_points.contains(&self.registers.pc) {
                 self.is_running = false;
             }
+
+            let after_ff10 = self.memory[0xff10];
+            let after_ff11 = self.memory[0xff11];
+            let after_ff12 = self.memory[0xff12];
+            let after_ff13 = self.memory[0xff13];
+            let after_ff14 = self.memory[0xff14];
+
+            if pre_ff10 != after_ff10
+                || pre_ff11 != after_ff11
+                || pre_ff12 != after_ff12
+                || pre_ff13 != after_ff13
+                || pre_ff14 != after_ff14
+            {
+                if self.sound_dirty_flag_check_s1() {
+                    self.reset_fm_osc(self.square1());
+                }
+            }
         }
+    }
+
+    pub fn reset_fm_osc(&mut self, square1: Channel) {
+        self.fmOsc.set_primary_frequency(square1.frequency());
+        self.fmOsc.set_gain_shift(
+            square1.volume() as f32 * 0.1,
+            square1.envelop_shift_num(),
+            square1.is_envelop_increase(),
+        );
+    }
+
+    fn sound_dirty_flag_check_s1(&self) -> bool {
+        let is_volume_non_zero = self.square1().volume() > 0;
+        let is_frequency_non_zero = self.square1().fr() > 0;
+        return self.is_sound_all_on() && is_volume_non_zero && is_frequency_non_zero;
     }
 
     pub fn new() -> Gameboy {

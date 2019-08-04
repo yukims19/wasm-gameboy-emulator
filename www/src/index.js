@@ -280,15 +280,15 @@ var render = function render(gameboy) {
   isRunning = gameboyInst.is_running();
   tick = tick + 1;
 
-  setSound(gameboy.square1());
+  //setSound(gameboy.square1());
 
   const next = () => {
-    console.log("next", gameboy.is_running());
+    //console.log("next", gameboy.is_running());
     if (gameboy.is_running()) {
       gameboy.execute_opcodes(1000);
       updateCharMapCanvas(gameboy);
       renderBackgroundMap1AsImageData(gameboy, memoryBytes);
-      playSound(gameboy);
+      //      playSound(gameboy);
 
       requestAnimationFrame(() => render(gameboy, memoryBytes));
     }
