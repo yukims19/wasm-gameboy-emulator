@@ -18,85 +18,6 @@ import { SoundDebugger } from "./soundDebugger.js";
 import { BreakPointDebugger } from "./breakPointDebugger.js";
 import { square1, playSquare, playSquare1, playSquare2 } from "./channels.jsx";
 
-import("wasm-gameboy-emulator/wasm_gameboy_emulator");
-
-let fmOsc = new FmOsc();
-
-const setSound = square1 => {
-  var volume = new Float32Array(1); //square1.volume() / 10;
-  volume[0] = 0.8;
-  let is_envelop_increase = square1.is_envelop_increase();
-  let envelop_shift_num = square1.envelop_shift_num();
-
-  console.log(volume[0], is_envelop_increase, envelop_shift_num);
-
-  const play_button = document.getElementById("play");
-  play_button.addEventListener("click", event => {
-    if (fmOsc === null) {
-      console.log("playsound");
-      fmOsc = new FmOsc();
-      fmOsc.set_primary_frequency(1551);
-      fmOsc.set_gain(volume[0]);
-      const fm_amount = document.getElementById("fm_amount");
-      fm_amount.addEventListener("input", event => {
-        if (fmOsc) {
-          const shiftNum = 3;
-          console.log(
-            `GainShift volume=${volume}, shiftNum=${shiftNum}, is_envelop_increase=${is_envelop_increase}`
-          );
-          fmOsc.set_gain_shift(0.8, shiftNum, is_envelop_increase);
-          const fmVolume = fmOsc.volume();
-          const fmFrequency = fmOsc.frequency();
-          console.log("fm:", fmVolume);
-          console.log("fm2:", fmFrequency);
-        }
-      });
-    } else {
-      fmOsc.free();
-      fmOsc = null;
-    }
-  });
-};
-
-// .then(rust_module => {
-//   let fm = null;
-
-//   const play_button = document.getElementById("play");
-//   play_button.addEventListener("click", event => {
-//     if (fm === null) {
-//       fm = new rust_module.FmOsc();
-//       fm.set_primary_frequency(1551);
-//       // fm.set_fm_frequency(0);
-//       // fm.set_fm_amount(0);
-//       fm.set_gain(0.8);
-//     } else {
-//       fm.free();
-//       fm = null;
-//     }
-//   });
-
-// const primary_slider = document.getElementById("primary_input");
-// primary_slider.addEventListener("input", event => {
-//   if (fm) {
-//     fm.set_note(parseInt(event.target.value));
-//   }
-// });
-
-// const fm_freq = document.getElementById("fm_freq");
-// fm_freq.addEventListener("input", event => {
-//   if (fm) {
-//     fm.set_fm_frequency(parseFloat(event.target.value));
-//   }
-// });
-
-// const fm_amount = document.getElementById("fm_amount");
-// fm_amount.addEventListener("input", event => {
-//   if (fm) {
-//     fm.set_fm_amount(parseFloat(event.target.value));
-//   }
-// });
-// })
-
 var ReactDOM = require("react-dom");
 
 const config = {
@@ -252,17 +173,8 @@ const renderBackgroundMap1AsImageData = (gameboy, fullMemory) => {
 };
 
 const playSound = gameboy => {
-  // //TODO:Need to fix sound on/off timing
-  // if (
-  //   gameboy.is_sound_all_on() // && gameboy.square1().fr() !== 0
-  // ) {
-  //   const audioCtx = new AudioContext();
-  //   playSquare(audioCtx, gameboy.square1());
-  // } else if (gameboy.is_sound_1_on()) {
-  //   console.log("sound 1 on");
-  // } else {
-  //   console.log(".");
-  // }
+  // //TODO:Implement playsound
+  console.log("js-playsound");
 };
 
 var domContainer = document.querySelector("#memory-viewer");
@@ -280,16 +192,11 @@ var render = function render(gameboy) {
   isRunning = gameboyInst.is_running();
   tick = tick + 1;
 
-  //setSound(gameboy.square1());
-
   const next = () => {
-    //console.log("next", gameboy.is_running());
     if (gameboy.is_running()) {
       gameboy.execute_opcodes(1000);
       updateCharMapCanvas(gameboy);
       renderBackgroundMap1AsImageData(gameboy, memoryBytes);
-      //      playSound(gameboy);
-
       requestAnimationFrame(() => render(gameboy, memoryBytes));
     }
   };

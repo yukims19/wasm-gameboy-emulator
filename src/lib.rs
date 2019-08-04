@@ -9,8 +9,6 @@ use web_sys::{AudioContext, OscillatorType};
 
 const MAX_GAMEBOY_VOLUME: u8 = 0xf;
 
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -18,24 +16,17 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 #[wasm_bindgen]
 pub struct FmOsc {
     ctx: AudioContext,
-
     /// The primary oscillator.  This will be the fundamental frequency
     primary: web_sys::OscillatorNode,
-
     /// Overall gain (volume) control
     gain: web_sys::GainNode,
-
     /// Amount of frequency modulation
     fm_gain: web_sys::GainNode,
-
     /// The oscillator that will modulate the primary oscillator's frequency
     fm_osc: web_sys::OscillatorNode,
-
     /// The ratio between the primary frequency and the fm_osc frequency.
-    ///
     /// Generally fractional values like 1/2 or 1/4 sound best
     fm_freq_ratio: f32,
-
     fm_gain_ratio: f32,
 }
 
