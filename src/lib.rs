@@ -940,6 +940,7 @@ pub struct Gameboy {
     screen_height: u8,
     image_data: Vec<u8>,
     registers: Registers,
+    fmOsc: FmOsc,
     total_cycle_num: usize,
     timer: usize,
     cpu_clock: usize,
@@ -1493,12 +1494,20 @@ impl Gameboy {
 
         let pixels = Gameboy::tile(pixel_byte_vec);
 
+        //FmOsc Here
+
+        let fmOsc = match Gameboy::initialize_fm_osc() {
+            Ok(something) => something,
+            _ => panic!("Failed initialize FmOsc"),
+        };
+
         Gameboy {
             background_width,
             background_height,
             screen_width,
             screen_height,
             registers,
+            fmOsc,
             image_data,
             memory: full_memory,
             total_cycle_num: 0,
@@ -1507,6 +1516,56 @@ impl Gameboy {
             break_points: vec![],
             cpu_clock: 0,
         }
+    }
+
+    fn initialize_fm_osc() -> Result<FmOsc, JsValue> {
+        let ctx = web_sys::AudioContext::new()?;
+
+        // Create our web audio objects.
+        let primary = ctx.create_oscillator()?;
+        let fm_osc = ctx.create_oscillator()?;
+        let gain = ctx.create_gain()?;
+        let fm_gain = ctx.create_gain()?;
+
+        // Some initial settings:
+        primary.set_type(OscillatorType::Square);
+        primary.frequency().set_value(0.0);
+        gain.gain().set_value(0.0); // starts muted
+        fm_gain.gain().set_value(0.0); // no initial frequency modulation
+        fm_osc.set_type(OscillatorType::Square);
+        fm_osc.frequency().set_value(0.0);
+
+        // Connect the nodes up!
+
+        // The primary oscillator is routed through the gain node, so that
+        // it can control the overall output volume.
+        primary.connect_with_audio_node(&gain)?;
+
+        // Then connect the gain node to the AudioContext destination (aka
+        // your speakers).
+        gain.connect_with_audio_node(&ctx.destination())?;
+
+        // The FM oscillator is connected to its own gain node, so it can
+        // control the amount of modulation.
+        fm_osc.connect_with_audio_node(&fm_gain)?;
+
+        // Connect the FM oscillator to the frequency parameter of the main
+        // oscillator, so that the FM node can modulate its frequency.
+        fm_gain.connect_with_audio_param(&primary.frequency())?;
+
+        // Start the oscillators!
+        primary.start()?;
+        fm_osc.start()?;
+
+        Ok(FmOsc {
+            ctx,
+            primary,
+            gain,
+            fm_gain,
+            fm_osc,
+            fm_freq_ratio: 0.0,
+            fm_gain_ratio: 0.0,
+        })
     }
 
     fn tile_row(first_b: u8, second_b: u8) -> Vec<Pixel> {
