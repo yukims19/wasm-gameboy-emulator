@@ -1515,8 +1515,17 @@ impl Gameboy {
 
         // //TODO: IMPORTANT! here pretending vertical-blank period
         full_memory[0xff44] = 0x90;
-        // //TODO: IMPORTANT! here to pass checksum
-        full_memory[0x14D] = -25i8 as u8;
+
+        // //TODO: IMPORTANT! Calculate correct checksum
+        //Checksum = 182
+        let mut checksum = 0;
+        for address in 0x0134..0x014d {
+            checksum = checksum - full_memory[address]
+        }
+        info!("checksum val: {:?}", checksum);
+
+        // //TODO: IMPORTANT! Calculate correct checksum
+        full_memory[0x14D] = 0b10011101; //157
 
         let pixel_byte_vec = full_memory[0x8000..0x8800].to_vec();
         let image_data = pixels_to_image_data(pixel_byte_vec.clone());
