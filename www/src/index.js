@@ -192,9 +192,9 @@ var render = function render(gameboy) {
   isRunning = gameboyInst.is_running();
   tick = tick + 1;
 
-  const next = () => {
+  const next = opNum => {
     if (gameboy.is_running()) {
-      gameboy.execute_opcodes(1000);
+      gameboy.execute_opcodes(opNum ? opNum : 1000);
       updateCharMapCanvas(gameboy);
       renderBackgroundMap1AsImageData(gameboy, memoryBytes);
       requestAnimationFrame(() => render(gameboy, memoryBytes));
@@ -217,7 +217,11 @@ var render = function render(gameboy) {
 
   var nextPc = gameboy.get_pc();
 
-  const onStep = () => next();
+  const onStep = () => {
+    gameboy.start_running();
+    next(1);
+    gameboy.stop_running();
+  };
 
   const registers = {
     a: gameboy.get_a(),
