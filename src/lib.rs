@@ -132,17 +132,6 @@ impl FmOsc {
         let shift_length = (one64th) as f64 * shift_num as f64;
         let original_volume = (original_volume_float * 10.0) as u8;
 
-        // for shift_offset in 1..(MAX_GAMEBOY_VOLUME - (original_volume as u8 * 10)) as u8 {
-        //     let at_time = current_time + (shift_offset as f64 * shift_length);
-        //     let volume = if is_increase {
-        //         original_volume + (shift_offset as f32 / 10.0)
-        //     } else {
-        //         original_volume - (shift_offset as f32 / 10.0)
-        //     };
-        //     self.gain.gain().set_value_at_time(volume, at_time);
-        // }
-
-        //TODO: passing original_volume from JS would not work
         if is_increase {
             let steps_to_max = (MAX_GAMEBOY_VOLUME - (original_volume as u8 * 10));
             for shift_offset in 1..steps_to_max as u8 {
@@ -165,23 +154,6 @@ impl FmOsc {
                 self.gain.gain().set_value_at_time(volume, at_time);
             }
         }
-
-        // self.gain.gain().set_value_at_time(
-        //     1.5 - 0.1 * 1 as f32,
-        //     current_time + (1.0 / 64.0) * 1 as f64 * shift_num as f64,
-        // );
-        // self.gain.gain().set_value_at_time(
-        //     1.5 - 0.2 * 1 as f32,
-        //     current_time + (1.0 / 64.0) * 2 as f64 * shift_num as f64,
-        // );
-        // self.gain.gain().set_value_at_time(
-        //     1.5 - 0.3 * 1 as f32,
-        //     current_time + (1.0 / 64.0) * 3 as f64 * shift_num as f64,
-        // );
-        // self.gain.gain().set_value_at_time(
-        //     1.5 - 0.4 * 1 as f32,
-        //     current_time + (1.0 / 64.0) * 4 as f64 * shift_num as f64,
-        // );
     }
 
     /// This should be between 0 and 1, though higher values are accepted.
@@ -733,16 +705,9 @@ impl Registers {
             0x086 => {
                 // ADD (HL)
                 let h_l = self.combine_two_bytes(self.h, self.l);
-                println!(
-                    "a:{:x}, hl:{:x}, val:{:x}, sum:{:x}",
-                    self.a,
-                    h_l,
-                    memory[h_l as usize],
-                    self.a.wrapping_add(memory[h_l as usize])
-                );
-                //TODO: Comfirm wrapping add
+                //info!("HL: {:x}, A:{:?}, $14D:{:?}", h_l, self.a, memory[0x014d]);
                 let value = self.a.wrapping_add(memory[h_l as usize]);
-                // let value = self.a + memory[h_l as usize];
+
                 self.set_a(value);
 
                 if value == 0 {
@@ -761,9 +726,6 @@ impl Registers {
 
             other => {
                 println!("No opcode found for {:x} at {:x}", other, pointer);
-                // println!("{:?}", self);
-                //println!("Cartrage Header---{:x?}", &memory[0x104..0x133]);
-                //println!("Cartrage vram---{:x?}", &memory[0x9800..0x9bff]);
                 std::process::exit(1)
             }
         }
