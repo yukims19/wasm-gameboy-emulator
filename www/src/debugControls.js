@@ -596,7 +596,7 @@ const Debugger = props => {
       <HexViewer
         name={"stack"}
         fullMemory={props.fullMemory}
-        range={[0x9700, 0x9cf0]}
+        range={[0xffd0, 0xffff]}
         registers={props.registers}
       />
 
