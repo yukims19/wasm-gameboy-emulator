@@ -238,6 +238,7 @@ struct Flag {
     n: bool, //(0x40) if subtraction
     h: bool, //(0x20) if the lower half of the byte overflowed past 15
     c: bool, //(0x10) if result over 255 or under 0
+    interuption: bool,
 }
 
 impl Flag {
@@ -246,6 +247,10 @@ impl Flag {
         self.n = n;
         self.h = h;
         self.c = c;
+    }
+
+    fn set_interuption(&mut self, interupt: bool) {
+        self.interuption = interupt
     }
 }
 
@@ -1442,6 +1447,7 @@ impl Gameboy {
             n: false,
             h: false,
             c: false,
+            interuption: false,
         };
 
         let mut registers = Registers {
