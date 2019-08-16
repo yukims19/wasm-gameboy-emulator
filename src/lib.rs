@@ -1488,12 +1488,18 @@ impl Gameboy {
         //Checksum = 182
         let mut checksum = 0;
         for address in 0x0134..0x014d {
-            checksum = checksum - full_memory[address]
+            let new_value = checksum - full_memory[address] - 1;
+            checksum = new_value
         }
-        info!("checksum val: {:?}", checksum);
 
         // //TODO: IMPORTANT! Calculate correct checksum
-        full_memory[0x14D] = 0b10011101; //157
+        let checksum_target = full_memory[0x14D];
+        info!(
+            "Checksum passes? target={:?}, value={:?}, pass={:?}",
+            checksum_target,
+            checksum,
+            checksum_target == checksum
+        );
 
         let pixel_byte_vec = full_memory[0x8000..0x8800].to_vec();
         let image_data = pixels_to_image_data(pixel_byte_vec.clone());
