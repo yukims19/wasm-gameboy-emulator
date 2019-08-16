@@ -88,11 +88,9 @@ let updateCharMapCanvas_lastData = null;
 const updateCharMapCanvas = gameboy => {
   const rustImageData = gameboy.char_map_to_image_data();
   const imageSource = new Uint8ClampedArray(rustImageData);
-
   const hasChanged =
     !!updateCharMapCanvas_lastData &&
     !areTypedArraysEqual(updateCharMapCanvas_lastData, rustImageData);
-
   if (hasChanged) {
     const imageData = new ImageData(imageSource, 8);
     charMapCanvas.putImageData(imageData, 0, 0);
@@ -105,7 +103,6 @@ const updateCharMapCanvas = gameboy => {
       charMapDebugCanvas.putImageData(tile, x * 8, y * 8);
     }
   }
-
   updateCharMapCanvas_lastData = rustImageData;
 };
 

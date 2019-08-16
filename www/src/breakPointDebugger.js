@@ -17,7 +17,6 @@ const BreakPointDebugger = props => {
   };
 
   const breakPointsChecker = points => {
-    console.log(points, typeof points);
     return points.map(point => {
       return (
         <div>

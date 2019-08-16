@@ -146,10 +146,10 @@ impl FmOsc {
                 let at_time = current_time + (shift_offset as f64 * shift_length);
                 let volume = (original_volume - (shift_offset)) as f32 / 10.0;
 
-                info!(
-                    "volume={:?} original_volume={:?} shift_offset={:?}",
-                    volume, original_volume, shift_offset
-                );
+                // info!(
+                //     "volume={:?} original_volume={:?} shift_offset={:?}",
+                //     volume, original_volume, shift_offset
+                // );
 
                 self.gain.gain().set_value_at_time(volume, at_time);
             }
@@ -406,7 +406,12 @@ impl Registers {
             0x0f0 => {
                 //LD A, ($ff00+n)
                 let following_byte = self.following_byte(pointer, memory);
-                let value = memory[0xff00 + following_byte as usize];
+                let offset = 0xff00 + following_byte as usize;
+                let value = memory[offset];
+                info!(
+                    "LD A, ($ff00+{:x}): ${:x}={:x} ",
+                    following_byte, offset, value
+                );
                 self.set_a(value);
                 self.inc_pc();
             }
@@ -1437,6 +1442,7 @@ impl Gameboy {
     }
 
     pub fn new() -> Gameboy {
+        info!("Starting a new gameboy!");
         let background_width = 255;
         let background_height = 255;
         let screen_width = 160;
@@ -1469,7 +1475,7 @@ impl Gameboy {
         let head = boot_rom_content;
         let body = &cartridge_content[0x100..(cartridge_content.len())];
 
-        let full_memory_capacity = 0xffff;
+        let full_memory_capacity = 0x10000;
 
         let head = boot_rom_content;
         let body = &cartridge_content[0x100..(cartridge_content.len())];
