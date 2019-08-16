@@ -734,8 +734,212 @@ impl Registers {
                 self.inc_pc();
             }
 
+            //New Opcodes after BootRom
+            0x000 => {
+                //NOP
+                self.inc_pc();
+            }
+
+            0x0CE => {
+                //ADC A,#
+                let following_byte = self.following_byte(pointer, memory);
+                let value = self.f.c as u8 + following_byte;
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = false;
+                if self.check_half_carry(self.a, 1u8) {
+                    flag_h = true;
+                }
+                if self.check_carry(self.a, value) {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+            0x066 => {
+                //LD H,(hl) - 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.set_h(value);
+                self.inc_pc();
+            }
+
+            0x0CC => {
+                //CALL Z, nn - 12
+                if self.f.z {
+                    let next_two_bytes = self.following_two_bytes(pointer, memory);
+                    let next_instruction_address = self.pc + 1;
+                    self.push_stack(self.sp, memory, next_instruction_address);
+                    self.set_pc(next_two_bytes);
+                } else {
+                    self.inc_pc();
+                }
+            }
+
+            0x00B => {
+                //DEB BC - 8
+                let b_c = self.combine_two_bytes(self.b, self.c);
+                let value = b_c - 1;
+                self.set_bc(value);
+                self.inc_pc();
+            }
+
+            0x003 => {
+                //INC BC - 8
+                let b_c = self.combine_two_bytes(self.b, self.c);
+                let value = b_c + 1;
+                self.set_bc(value);
+                self.inc_pc();
+            }
+
+            0x073 => {
+                //LD (HL),E
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                memory[h_l as usize] = self.e;
+                self.inc_pc();
+            }
+
+            0x083 => {
+                //ADD A,E
+                let value = self.a.wrapping_add(self.e);
+                self.set_a(value);
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = false;
+                if self.check_half_carry(self.a, value) {
+                    flag_h = true
+                }
+                if self.check_carry(self.a, value) {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x008 => {
+                //LD (nn), SP - 20
+                let address = self.following_two_bytes(pointer, &memory);
+                self.set_two_bytes(memory, address, self.sp);
+                self.inc_pc();
+                info!(
+                    "LD (nn), SP - Put Stack Pointer at address n.sp: {:x}, address:{:x}, address value:{:x} & {:x}",
+                    self.sp,address,memory[address as usize], memory[address as usize + 1]
+                )
+            }
+            0x01F => {
+                //RRA
+                self.a = self.a.rotate_right(1);
+                if self.a & 0x001 == 0 {
+                    flag_c = false
+                } else {
+                    flag_c = true
+                }
+                self.a = self.a | self.f.c as u8;
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+            }
+            0x088 => {
+                // ADC A,B - 4
+                let value = self.f.c as u8 + self.b;
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = false;
+                if self.check_half_carry(self.a, 1u8) {
+                    flag_h = true;
+                }
+                if self.check_carry(self.a, value) {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+            0x089 => {
+                // ADC A,C - 4
+                let value = self.f.c as u8 + self.c;
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = false;
+                if self.check_half_carry(self.a, 1u8) {
+                    flag_h = true;
+                }
+                if self.check_carry(self.a, value) {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x06E => {
+                //LD L,(hl) - 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.set_l(value);
+                self.inc_pc();
+            }
+
+            0x0E6 => {
+                //AND #
+                let next_byte = self.following_byte(pointer, memory);
+                let value = next_byte & self.a;
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                };
+                if self.check_half_carry(self.c, 1) {
+                    flag_h = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+            }
+
+            0x0dd => match self.following_byte(pointer, memory) {
+                0x0dd => {
+                    info!("dd again, pc: {:x}", self.pc);
+                }
+
+                0x0D9 => {
+                    //RETI
+                    info!("0x0DD -> 0x0D9, sp:{:x}", self.sp);
+                    //TODO: stack set & pop
+                    let address = self.pop_stack(self.sp, memory);
+                    self.set_pc(address);
+                    //Endable interrupts
+                    self.f.set_interuption(true);
+                    info!("enable interrupts");
+                    std::process::exit(1)
+                }
+
+                other => {
+                    info!("Unknown instruction after 0x0DD: {:x}", other);
+                    std::process::exit(1)
+                }
+            },
+
+            //New Round 2//
+            0x0C3 => {
+                // JP nn - 12
+                let value = self.following_two_bytes(pointer, memory);
+                self.set_pc(value)
+            }
+
+            0x0f3 => {
+                // DI
+                //Interrupts are disabled after instruction after DI is executed.
+                self.f.set_interuption(false);
+                self.inc_pc();
+            }
+
             other => {
-                println!("No opcode found for {:x} at {:x}", other, pointer);
+                info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
             }
         }
@@ -834,6 +1038,12 @@ impl Registers {
         let byte_vec = value.to_be_bytes();
         self.b = byte_vec[0];
         self.c = byte_vec[1];
+    }
+
+    fn set_two_bytes(&mut self, memory: &mut Vec<u8>, start_address: u16, value: u16) {
+        let byte_vec = value.to_be_bytes();
+        memory[start_address as usize] = byte_vec[1];
+        memory[start_address as usize + 1] = byte_vec[0];
     }
 
     fn set_sp(&mut self, value: u16) {
@@ -1105,6 +1315,25 @@ impl Gameboy {
             0x0EA => 16,
             0x090 => 4,
             0x086 => 8,
+            //TODO: 1 is fake cycle num
+                        0x000 => 1,
+            0x0CE => 1,
+            0x066 => 8,
+            0x0CC => 12,
+            0x00B => 8,
+            0x003 => 8,
+            0x073 => 1,
+            0x083 => 1,
+            0x008 => 20,
+            0x01F => 1,
+            0x088 => 4,
+            0x089 => 4,
+            0x06E => 8,
+            0x0E6 => 1,
+            0x0dd => 1,
+            //New Round 2//
+            0x0C3 => 12,
+            0x0f3 => 1,
             other => {
                 println!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
