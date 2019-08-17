@@ -1202,6 +1202,29 @@ impl Gameboy {
     //     // joypad => self.memory[0x60],
     // }
 
+    pub fn request_vblank(&mut self) {
+        self.memory[0xff0f] = self.memory[0xff0f] & 0x40
+    }
+
+    pub fn disable_vblank(&mut self) {
+        self.memory[0xff0f] = self.memory[0xff0f] ^ 0x40
+    }
+
+    //LCDC Y-Coordinate : LY
+    pub fn inc_ly(&mut self) {
+        let ly_max = 153;
+        let vblank_start = 144;
+
+        if (self.memory[0xff44] == ly_max) {
+            self.memory[0xff44] = 0;
+            self.disable_vblank()
+        } else if (self.memory[0xff44] == vblank_start) {
+            self.request_vblank()
+        } else {
+            self.memory[0xff44] = self.memory[0xff44] + 1;
+        }
+    }
+
     //Timer
     pub fn total_cycle(&self) -> usize {
         self.total_cycle_num
