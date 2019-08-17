@@ -1688,11 +1688,14 @@ impl Gameboy {
     }
 
     pub fn cycle_based_vram_operation(&mut self, instruction: u8) {
+        let vram_cycle_per_ly_inc = 456;
+
         if self.is_lcd_display_enable() {
             self.add_cycles(instruction, CycleRegister::VramCycle);
-            if self.vram_cycle_num >= 456 {
+            if self.vram_cycle_num >= vram_cycle_per_ly_inc {
                 self.inc_ly();
-                self.set_vram_cycle(self.vram_cycle_num - 456);
+                //Resetting vram cycle here
+                self.set_vram_cycle(self.vram_cycle_num - vram_cycle_per_ly_inc);
             }
         }
     }
