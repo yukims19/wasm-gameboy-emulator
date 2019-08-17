@@ -1339,24 +1339,27 @@ impl Gameboy {
             0x090 => 4,
             0x086 => 8,
             //TODO: 1 is fake cycle num
-                        0x000 => 1,
-            0x0CE => 1,
+                        0x000 => 4,
+            0x0CE => 8,
             0x066 => 8,
             0x0CC => 12,
             0x00B => 8,
             0x003 => 8,
-            0x073 => 1,
-            0x083 => 1,
+            0x073 => 8,
+            0x083 => 4,
             0x008 => 20,
-            0x01F => 1,
+            0x01F => 4,
             0x088 => 4,
             0x089 => 4,
             0x06E => 8,
-            0x0E6 => 1,
-            0x0dd => 1,
+            0x0E6 => 8,
+            0x0dd => {
+                println!("Not sure what's the cycle for 0x0DD");
+                std::process::exit(1)
+            },
             //New Round 2//
             0x0C3 => 12,
-            0x0f3 => 1,
+            0x0f3 => 4,
             other => {
                 println!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
