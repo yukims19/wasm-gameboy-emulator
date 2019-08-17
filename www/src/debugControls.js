@@ -424,6 +424,7 @@ const Controls = props => {
     isPlaying,
     tick,
     cycleTotal,
+    vramCycleTotal,
     timer,
     cpuClock,
     onDraw,
@@ -463,6 +464,10 @@ const Controls = props => {
         <tr>
           <th>Cycle Totoal:</th>
           <th>{cycleTotal}</th>
+        </tr>
+        <tr>
+          <th>Vram Cycle Totoal:</th>
+          <th>{vramCycleTotal}</th>
         </tr>
         <tr>
           <th>Timer:</th>
@@ -550,6 +555,7 @@ const Debugger = props => {
           nextPc={props.nextPc}
           tick={props.tick}
           cycleTotal={props.cycleTotal}
+          vramCycleTotal={props.vramCycleTotal}
           timer={props.timer}
           cpuClock={props.cpuClock}
         />

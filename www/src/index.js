@@ -239,6 +239,7 @@ var render = function render(gameboy) {
   };
 
   const cycleTotal = gameboy.total_cycle();
+  const vramCycleTotal = gameboy.vram_cycle();
   const timer = gameboy.timer();
   const cpuClock = gameboy.cpu_clock();
 
@@ -306,6 +307,7 @@ var render = function render(gameboy) {
       opLog: opLog,
       registers: registers,
       cycleTotal: cycleTotal,
+      vramCycleTotal: vramCycleTotal,
       timer: timer,
       cpuClock,
       onDraw: () => {

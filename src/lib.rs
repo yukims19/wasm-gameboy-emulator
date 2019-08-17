@@ -13,6 +13,11 @@ const MAX_GAMEBOY_VOLUME: u8 = 0xf;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+enum CycleRegister {
+    CpuCycle,
+    VramCycle,
+}
+
 #[wasm_bindgen]
 pub struct FmOsc {
     ctx: AudioContext,
@@ -1115,6 +1120,7 @@ pub struct Gameboy {
     registers: Registers,
     fmOsc: FmOsc,
     total_cycle_num: usize,
+    vram_cycle_num: u16,
     timer: usize,
     cpu_clock: usize,
     is_running: bool,
@@ -1202,6 +1208,10 @@ impl Gameboy {
     //     // joypad => self.memory[0x60],
     // }
 
+    pub fn set_vram_cycle(&mut self, value: u16) {
+        self.vram_cycle_num = value
+    }
+
     pub fn request_vblank(&mut self) {
         self.memory[0xff0f] = self.memory[0xff0f] & 0x40
     }
@@ -1228,6 +1238,10 @@ impl Gameboy {
     //Timer
     pub fn total_cycle(&self) -> usize {
         self.total_cycle_num
+    }
+
+    pub fn vram_cycle(&self) -> u16 {
+        self.vram_cycle_num
     }
 
     pub fn timer_counter_memory(&self) -> u8 {
@@ -1279,7 +1293,7 @@ impl Gameboy {
         self.memory[0xff04]
     }
 
-    fn add_cycles(&mut self, instruction: u8) {
+    fn add_cycles(&mut self, instruction: u8, cycle_register: CycleRegister) {
         let cycle = match instruction {
             0x031 => 12,
             0x0AF => 4,
@@ -1366,7 +1380,14 @@ impl Gameboy {
             }
         };
 
-        self.total_cycle_num += cycle as usize;
+        match cycle_register {
+            CycleRegister::VramCycle => self.vram_cycle_num += cycle as u16,
+            CycleRegister::CpuCycle => self.total_cycle_num += cycle as usize,
+            other => {
+                println!("Invalid Cycle type");
+                std::process::exit(1)
+            }
+        }
     }
 
     pub fn square1(&self) -> Channel {
@@ -1642,7 +1663,7 @@ impl Gameboy {
         let instruction = self.memory[self.registers.pc as usize];
         self.registers
             .execute_instruction(instruction, &mut self.memory);
-        self.add_cycles(instruction);
+        self.add_cycles(instruction, CycleRegister::CpuCycle);
     }
 
     pub fn is_channel1_changed(
@@ -1665,6 +1686,17 @@ impl Gameboy {
             || pre_ff13 != after_ff13
             || pre_ff14 != after_ff14
     }
+
+    pub fn cycle_based_vram_operation(&mut self, instruction: u8) {
+        if self.is_lcd_display_enable() {
+            self.add_cycles(instruction, CycleRegister::VramCycle);
+            if self.vram_cycle_num >= 456 {
+                self.inc_ly();
+                self.set_vram_cycle(self.vram_cycle_num - 456);
+            }
+        }
+    }
+
     pub fn execute_opcodes(&mut self, count: u8) {
         //ff10-ff14 is responsible for sound channel 1
         let pre_ff10 = self.memory[0xff10];
@@ -1677,7 +1709,8 @@ impl Gameboy {
             let instruction = self.memory[self.registers.pc as usize];
             self.registers
                 .execute_instruction(instruction, &mut self.memory);
-            self.add_cycles(instruction);
+            self.add_cycles(instruction, CycleRegister::CpuCycle);
+            self.cycle_based_vram_operation(instruction);
 
             if self.break_points.contains(&self.registers.pc) {
                 self.is_running = false;
@@ -1794,6 +1827,7 @@ impl Gameboy {
             image_data,
             memory: full_memory,
             total_cycle_num: 0,
+            vram_cycle_num: 0,
             timer: 0,
             is_running: false,
             break_points: vec![],
