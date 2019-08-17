@@ -1642,7 +1642,28 @@ impl Gameboy {
         self.add_cycles(instruction);
     }
 
+    pub fn is_channel1_changed(
+        &self,
+        pre_ff10: u8,
+        pre_ff11: u8,
+        pre_ff12: u8,
+        pre_ff13: u8,
+        pre_ff14: u8,
+    ) -> bool {
+        let after_ff10 = self.memory[0xff10];
+        let after_ff11 = self.memory[0xff11];
+        let after_ff12 = self.memory[0xff12];
+        let after_ff13 = self.memory[0xff13];
+        let after_ff14 = self.memory[0xff14];
+
+        pre_ff10 != after_ff10
+            || pre_ff11 != after_ff11
+            || pre_ff12 != after_ff12
+            || pre_ff13 != after_ff13
+            || pre_ff14 != after_ff14
+    }
     pub fn execute_opcodes(&mut self, count: u8) {
+        //ff10-ff14 is responsible for sound channel 1
         let pre_ff10 = self.memory[0xff10];
         let pre_ff11 = self.memory[0xff11];
         let pre_ff12 = self.memory[0xff12];
@@ -1659,18 +1680,7 @@ impl Gameboy {
                 self.is_running = false;
             }
 
-            let after_ff10 = self.memory[0xff10];
-            let after_ff11 = self.memory[0xff11];
-            let after_ff12 = self.memory[0xff12];
-            let after_ff13 = self.memory[0xff13];
-            let after_ff14 = self.memory[0xff14];
-
-            if pre_ff10 != after_ff10
-                || pre_ff11 != after_ff11
-                || pre_ff12 != after_ff12
-                || pre_ff13 != after_ff13
-                || pre_ff14 != after_ff14
-            {
+            if self.is_channel1_changed(pre_ff10, pre_ff11, pre_ff12, pre_ff13, pre_ff14) {
                 if self.sound_dirty_flag_check_s1() {
                     self.reset_fm_osc(self.square1());
                 }
