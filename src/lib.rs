@@ -9,6 +9,9 @@ use web_sys::{AudioContext, OscillatorType};
 
 const MAX_GAMEBOY_VOLUME: u8 = 0xf;
 
+#[macro_use]
+extern crate serde_derive;
+
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -244,6 +247,7 @@ impl Channel {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 struct Flag {
     z: bool, //(0x80) if zero
     n: bool, //(0x40) if subtraction
@@ -265,6 +269,7 @@ impl Flag {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
 struct Registers {
     a: u8,
     b: u8,
@@ -1121,6 +1126,18 @@ pub fn pixels_to_image_data(pixels_as_byte_vec: Vec<u8>) -> Vec<u8> {
 }
 
 #[wasm_bindgen]
+#[derive(Deserialize, Serialize)]
+pub struct SerializedGameboy {
+    registers: Registers,
+    total_cycle_num: usize,
+    vram_cycle_num: u16,
+    timer: usize,
+    cpu_clock: usize,
+    break_points: Vec<u16>,
+    memory: Vec<u8>,
+}
+
+#[wasm_bindgen]
 pub struct Gameboy {
     background_width: u8,
     background_height: u8,
@@ -1141,6 +1158,20 @@ pub struct Gameboy {
 
 #[wasm_bindgen]
 impl Gameboy {
+    pub fn to_serializable(&self) -> SerializedGameboy {
+        let serializable = SerializedGameboy {
+            registers: self.registers.clone(),
+            total_cycle_num: self.total_cycle_num,
+            vram_cycle_num: self.vram_cycle_num,
+            timer: self.timer,
+            cpu_clock: self.cpu_clock,
+            break_points: self.break_points.clone(),
+            memory: self.memory.clone(),
+        };
+
+        serializable
+    }
+
     pub fn background_width(&self) -> u8 {
         self.background_width
     }
@@ -1948,6 +1979,65 @@ impl Gameboy {
 
         new_image_data
     }
+}
+
+pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
+    let background_width = 255;
+    let background_height = 255;
+    let screen_width = 160;
+    let screen_height = 144;
+    let fm_osc = match Gameboy::initialize_fm_osc() {
+        Ok(something) => something,
+        _ => panic!("Failed initialize FmOsc"),
+    };
+
+    let full_memory = serializeable.memory.clone();
+
+    let pixel_byte_vec = full_memory[0x8000..0x8800].to_vec();
+    let image_data = pixels_to_image_data(pixel_byte_vec.clone());
+
+    let gameboy = Gameboy {
+        // From serialized
+        registers: serializeable.registers.clone(),
+        total_cycle_num: serializeable.total_cycle_num,
+        vram_cycle_num: serializeable.vram_cycle_num,
+        timer: serializeable.timer,
+        cpu_clock: serializeable.cpu_clock,
+        break_points: serializeable.break_points.clone(),
+        memory: full_memory,
+        // Default, non-serializable values
+        background_width,
+        background_height,
+        screen_width,
+        screen_height,
+        fm_osc,
+        image_data,
+        is_running: false,
+    };
+
+    gameboy
+}
+
+impl SerializedGameboy {
+    pub fn to_json(&self) -> JsValue {
+        JsValue::from_serde(&self).unwrap()
+    }
+
+    pub fn from_json(val: &JsValue) -> Gameboy {
+        let serialized: SerializedGameboy = val.into_serde().unwrap();
+        let gameboy: Gameboy = gameboy_from_serializable(serialized);
+        gameboy
+    }
+}
+
+#[wasm_bindgen]
+pub fn to_save_state(gameboy: Gameboy) -> JsValue {
+    gameboy.to_serializable().to_json()
+}
+
+#[wasm_bindgen]
+pub fn load_state(val: &JsValue) -> Gameboy {
+    SerializedGameboy::from_json(val)
 }
 
 #[wasm_bindgen]

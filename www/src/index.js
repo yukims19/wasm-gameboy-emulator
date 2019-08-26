@@ -2,47 +2,50 @@ import {
   Gameboy,
   Pixel,
   FmOsc,
+  to_save_state,
+  load_state,
   init as initEmulation,
   init_panic_hook,
-  opcode_name
-} from "wasm-gameboy-emulator/wasm_gameboy_emulator";
-import { memory } from "wasm-gameboy-emulator/wasm_gameboy_emulator_bg";
-import React, { useState } from "react";
+  opcode_name,
+} from 'wasm-gameboy-emulator/wasm_gameboy_emulator';
+import {memory} from 'wasm-gameboy-emulator/wasm_gameboy_emulator_bg';
+import React, {useState} from 'react';
 import {
   areTypedArraysEqual,
   compareUint8Array,
   interestingRanges,
-  toHex
-} from "./utils.js";
-import { Debugger } from "./debugControls.js";
-import { SoundDebugger } from "./soundDebugger.js";
-import { BreakPointDebugger } from "./breakPointDebugger.js";
-import { square1, playSquare, playSquare1, playSquare2 } from "./channels.jsx";
+  toHex,
+} from './utils.js';
+import {Debugger} from './debugControls.js';
+import {SoundDebugger} from './soundDebugger.js';
+import {BreakPointDebugger} from './breakPointDebugger.js';
+import {SaveStateManager} from './saveStateManager.js';
+import {square1, playSquare, playSquare1, playSquare2} from './channels.jsx';
 
-var ReactDOM = require("react-dom");
+var ReactDOM = require('react-dom');
 
 const config = {
-  PIXEL_ZOOM: 1
+  PIXEL_ZOOM: 1,
 };
 
 initEmulation();
 const gameboyInst = Gameboy.new();
 
 const makeCanvas = (canvasSelector, options) => {
-  console.log("Making canvas from ", canvasSelector);
+  console.log('Making canvas from ', canvasSelector);
   const el = document.querySelector(canvasSelector);
-  const ctx = el.getContext("2d");
+  const ctx = el.getContext('2d');
   const zoom = options.zoom || 1;
 
   el.width = options.width;
   el.height = options.height;
-  el.style.width = el.width * zoom + "px";
-  el.style.height = el.height * zoom + "px";
+  el.style.width = el.width * zoom + 'px';
+  el.style.height = el.height * zoom + 'px';
 
-  ctx["imageSmoothingEnabled"] = false; /* standard */
-  ctx["oImageSmoothingEnabled"] = false; /* Opera */
-  ctx["webkitImageSmoothingEnabled"] = false; /* Safari */
-  ctx["msImageSmoothingEnabled"] = false; /* IE */
+  ctx['imageSmoothingEnabled'] = false; /* standard */
+  ctx['oImageSmoothingEnabled'] = false; /* Opera */
+  ctx['webkitImageSmoothingEnabled'] = false; /* Safari */
+  ctx['msImageSmoothingEnabled'] = false; /* IE */
 
   return [el, ctx];
 };
@@ -53,23 +56,23 @@ var screen_width = gameboyInst.screen_width();
 var screen_height = gameboyInst.screen_height();
 
 const [backgroundCanvasEl, backgroundCanvas] = makeCanvas(
-  "#gameboy-background-canvas",
+  '#gameboy-background-canvas',
   {
     width: config.PIXEL_ZOOM * background_width,
-    height: config.PIXEL_ZOOM * background_height
-  }
+    height: config.PIXEL_ZOOM * background_height,
+  },
 );
-const [screenCanvasEl, screenCanvas] = makeCanvas("#gameboy-screen-canvas", {
+const [screenCanvasEl, screenCanvas] = makeCanvas('#gameboy-screen-canvas', {
   width: config.PIXEL_ZOOM * screen_width,
-  height: config.PIXEL_ZOOM * screen_height
+  height: config.PIXEL_ZOOM * screen_height,
 });
-const [charMapCanvasEl, charMapCanvas] = makeCanvas("#char-map-actual-canvas", {
+const [charMapCanvasEl, charMapCanvas] = makeCanvas('#char-map-actual-canvas', {
   width: 8,
-  height: 1024
+  height: 1024,
 });
 const [charMapDebugCanvasEl, charMapDebugCanvas] = makeCanvas(
-  "#char-map-debug-canvas",
-  { width: 8 * 12, height: 8 * 8, zoom: 4 }
+  '#char-map-debug-canvas',
+  {width: 8 * 12, height: 8 * 8, zoom: 4},
 );
 
 const clearContext = context => {
@@ -121,7 +124,7 @@ const drawScreen = () => {
     x,
     y,
     config.PIXEL_ZOOM * screen_width,
-    config.PIXEL_ZOOM * screen_height
+    config.PIXEL_ZOOM * screen_height,
   );
 
   screenCanvas.putImageData(imageData, 0, 0);
@@ -172,12 +175,12 @@ const renderBackgroundMap1AsImageData = (gameboy, fullMemory) => {
 
 const playSound = gameboy => {
   // //TODO:Implement playsound
-  console.log("js-playsound");
+  console.log('js-playsound');
 };
 
-var domContainer = document.querySelector("#memory-viewer");
-var soundContainer = document.getElementById("sound-container");
-var breakPointContainer = document.getElementById("break-point-container");
+var domContainer = document.querySelector('#memory-viewer');
+var soundContainer = document.getElementById('sound-container');
+var breakPointContainer = document.getElementById('break-point-container');
 
 let tick = -1;
 const opLogMaxLength = 16;
@@ -204,7 +207,7 @@ var render = function render(gameboy) {
     tick: tick,
     pc: pc,
     opcode: memoryBytes[pc],
-    memory: new Uint8Array(memoryBytes)
+    memory: new Uint8Array(memoryBytes),
   };
 
   opLog.push(opcodeLogEntry);
@@ -235,8 +238,8 @@ var render = function render(gameboy) {
       z: gameboy.get_flag_z(),
       n: gameboy.get_flag_n(),
       h: gameboy.get_flag_h(),
-      c: gameboy.get_flag_c()
-    }
+      c: gameboy.get_flag_c(),
+    },
   };
 
   window.gb = gameboy;
@@ -279,23 +282,30 @@ var render = function render(gameboy) {
       fr,
       frequency,
       is_restart,
-      is_use_length
+      is_use_length,
     }),
-    soundContainer
+    soundContainer,
   );
 
   ReactDOM.render(
     React.createElement(BreakPointDebugger, {
       setBreakPoint: point => gameboy.set_break_point(point),
-      removeBreakPoint: point => gameboy.remove_break_point(point)
+      removeBreakPoint: point => gameboy.remove_break_point(point),
     }),
-    breakPointContainer
+    breakPointContainer,
   );
 
   const onTogglePlay = () => {
     gameboy.toggle_is_running();
     next();
   };
+
+  ReactDOM.render(
+    React.createElement(SaveStateManager, {
+      gameboy: gameboy,
+    }),
+    domContainer,
+  );
 
   ReactDOM.render(
     React.createElement(Debugger, {
@@ -330,9 +340,9 @@ var render = function render(gameboy) {
       },
       onPlaySound: () => {
         playSound(gameboy);
-      }
+      },
     }),
-    domContainer
+    domContainer,
   );
 
   next();
