@@ -471,6 +471,10 @@ impl Registers {
                     let n_param = self.following_byte(pointer, memory) as i8;
                     self.inc_pc();
                     let destination = self.pc as i16 + n_param as i16;
+                    info!(
+                        "PC: {:x}, n: {:x}, destination: {:x}",
+                        self.pc, n_param, destination
+                    );
                     self.set_pc(destination as u16);
                 } else {
                     self.inc_pc();
@@ -1147,8 +1151,16 @@ impl Gameboy {
         self.screen_height
     }
 
+    pub fn ly(&self) -> u8 {
+        self.memory[0xff44]
+    }
+
     pub fn is_running(&self) -> bool {
         self.is_running
+    }
+
+    pub fn is_vblank(&self) -> bool {
+        self.memory[0xff44] >= 144
     }
 
     pub fn toggle_is_running(&mut self) {
@@ -1213,11 +1225,11 @@ impl Gameboy {
     }
 
     pub fn request_vblank(&mut self) {
-        self.memory[0xff0f] = self.memory[0xff0f] & 0x40
+        self.memory[0xff0f] = self.memory[0xff0f] | 0b1000000
     }
 
     pub fn disable_vblank(&mut self) {
-        self.memory[0xff0f] = self.memory[0xff0f] ^ 0x40
+        self.memory[0xff0f] = self.memory[0xff0f] ^ 0b1000000
     }
 
     //LCDC Y-Coordinate : LY
@@ -1228,10 +1240,11 @@ impl Gameboy {
         if (self.memory[0xff44] == ly_max) {
             self.memory[0xff44] = 0;
             self.disable_vblank()
-        } else if (self.memory[0xff44] == vblank_start) {
-            self.request_vblank()
         } else {
             self.memory[0xff44] = self.memory[0xff44] + 1;
+            if (self.memory[0xff44] == vblank_start) {
+                self.request_vblank()
+            }
         }
     }
 
@@ -1319,16 +1332,18 @@ impl Gameboy {
             0x0f0 => 12,
             0x0E2 => 8,
             0x0E0 => 12,
-            0x0CB => // match self.following_byte(pointer, memory) {
-                // 0x07c => {
-                //     if self.h & 0x80 == 0x00 {
-                //         flag_z = true;
-                //     }
-                //     self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                // }
-                // 0x011 =>
-                    8,
-                // other => println!("Unrecogized opcode (CB: {:x})", other),
+            0x0CB => // match self
+            //     .registers
+            //     .following_byte(self.registers.pc as usize, &self.memory)
+            // {
+            //     0x07c => 8,
+            //     0x011 => 8,
+            //     other => {
+            //         println!("Unrecogized opcode (CB: {:x})", other);
+            //         std::process::exit(1)
+            //     }
+            // }
+                8,
             0x017 => 4,
             0x020 => 8,
             0x028 => 8,
@@ -1353,7 +1368,7 @@ impl Gameboy {
             0x090 => 4,
             0x086 => 8,
             //TODO: 1 is fake cycle num
-                        0x000 => 4,
+            0x000 => 4,
             0x0CE => 8,
             0x066 => 8,
             0x0CC => 12,
@@ -1370,7 +1385,7 @@ impl Gameboy {
             0x0dd => {
                 println!("Not sure what's the cycle for 0x0DD");
                 std::process::exit(1)
-            },
+            }
             //New Round 2//
             0x0C3 => 12,
             0x0f3 => 4,
@@ -1789,7 +1804,7 @@ impl Gameboy {
         full_memory.resize_with(full_memory_capacity, || 0);
 
         // //TODO: IMPORTANT! here pretending vertical-blank period
-        full_memory[0xff44] = 0x90;
+        // full_memory[0xff44] = 0x90;
 
         // //TODO: IMPORTANT! Calculate correct checksum
         //Checksum = 182

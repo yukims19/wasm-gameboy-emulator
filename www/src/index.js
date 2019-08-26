@@ -238,8 +238,12 @@ var render = function render(gameboy) {
     }
   };
 
+  window.gb = gameboy;
+
   const cycleTotal = gameboy.total_cycle();
   const vramCycleTotal = gameboy.vram_cycle();
+  const ly = gameboy.ly();
+  const isVblank = gameboy.is_vblank();
   const timer = gameboy.timer();
   const cpuClock = gameboy.cpu_clock();
 
@@ -308,6 +312,8 @@ var render = function render(gameboy) {
       registers: registers,
       cycleTotal: cycleTotal,
       vramCycleTotal: vramCycleTotal,
+      isVblank: isVblank,
+      ly: ly,
       timer: timer,
       cpuClock,
       onDraw: () => {

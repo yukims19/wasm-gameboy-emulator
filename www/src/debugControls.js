@@ -422,9 +422,11 @@ const Controls = props => {
     onStep,
     onTogglePlay,
     isPlaying,
+    isVblank,
     tick,
     cycleTotal,
     vramCycleTotal,
+    ly,
     timer,
     cpuClock,
     onDraw,
@@ -468,6 +470,14 @@ const Controls = props => {
         <tr>
           <th>Vram Cycle Totoal:</th>
           <th>{vramCycleTotal}</th>
+        </tr>
+        <tr>
+          <th>LY:</th>
+          <th>{ly}</th>
+        </tr>
+        <tr>
+          <th>Vblank?:</th>
+          <th>{String(isVblank)}</th>
         </tr>
         <tr>
           <th>Timer:</th>
@@ -556,6 +566,8 @@ const Debugger = props => {
           tick={props.tick}
           cycleTotal={props.cycleTotal}
           vramCycleTotal={props.vramCycleTotal}
+          ly={props.ly}
+          isVblank={props.isVblank}
           timer={props.timer}
           cpuClock={props.cpuClock}
         />
