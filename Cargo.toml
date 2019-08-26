@@ -3,6 +3,9 @@ name = "wasm-gameboy-emulator"
 version = "0.1.0"
 authors = ["yukims19 <yukims19@gmail.com>"]
 edition = "2018"
+description = "A gameboy emulator meant for learning and to compile down to wasm"
+license = "BSD"
+repository = "https://github.com/yukims19/wasm-gameboy-emulator"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -11,10 +14,11 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook", "console_log"]
 
 [dependencies]
-wasm-bindgen = "0.2"
 bit-vec = "0.6.1"
 log = "0.4"
 console_log = { version = "0.1", optional = true }
+serde = "^1.0.59"
+serde_derive = "^1.0.59"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -47,3 +51,7 @@ wasm-bindgen-test = "0.2"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+[dependencies.wasm-bindgen]
+version = "^0.2"
+features = ["serde-serialize"]
