@@ -3,6 +3,7 @@ import {
   Pixel,
   FmOsc,
   init as initEmulation,
+  init_panic_hook,
   opcode_name
 } from "wasm-gameboy-emulator/wasm_gameboy_emulator";
 import { memory } from "wasm-gameboy-emulator/wasm_gameboy_emulator_bg";
@@ -336,5 +337,7 @@ var render = function render(gameboy) {
 
   next();
 };
+
+init_panic_hook();
 
 requestAnimationFrame(() => render(gameboyInst));

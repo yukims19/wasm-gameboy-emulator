@@ -2012,3 +2012,8 @@ pub fn opcode_name(opcode: u8) -> String {
 
     String::from(result)
 }
+
+#[wasm_bindgen]
+pub fn init_panic_hook() {
+    console_error_panic_hook::set_once();
+}
