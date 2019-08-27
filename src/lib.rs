@@ -567,7 +567,6 @@ impl Registers {
             }
             0x005 => {
                 //DEC B
-                //TODO: Confirm wrapping_sub is correct
                 let value = self.b.wrapping_sub(1);
                 self.set_b(value);
                 if value == 0 {
@@ -583,7 +582,7 @@ impl Registers {
             }
             0x00D => {
                 //DEC C
-                let value = self.c - 1;
+                let value = self.c.wrapping_sub(1);
                 self.set_c(value);
                 if value == 0 {
                     flag_z = true;
@@ -598,7 +597,7 @@ impl Registers {
             }
             0x01D => {
                 //DEC E
-                let value = self.e - 1;
+                let value = self.e.wrapping_sub(1);
                 self.set_e(value);
                 if value == 0 {
                     flag_z = true;
@@ -613,7 +612,7 @@ impl Registers {
             }
             0x03D => {
                 //DEC A
-                let value = self.a - 1;
+                let value = self.a.wrapping_sub(1);
                 self.set_a(value);
                 if value == 0 {
                     flag_z = true;
@@ -628,7 +627,7 @@ impl Registers {
             }
             0x015 => {
                 //DEC D
-                let value = self.d - 1;
+                let value = self.d.wrapping_sub(1);
                 self.set_d(value);
                 if value == 0 {
                     flag_z = true;
