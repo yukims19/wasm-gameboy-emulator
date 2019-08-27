@@ -413,10 +413,10 @@ impl Registers {
                 let following_byte = self.following_byte(pointer, memory);
                 let offset = 0xff00 + following_byte as usize;
                 let value = memory[offset];
-                info!(
-                    "LD A, ($ff00+{:x}): ${:x}={:x} ",
-                    following_byte, offset, value
-                );
+                // info!(
+                //     "LD A, ($ff00+{:x}): ${:x}={:x} ",
+                //     following_byte, offset, value
+                // );
                 self.set_a(value);
                 self.inc_pc();
             }
@@ -471,10 +471,10 @@ impl Registers {
                     let n_param = self.following_byte(pointer, memory) as i8;
                     self.inc_pc();
                     let destination = self.pc as i16 + n_param as i16;
-                    info!(
-                        "PC: {:x}, n: {:x}, destination: {:x}",
-                        self.pc, n_param, destination
-                    );
+                    // info!(
+                    //     "PC: {:x}, n: {:x}, destination: {:x}",
+                    //     self.pc, n_param, destination
+                    // );
                     self.set_pc(destination as u16);
                 } else {
                     self.inc_pc();
@@ -834,10 +834,10 @@ impl Registers {
                 let address = self.following_two_bytes(pointer, &memory);
                 self.set_two_bytes(memory, address, self.sp);
                 self.inc_pc();
-                info!(
-                    "LD (nn), SP - Put Stack Pointer at address n.sp: {:x}, address:{:x}, address value:{:x} & {:x}",
-                    self.sp,address,memory[address as usize], memory[address as usize + 1]
-                )
+                // info!(
+                //     "LD (nn), SP - Put Stack Pointer at address n.sp: {:x}, address:{:x}, address value:{:x} & {:x}",
+                //     self.sp,address,memory[address as usize], memory[address as usize + 1]
+                // )
             }
             0x01F => {
                 //RRA
@@ -917,7 +917,7 @@ impl Registers {
 
                 0x0D9 => {
                     //RETI
-                    info!("0x0DD -> 0x0D9, sp:{:x}", self.sp);
+                    // info!("0x0DD -> 0x0D9, sp:{:x}", self.sp);
                     //TODO: stack set & pop
                     let address = self.pop_stack(self.sp, memory);
                     self.set_pc(address);
