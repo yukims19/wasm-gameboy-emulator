@@ -9,6 +9,9 @@ use web_sys::{AudioContext, OscillatorType};
 
 const MAX_GAMEBOY_VOLUME: u8 = 0xf;
 
+#[macro_use]
+extern crate serde_derive;
+
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -133,17 +136,20 @@ impl FmOsc {
     #[wasm_bindgen]
     pub fn set_gain_shift(&mut self, original_volume_float: f32, shift_num: u8, is_increase: bool) {
         let current_time = self.ctx.current_time();
-        let one64th = (1.0 / 64.0);
+        let one64th = 1.0 / 64.0;
         let shift_length = (one64th) as f64 * shift_num as f64;
         let original_volume = (original_volume_float * 10.0) as u8;
 
         if is_increase {
-            let steps_to_max = (MAX_GAMEBOY_VOLUME - (original_volume as u8 * 10));
+            let steps_to_max = MAX_GAMEBOY_VOLUME - (original_volume as u8 * 10);
             for shift_offset in 1..steps_to_max as u8 {
                 let at_time = current_time + (shift_offset as f64 * shift_length);
                 let volume = (original_volume + (shift_offset)) as f32 / 10.0;
 
-                self.gain.gain().set_value_at_time(volume, at_time);
+                match self.gain.gain().set_value_at_time(volume, at_time) {
+                    Ok(_v) => (),
+                    Err(_e) => (),
+                }
             }
         } else {
             let steps_to_min = original_volume as u8 + 1;
@@ -156,7 +162,10 @@ impl FmOsc {
                 //     volume, original_volume, shift_offset
                 // );
 
-                self.gain.gain().set_value_at_time(volume, at_time);
+                match self.gain.gain().set_value_at_time(volume, at_time) {
+                    Ok(_v) => (),
+                    Err(_e) => (),
+                }
             }
         }
     }
@@ -238,6 +247,7 @@ impl Channel {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 struct Flag {
     z: bool, //(0x80) if zero
     n: bool, //(0x40) if subtraction
@@ -259,6 +269,7 @@ impl Flag {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
 struct Registers {
     a: u8,
     b: u8,
@@ -533,7 +544,7 @@ impl Registers {
                 //CALL
                 let next_two_bytes = self.following_two_bytes(pointer, memory);
                 let next_instruction_address = self.pc + 1;
-                self.push_stack(self.sp, memory, next_instruction_address);
+                self.push_stack(memory, next_instruction_address);
                 self.set_pc(next_two_bytes);
             }
             0x0C9 => {
@@ -544,7 +555,7 @@ impl Registers {
             0x0C5 => {
                 //PUSH BC
                 let bc_value = self.combine_two_bytes(self.b, self.c);
-                self.push_stack(self.sp, memory, bc_value);
+                self.push_stack(memory, bc_value);
                 self.inc_pc();
             }
             0x0C1 => {
@@ -781,7 +792,7 @@ impl Registers {
                 if self.f.z {
                     let next_two_bytes = self.following_two_bytes(pointer, memory);
                     let next_instruction_address = self.pc + 1;
-                    self.push_stack(self.sp, memory, next_instruction_address);
+                    self.push_stack(memory, next_instruction_address);
                     self.set_pc(next_two_bytes);
                 } else {
                     self.inc_pc();
@@ -1004,7 +1015,7 @@ impl Registers {
         two_bytes_value
     }
 
-    fn push_stack(&mut self, sp: u16, memory: &mut Vec<u8>, value: u16) {
+    fn push_stack(&mut self, memory: &mut Vec<u8>, value: u16) {
         self.sp = self.sp - 2;
         let value_byte_vec = value.to_be_bytes();
         memory[self.sp as usize] = value_byte_vec[0];
@@ -1144,6 +1155,18 @@ pub fn pixels_to_image_data(pixels_as_byte_vec: Vec<u8>) -> Vec<u8> {
 }
 
 #[wasm_bindgen]
+#[derive(Deserialize, Serialize)]
+pub struct SerializedGameboy {
+    registers: Registers,
+    total_cycle_num: usize,
+    vram_cycle_num: u16,
+    timer: usize,
+    cpu_clock: usize,
+    break_points: Vec<u16>,
+    memory: Vec<u8>,
+}
+
+#[wasm_bindgen]
 pub struct Gameboy {
     background_width: u8,
     background_height: u8,
@@ -1151,7 +1174,7 @@ pub struct Gameboy {
     screen_height: u8,
     image_data: Vec<u8>,
     registers: Registers,
-    fmOsc: FmOsc,
+    fm_osc: FmOsc,
     total_cycle_num: usize,
     vram_cycle_num: u16,
     timer: usize,
@@ -1164,6 +1187,20 @@ pub struct Gameboy {
 
 #[wasm_bindgen]
 impl Gameboy {
+    pub fn to_serializable(&self) -> SerializedGameboy {
+        let serializable = SerializedGameboy {
+            registers: self.registers.clone(),
+            total_cycle_num: self.total_cycle_num,
+            vram_cycle_num: self.vram_cycle_num,
+            timer: self.timer,
+            cpu_clock: self.cpu_clock,
+            break_points: self.break_points.clone(),
+            memory: self.memory.clone(),
+        };
+
+        serializable
+    }
+
     pub fn background_width(&self) -> u8 {
         self.background_width
     }
@@ -1266,12 +1303,12 @@ impl Gameboy {
         let ly_max = 153;
         let vblank_start = 144;
 
-        if (self.memory[0xff44] == ly_max) {
+        if self.memory[0xff44] == ly_max {
             self.memory[0xff44] = 0;
             self.disable_vblank()
         } else {
             self.memory[0xff44] = self.memory[0xff44] + 1;
-            if (self.memory[0xff44] == vblank_start) {
+            if self.memory[0xff44] == vblank_start {
                 self.request_vblank()
             }
         }
@@ -1323,7 +1360,7 @@ impl Gameboy {
         timer_frequency
     }
 
-    fn add_time_counter(&mut self) {
+    fn _add_time_counter(&mut self) {
         if self.memory[0xff05] == 255 {
             self.memory[0xff05] = self.memory[0xff06]
         } else {
@@ -1432,10 +1469,6 @@ impl Gameboy {
         match cycle_register {
             CycleRegister::VramCycle => self.vram_cycle_num += cycle as u16,
             CycleRegister::CpuCycle => self.total_cycle_num += cycle as usize,
-            other => {
-                println!("Invalid Cycle type");
-                std::process::exit(1)
-            }
         }
     }
 
@@ -1456,7 +1489,7 @@ impl Gameboy {
         let is_sweep_increase = self.memory[0xff10] & 0b00001000u8 == 0b00001000u8;
         let sweep_shift_num = self.memory[0xff10] & 0b00000111u8;
 
-        let wave_duty_raw = self.memory[0xff11] & 0b11000000u8;
+        let _wave_duty_raw = self.memory[0xff11] & 0b11000000u8;
         let wave_duty_pct = match sweep_time_raw {
             0b00000000 => 12.5,
             0b01000000 => 25.0,
@@ -1777,8 +1810,8 @@ impl Gameboy {
     }
 
     pub fn reset_fm_osc(&mut self, square1: Channel) {
-        self.fmOsc.set_primary_frequency(square1.frequency());
-        self.fmOsc.set_gain_shift(
+        self.fm_osc.set_primary_frequency(square1.frequency());
+        self.fm_osc.set_gain_shift(
             square1.volume() as f32 * 0.1,
             square1.envelop_shift_num(),
             square1.is_envelop_increase(),
@@ -1822,8 +1855,8 @@ impl Gameboy {
         let boot_rom_content = include_bytes!("boot-rom.gb");
         let cartridge_content = include_bytes!("mario.gb");
 
-        let head = boot_rom_content;
-        let body = &cartridge_content[0x100..(cartridge_content.len())];
+        let _head = boot_rom_content;
+        let _body = &cartridge_content[0x100..(cartridge_content.len())];
 
         let full_memory_capacity = 0x10000;
 
@@ -1860,11 +1893,11 @@ impl Gameboy {
         let pixel_byte_vec = full_memory[0x8000..0x8800].to_vec();
         let image_data = pixels_to_image_data(pixel_byte_vec.clone());
 
-        let pixels = Gameboy::tile(pixel_byte_vec);
+        let _pixels = Gameboy::tile(pixel_byte_vec);
 
         //FmOsc Here
 
-        let fmOsc = match Gameboy::initialize_fm_osc() {
+        let fm_osc = match Gameboy::initialize_fm_osc() {
             Ok(something) => something,
             _ => panic!("Failed initialize FmOsc"),
         };
@@ -1875,7 +1908,7 @@ impl Gameboy {
             screen_width,
             screen_height,
             registers,
-            fmOsc,
+            fm_osc,
             image_data,
             memory: full_memory,
             total_cycle_num: 0,
@@ -1982,6 +2015,65 @@ impl Gameboy {
     }
 }
 
+pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
+    let background_width = 255;
+    let background_height = 255;
+    let screen_width = 160;
+    let screen_height = 144;
+    let fm_osc = match Gameboy::initialize_fm_osc() {
+        Ok(something) => something,
+        _ => panic!("Failed initialize FmOsc"),
+    };
+
+    let full_memory = serializeable.memory.clone();
+
+    let pixel_byte_vec = full_memory[0x8000..0x8800].to_vec();
+    let image_data = pixels_to_image_data(pixel_byte_vec.clone());
+
+    let gameboy = Gameboy {
+        // From serialized
+        registers: serializeable.registers.clone(),
+        total_cycle_num: serializeable.total_cycle_num,
+        vram_cycle_num: serializeable.vram_cycle_num,
+        timer: serializeable.timer,
+        cpu_clock: serializeable.cpu_clock,
+        break_points: serializeable.break_points.clone(),
+        memory: full_memory,
+        // Default, non-serializable values
+        background_width,
+        background_height,
+        screen_width,
+        screen_height,
+        fm_osc,
+        image_data,
+        is_running: false,
+    };
+
+    gameboy
+}
+
+impl SerializedGameboy {
+    pub fn to_json(&self) -> JsValue {
+        JsValue::from_serde(&self).unwrap()
+    }
+
+    pub fn from_json(val: &JsValue) -> Gameboy {
+        let serialized: SerializedGameboy = val.into_serde().unwrap();
+        let gameboy: Gameboy = gameboy_from_serializable(serialized);
+        gameboy
+    }
+}
+
+#[wasm_bindgen]
+pub fn to_save_state(gameboy: Gameboy) -> JsValue {
+    gameboy.to_serializable().to_json()
+}
+
+#[wasm_bindgen]
+pub fn load_state(val: &JsValue) -> Gameboy {
+    SerializedGameboy::from_json(val)
+}
+
 #[wasm_bindgen]
 pub fn init() {
     match console_log::init_with_level(Level::Debug) {
@@ -2049,5 +2141,5 @@ pub fn opcode_name(opcode: u8) -> String {
 
 #[wasm_bindgen]
 pub fn init_panic_hook() {
-    console_error_panic_hook::set_once();
+    utils::set_panic_hook();
 }

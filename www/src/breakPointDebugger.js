@@ -1,12 +1,12 @@
-import { opcode_name } from "wasm-gameboy-emulator/wasm_gameboy_emulator";
-import { compareUint8Array, interestingRanges, toHex } from "./utils.js";
-import React, { useState } from "react";
+import {opcode_name} from 'wasm-gameboy-emulator/wasm_gameboy_emulator';
+import {compareUint8Array, interestingRanges, toHex} from './utils.js';
+import React, {useState} from 'react';
 
 const BreakPointDebugger = props => {
-  const initialBreakPoints = ["00f1", "008b"];
-  const { setBreakPoint, removeBreakPoint } = props;
+  const initialBreakPoints = ['00f1', '008b'];
+  const {setBreakPoint, removeBreakPoint} = props;
   const [breakPoints, setBreakPoints] = useState(initialBreakPoints);
-  const [newPoint, setNewPoint] = useState("");
+  const [newPoint, setNewPoint] = useState('');
 
   const handleClick = target => {
     if (target.checked) {
@@ -17,9 +17,9 @@ const BreakPointDebugger = props => {
   };
 
   const breakPointsChecker = points => {
-    return points.map(point => {
+    return points.map((point, idx) => {
       return (
-        <div>
+        <div key={idx}>
           <input
             type="checkbox"
             value={point}
@@ -34,10 +34,10 @@ const BreakPointDebugger = props => {
 
   const handleKeyPress = e => {
     const points = breakPoints.slice();
-    if (e.key === "Enter" && newPoint != "" && !points.includes(newPoint)) {
+    if (e.key === 'Enter' && newPoint != '' && !points.includes(newPoint)) {
       points.push(newPoint);
       setBreakPoints(points);
-      setNewPoint("");
+      setNewPoint('');
     }
   };
 
@@ -54,4 +54,4 @@ const BreakPointDebugger = props => {
     </div>
   );
 };
-export { BreakPointDebugger };
+export {BreakPointDebugger};

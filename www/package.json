@@ -1,13 +1,14 @@
 {
-  "name": "create-wasm-app",
+  "name": "libation",
   "version": "0.1.0",
-  "description": "create an app to consume rust-generated wasm packages",
+  "description": "A rust-powered Gameboy emulator",
   "main": "index.js",
   "bin": {
     "create-wasm-app": ".bin/create-wasm-app.js"
   },
   "scripts": {
     "build": "webpack --config webpack.config.js",
+    "prettier": "prettier --write \"src/**/*.js\" README.md",
     "start": "webpack-dev-server"
   },
   "repository": {
@@ -20,12 +21,19 @@
     "rust",
     "webpack"
   ],
-  "author": "Ashley Williams <ashley666ashley@gmail.com>",
+  "author": "Youxi Li",
   "license": "(MIT OR Apache-2.0)",
   "bugs": {
     "url": "https://github.com/rustwasm/create-wasm-app/issues"
   },
   "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all",
+    "bracketSpacing": false,
+    "jsxBracketSameLine": true,
+    "printWidth": 80
+  },
   "devDependencies": {
     "@babel/core": "^7.5.0",
     "@babel/preset-env": "^7.5.0",
@@ -34,6 +42,7 @@
     "babel-loader": "^8.0.6",
     "copy-webpack-plugin": "^5.0.0",
     "hello-wasm-pack": "^0.1.0",
+    "prettier": "^1.15.2",
     "wasm-gameboy-emulator": "file:../pkg",
     "webpack": "^4.29.3",
     "webpack-cli": "^3.1.0",
