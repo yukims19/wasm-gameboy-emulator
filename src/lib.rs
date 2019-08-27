@@ -986,6 +986,207 @@ impl Registers {
                 self.set_bc(self.a as u16);
                 self.inc_pc();
             }
+
+            //New Round
+            0x0fd => {
+                //No operation?
+                println!("no operation with opcode 0xfd");
+                self.inc_pc();
+            }
+
+            0x06d => {
+                //LD L,L -> 4
+                self.set_l(self.l);
+                self.inc_pc();
+            }
+
+            0x06c => {
+                //LD L,H -> 4
+                self.set_l(self.h);
+                self.inc_pc();
+            }
+
+            0x071 => {
+                //LD (HL), C -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                memory[h_l as usize] = self.c;
+                self.inc_pc();
+            }
+
+            0x03c => {
+                //INC A -> 4
+                let value = self.a + 1;
+                if value == 0 {
+                    flag_z = true;
+                };
+                if self.check_half_carry(self.a, 1) {
+                    flag_h = true;
+                }
+                flag_c = self.f.c;
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.set_a(value);
+                self.inc_pc();
+            }
+
+            0x0e1 => {
+                //POP HL -> 12
+                let value = self.pop_stack(self.sp, memory);
+                self.set_hl(value);
+                self.inc_pc();
+            }
+
+            0x055 => {
+                //LD D,L -> 4
+                self.set_d(self.l);
+                self.inc_pc();
+            }
+
+            0x056 => {
+                //LD D,(HL) -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.set_d(value);
+                self.inc_pc();
+            }
+
+            0x05a => {
+                //LD E,D -> 4
+                self.set_e(self.d);
+                self.inc_pc();
+            }
+
+            0x061 => {
+                //LD H,C -> 4
+                self.set_h(self.c);
+                self.inc_pc();
+            }
+
+            0x05b => {
+                //LD E,E -> 4
+                self.set_e(self.e);
+                self.inc_pc();
+            }
+
+            0x049 => {
+                //LD C,C -> 4
+                self.set_c(self.c);
+                self.inc_pc();
+            }
+
+            0x05e => {
+                //LD E,(HL) -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.set_e(value);
+                self.inc_pc();
+            }
+
+            0x058 => {
+                //LD E,B -> 4
+                self.set_e(self.b);
+                self.inc_pc();
+            }
+
+            0x05c => {
+                //LD E,H -> 4
+                self.set_e(self.h);
+                self.inc_pc();
+            }
+
+            0x051 => {
+                //LD D,C -> 4
+                self.set_d(self.c);
+                self.inc_pc();
+            }
+
+            0x050 => {
+                //LD D,B -> 4
+                self.set_d(self.b);
+                self.inc_pc();
+            }
+
+            0x04C => {
+                //LD C,H -> 4
+                self.set_d(self.b);
+                self.inc_pc();
+            }
+
+            0x04E => {
+                //LD C,(HL) -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.set_c(value);
+                self.inc_pc();
+            }
+
+            0x059 => {
+                //LD E,C -> 4
+                self.set_e(self.d);
+                self.inc_pc();
+            }
+
+            0x053 => {
+                //LD D,E -> 4
+                self.set_d(self.e);
+                self.inc_pc();
+            }
+
+            0x052 => {
+                //LD D,D -> 4
+                self.set_d(self.d);
+                self.inc_pc();
+            }
+
+            0x04d => {
+                //LD C,L -> 4
+                self.set_c(self.l);
+                self.inc_pc();
+            }
+
+            0x054 => {
+                //LD D,H -> 4
+                self.set_d(self.h);
+                self.inc_pc();
+            }
+
+            0x0d3 => {
+                //No operation?
+                println!("no operation with opcode 0xd3");
+                self.inc_pc();
+            }
+
+            0x0a6 => {
+                //AND (HL)
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let address_value = memory[h_l as usize];
+                let value = address_value & self.a;
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                };
+                if self.check_half_carry(self.c, 1) {
+                    flag_h = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x05d => {
+                //LD E,L
+                self.set_e(self.l);
+                self.inc_pc();
+            }
+
+            0x03a => {
+                //LD A, (HL-)
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.set_a(value);
+                self.set_hl(h_l - 1);
+                self.inc_pc();
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -1457,6 +1658,35 @@ impl Gameboy {
             0x02a => 8,
             0x047 => 4,
             0x002 => 8,
+                        //New Round
+            0x0fd => 0,
+            0x06d => 4,
+            0x06c => 4,
+            0x071 => 8,
+            0x03c => 4,
+            0x0e1 => 12,
+            0x055 => 4,
+            0x056 => 8,
+            0x05a => 4,
+            0x061 => 4,
+            0x05b => 4,
+            0x049 => 4,
+            0x05e => 8,
+            0x058 => 4,
+            0x05c => 4,
+            0x051 => 4,
+            0x050 => 4,
+            0x04C => 4,
+            0x04E => 8,
+            0x059 => 4,
+            0x053 => 4,
+            0x052 => 4,
+            0x04d => 4,
+            0x054 => 4,
+            0x0d3 => 0,
+            0x0a6 => 8,
+            0x05d => 4,
+            0x03a => 8,
             other => {
                 println!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
