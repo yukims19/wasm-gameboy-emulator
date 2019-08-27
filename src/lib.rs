@@ -859,7 +859,8 @@ impl Registers {
                     flag_c = true
                 }
                 self.a = self.a | self.f.c as u8;
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
             }
             0x088 => {
                 // ADC A,B - 4
@@ -919,6 +920,7 @@ impl Registers {
                     flag_h = true;
                 }
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
             }
 
             0x0dd => match self.following_byte(pointer, memory) {
@@ -944,7 +946,6 @@ impl Registers {
                 }
             },
 
-            //New Round 2//
             0x0C3 => {
                 // JP nn - 12
                 let value = self.following_two_bytes(pointer, memory);
@@ -958,8 +959,6 @@ impl Registers {
                 self.inc_pc();
             }
 
-            //Round 3
-            //Round 3
             0x036 => {
                 //LD (HL),n -> 12
                 let value = self.following_byte(self.pc as usize, &memory);
@@ -1452,10 +1451,8 @@ impl Gameboy {
                 println!("Not sure what's the cycle for 0x0DD");
                 std::process::exit(1)
             }
-            //New Round 2//
             0x0C3 => 12,
             0x0f3 => 4,
-            //Round 3
             0x036 =>  12,
             0x02a => 8,
             0x047 => 4,
