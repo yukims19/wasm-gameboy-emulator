@@ -947,6 +947,35 @@ impl Registers {
                 self.inc_pc();
             }
 
+            //Round 3
+            //Round 3
+            0x036 => {
+                //LD (HL),n -> 12
+                let value = self.following_byte(self.pc as usize, &memory);
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                memory[h_l as usize] = value;
+                self.inc_pc();
+            }
+
+            0x02a => {
+                // LDI A,(HL) -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                self.set_a(memory[h_l as usize]);
+                self.set_hl(h_l + 1);
+                self.inc_pc();
+            }
+
+            0x047 => {
+                // LD B,A -> 4
+                self.set_b(self.a);
+                self.inc_pc();
+            }
+
+            0x002 => {
+                //LD (BC), A -> 8
+                self.set_bc(self.a as u16);
+                self.inc_pc();
+            }
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -1389,6 +1418,11 @@ impl Gameboy {
             //New Round 2//
             0x0C3 => 12,
             0x0f3 => 4,
+            //Round 3
+            0x036 =>  12,
+            0x02a => 8,
+            0x047 => 4,
+            0x002 => 8,
             other => {
                 println!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
