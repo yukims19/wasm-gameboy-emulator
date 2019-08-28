@@ -1256,7 +1256,7 @@ impl Registers {
 
             0x076 => {
                 //HALT Power down CPU until interrupt occurs -> 4
-                //TODO: Halt function
+                //Implementation escalated to Gameboy. Checking at fn execute_opcodes()
                 println!("NEED TO IMPLEMENT HALT FUNCTION FOR 0x076");
                 self.inc_pc();
             }
@@ -1783,8 +1783,8 @@ pub struct Gameboy {
     cpu_clock: usize,
     is_running: bool,
     break_points: Vec<u16>,
-    memory: Vec<u8>, //consist of 256*256 pixels or 32*32 tiles
-                     //only 160*144 pixels can be displayed on screen
+    memory: Vec<u8>,
+    cpu_paused: bool,
 }
 
 #[wasm_bindgen]
@@ -1843,6 +1843,10 @@ impl Gameboy {
     pub fn start_running(&mut self) {
         info!("start running");
         self.is_running = true
+    }
+
+    pub fn pause_cpu(&mut self) {
+        self.cpu_paused = true
     }
 
     pub fn set_break_point(&mut self, point: u16) {
@@ -2410,10 +2414,36 @@ impl Gameboy {
     }
 
     pub fn execute_opcode(&mut self) {
+        if self.cpu_paused {
+            return;
+        }
+
+        //ff10-ff14 is responsible for sound channel 1
+        let pre_ff10 = self.memory[0xff10];
+        let pre_ff11 = self.memory[0xff11];
+        let pre_ff12 = self.memory[0xff12];
+        let pre_ff13 = self.memory[0xff13];
+        let pre_ff14 = self.memory[0xff14];
+
         let instruction = self.memory[self.registers.pc as usize];
         self.registers
             .execute_instruction(instruction, &mut self.memory);
         self.add_cycles(instruction, CycleRegister::CpuCycle);
+        self.cycle_based_vram_operation(instruction);
+
+        if self.break_points.contains(&self.registers.pc) {
+            self.is_running = false;
+        }
+
+        if instruction == 0x076 {
+            self.pause_cpu()
+        }
+
+        if self.is_channel1_changed(pre_ff10, pre_ff11, pre_ff12, pre_ff13, pre_ff14) {
+            if self.sound_dirty_flag_check_s1() {
+                self.reset_fm_osc(self.square1());
+            }
+        }
     }
 
     pub fn is_channel1_changed(
@@ -2451,6 +2481,10 @@ impl Gameboy {
     }
 
     pub fn execute_opcodes(&mut self, count: u8) {
+        if self.cpu_paused {
+            return;
+        }
+
         //ff10-ff14 is responsible for sound channel 1
         let pre_ff10 = self.memory[0xff10];
         let pre_ff11 = self.memory[0xff11];
@@ -2459,6 +2493,10 @@ impl Gameboy {
         let pre_ff14 = self.memory[0xff14];
 
         for _ in 0..count {
+            if self.cpu_paused {
+                break;
+            }
+
             let instruction = self.memory[self.registers.pc as usize];
             self.registers
                 .execute_instruction(instruction, &mut self.memory);
@@ -2467,6 +2505,11 @@ impl Gameboy {
 
             if self.break_points.contains(&self.registers.pc) {
                 self.is_running = false;
+            }
+
+            if instruction == 0x076 {
+                //HALT: Pause CPU Until Interrupt
+                self.pause_cpu()
             }
 
             if self.is_channel1_changed(pre_ff10, pre_ff11, pre_ff12, pre_ff13, pre_ff14) {
@@ -2585,6 +2628,7 @@ impl Gameboy {
             is_running: false,
             break_points: vec![],
             cpu_clock: 0,
+            cpu_paused: false,
         }
     }
 
@@ -2715,6 +2759,7 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
         fm_osc,
         image_data,
         is_running: false,
+        cpu_paused: false,
     };
 
     gameboy
