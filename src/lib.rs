@@ -788,8 +788,8 @@ impl Registers {
 
             0x0CC => {
                 //CALL Z, nn - 12
+                let next_two_bytes = self.following_two_bytes(pointer, memory);
                 if self.f.z {
-                    let next_two_bytes = self.following_two_bytes(pointer, memory);
                     let next_instruction_address = self.pc + 1;
                     self.push_stack(memory, next_instruction_address);
                     self.set_pc(next_two_bytes);
@@ -1186,6 +1186,383 @@ impl Registers {
                 self.inc_pc();
             }
 
+            //New Round 2
+            0x040 => {
+                //LD B,B
+                self.set_b(self.b);
+                self.inc_pc();
+            }
+            0x043 => {
+                //LD B,E
+                self.set_b(self.e);
+                self.inc_pc();
+            }
+
+            0x038 => {
+                //JR C,*one byte -> 8
+                if !self.f.c {
+                    let n_param = self.following_byte(pointer, memory) as i8;
+                    self.inc_pc();
+                    let destination = self.pc as i16 + n_param as i16;
+                    self.set_pc(destination as u16);
+                } else {
+                    self.inc_pc();
+                    self.inc_pc();
+                }
+            }
+
+            0x0c2 => {
+                //JP NZ,nn -> 12
+                let value = self.following_two_bytes(pointer, memory);
+                if !self.f.z {
+                    self.set_pc(value);
+                } else {
+                    self.inc_pc();
+                }
+            }
+
+            0x0f4 => {
+                //No operation?
+                println!("no operation with opcode 0xf4");
+                self.inc_pc();
+            }
+
+            0x07f => {
+                // LD A,A -> 4
+                self.set_a(self.a);
+                self.inc_pc();
+            }
+
+            0x074 => {
+                // LD (HL),H -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                memory[h_l as usize] = self.h;
+                self.inc_pc();
+            }
+
+            0x075 => {
+                // LD (HL),L -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                memory[h_l as usize] = self.l;
+                self.inc_pc();
+            }
+
+            0x072 => {
+                // LD (HL),D -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                memory[h_l as usize] = self.d;
+                self.inc_pc();
+            }
+
+            0x076 => {
+                //HALT Power down CPU until interrupt occurs -> 4
+                //TODO: Halt function
+                println!("NEED TO IMPLEMENT HALT FUNCTION FOR 0x076");
+                self.inc_pc();
+            }
+
+            0x079 => {
+                //LD A,C -> 4
+                self.set_a(self.c);
+                self.inc_pc();
+            }
+
+            0x0f1 => {
+                //POP AF -> 12
+                let value = self.pop_stack(self.sp, memory);
+                self.set_af(value);
+                self.inc_pc();
+            }
+
+            0x085 => {
+                //ADD A,L
+                let value = self.a.wrapping_add(self.l);
+                self.set_a(value);
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = false;
+                if self.check_half_carry(self.a, value) {
+                    flag_h = true
+                }
+                if self.check_carry(self.a, value) {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x0b1 => {
+                //OR C
+                let value = self.c | self.a;
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+
+                self.inc_pc();
+            }
+
+            0x03f => {
+                //CCF -> 4
+                flag_z = self.f.z;
+                flag_c = !self.f.c;
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x042 => {
+                // LD B,D -> 4
+                self.set_b(self.d);
+                self.inc_pc();
+            }
+
+            0x081 => {
+                //ADD A,C
+                let value = self.a.wrapping_add(self.c);
+                self.set_a(value);
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = false;
+                if self.check_half_carry(self.a, value) {
+                    flag_h = true
+                }
+                if self.check_carry(self.a, value) {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x046 => {
+                //LD B,(HL)
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.set_b(value);
+                self.inc_pc();
+            }
+
+            0x0b5 => {
+                //OR L
+                let value = self.l | self.a;
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+
+                self.inc_pc();
+            }
+
+            0x070 => {
+                // LD (HL),B -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                memory[h_l as usize] = self.b;
+                self.inc_pc();
+            }
+
+            0x048 => {
+                // LD C,B -> 4
+                self.set_c(self.b);
+                self.inc_pc();
+            }
+
+            0x0C4 => {
+                let next_two_bytes = self.following_two_bytes(pointer, memory);
+                if !self.f.z {
+                    //CALL NZ, nn -> 24
+                    let next_instruction_address = self.pc + 1;
+                    self.push_stack(memory, next_instruction_address);
+                    self.set_pc(next_two_bytes);
+                } else {
+                    //CALL NZ, nn -> 12
+                    self.inc_pc();
+                }
+            }
+
+            0x069 => {
+                // LD L,C -> 4
+                self.set_l(self.c);
+                self.inc_pc();
+            }
+
+            0x06a => {
+                // LD L,D -> 4
+                self.set_l(self.d);
+                self.inc_pc();
+            }
+
+            0x06f => {
+                // LD L,A -> 4
+                self.set_l(self.a);
+                self.inc_pc();
+            }
+
+            0x0D1 => {
+                //POP DE -> 12
+                let value = self.pop_stack(self.sp, memory);
+                //
+                self.set_de(value);
+                self.inc_pc();
+            }
+
+            0x05f => {
+                // LD E,A -> 4
+                self.set_e(self.a);
+                self.inc_pc();
+            }
+
+            0x092 => {
+                // SUB D -> 4
+                let value = self.a.wrapping_sub(self.d);
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = true;
+                if self.check_half_carry_sub(self.a, self.d) {
+                    flag_h = true
+                }
+                if self.a < self.d {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x097 => {
+                // SUB A -> 4
+                let value = self.a.wrapping_sub(self.a);
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = true;
+                if self.check_half_carry_sub(self.a, self.a) {
+                    flag_h = true
+                }
+                if self.a < self.a {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x091 => {
+                // SUB C -> 4
+                let value = self.a.wrapping_sub(self.c);
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = true;
+                if self.check_half_carry_sub(self.a, self.c) {
+                    flag_h = true
+                }
+                if self.a < self.c {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x093 => {
+                // SUB E -> 4
+                let value = self.a.wrapping_sub(self.e);
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = true;
+                if self.check_half_carry_sub(self.a, self.e) {
+                    flag_h = true
+                }
+                if self.a < self.e {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x094 => {
+                // SUB H -> 4
+                let value = self.a.wrapping_sub(self.h);
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = true;
+                if self.check_half_carry_sub(self.a, self.h) {
+                    flag_h = true
+                }
+                if self.a < self.h {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x095 => {
+                // SUB L -> 4
+                let value = self.a.wrapping_sub(self.l);
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = true;
+                if self.check_half_carry_sub(self.a, self.l) {
+                    flag_h = true
+                }
+                if self.a < self.l {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x096 => {
+                // SUB (HL) -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let address_value = memory[h_l as usize];
+                let value = self.a.wrapping_sub(address_value);
+                self.set_a(value);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = true;
+                if self.check_half_carry_sub(self.a, address_value) {
+                    flag_h = true
+                }
+                if self.a < address_value {
+                    flag_c = true;
+                }
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x041 => {
+                // LD B,C -> 4
+                self.set_b(self.c);
+                self.inc_pc();
+            }
+
+            0x044 => {
+                // LD B,H -> 4
+                self.set_b(self.h);
+                self.inc_pc();
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -1286,6 +1663,32 @@ impl Registers {
         let byte_vec = value.to_be_bytes();
         self.b = byte_vec[0];
         self.c = byte_vec[1];
+    }
+
+    fn set_af(&mut self, value: u16) {
+        let byte_vec = value.to_be_bytes();
+        self.a = byte_vec[0];
+        let flag = byte_vec[1];
+
+        let mut flag_z = false; //(0x80)
+        let mut flag_n = false; //(0x40)
+        let mut flag_h = false; //(0x20)
+        let mut flag_c = false; //(0x10)
+
+        if flag & 0x80 == 0x80 {
+            flag_z = true;
+        };
+        if flag & 0x40 == 0x40 {
+            flag_n = true;
+        };
+        if flag & 0x20 == 0x20 {
+            flag_h = true;
+        };
+        if flag & 0x10 == 0x10 {
+            flag_c = true;
+        };
+
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
     }
 
     fn set_two_bytes(&mut self, memory: &mut Vec<u8>, start_address: u16, value: u16) {
@@ -1636,7 +2039,8 @@ impl Gameboy {
             0x000 => 4,
             0x0CE => 8,
             0x066 => 8,
-            0x0CC => 12,
+            0x0CC =>
+            { if self.registers.f.z  {24} else {12}  },
             0x00B => 8,
             0x003 => 8,
             0x073 => 8,
@@ -1686,6 +2090,44 @@ impl Gameboy {
             0x0a6 => 8,
             0x05d => 4,
             0x03a => 8,
+                        //New Round 2
+            0x040 => 4,
+            0x043 => 4,
+            0x038 => 8,
+            0x0c2 => 12,
+            0x0f4 => 0,
+            0x07f => 4,
+            0x074 => 8,
+            0x075 => 8,
+            0x072 => 8,
+            0x076 => 4,
+            0x079 => 4,
+            0x0f1 => 12,
+            0x085 => 4,
+            0x0b1 => 4,
+            0x03f => 4,
+            0x042 => 4,
+            0x081 => 4,
+            0x046 => 8,
+            0x0b5 => 4,
+            0x070 => 8,
+            0x048 => 4,
+            0x0C4 =>
+            { if !self.registers.f.z  {24} else {12}  },
+            0x069 => 4,
+            0x06a => 4,
+            0x06f => 4,
+            0x0D1 => 12,
+            0x05f => 4,
+            0x092 => 4,
+            0x097 => 4,
+            0x091 => 4,
+            0x093 => 4,
+            0x094 => 4,
+            0x095 => 4,
+            0x096 => 8,
+            0x041 => 4,
+            0x044 => 4,
             other => {
                 println!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
