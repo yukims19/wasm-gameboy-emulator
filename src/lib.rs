@@ -2039,7 +2039,6 @@ impl Gameboy {
             0x0EA => 16,
             0x090 => 4,
             0x086 => 8,
-            //TODO: 1 is fake cycle num
             0x000 => 4,
             0x0CE => 8,
             0x066 => 8,
@@ -2581,25 +2580,8 @@ impl Gameboy {
 
         full_memory.resize_with(full_memory_capacity, || 0);
 
-        // //TODO: IMPORTANT! here pretending vertical-blank period
+        // Vblank
         // full_memory[0xff44] = 0x90;
-
-        // //TODO: IMPORTANT! Calculate correct checksum
-        //Checksum = 182
-        let mut checksum = 0;
-        for address in 0x0134..0x014d {
-            let new_value = checksum - full_memory[address] - 1;
-            checksum = new_value
-        }
-
-        // //TODO: IMPORTANT! Calculate correct checksum
-        let checksum_target = full_memory[0x14D];
-        info!(
-            "Checksum passes? target={:?}, value={:?}, pass={:?}",
-            checksum_target,
-            checksum,
-            checksum_target == checksum
-        );
 
         let pixel_byte_vec = full_memory[0x8000..0x8800].to_vec();
         let image_data = pixels_to_image_data(pixel_byte_vec.clone());
