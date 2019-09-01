@@ -1827,6 +1827,10 @@ impl Gameboy {
         self.is_running
     }
 
+    pub fn cpu_paused(&self) -> bool {
+        self.cpu_paused
+    }
+
     pub fn is_vblank(&self) -> bool {
         self.memory[0xff44] >= 144
     }
@@ -1847,6 +1851,10 @@ impl Gameboy {
 
     pub fn pause_cpu(&mut self) {
         self.cpu_paused = true
+    }
+
+    pub fn start_cpu(&mut self) {
+        self.cpu_paused = false
     }
 
     pub fn set_break_point(&mut self, point: u16) {
