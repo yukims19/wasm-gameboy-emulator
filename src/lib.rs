@@ -409,7 +409,7 @@ impl Registers {
                 //LD (HL-), A
                 let h_l = self.combine_two_bytes(self.h, self.l);
                 memory[h_l as usize] = self.a;
-                self.set_hl(h_l - 1 as u16);
+                self.set_hl(h_l.wrapping_sub(1) as u16);
                 self.inc_pc();
             }
             0x022 => {
@@ -1182,7 +1182,7 @@ impl Registers {
                 let h_l = self.combine_two_bytes(self.h, self.l);
                 let value = memory[h_l as usize];
                 self.set_a(value);
-                self.set_hl(h_l - 1);
+                self.set_hl(h_l.wrapping_sub(1));
                 self.inc_pc();
             }
 
@@ -2421,9 +2421,9 @@ impl Gameboy {
     }
 
     pub fn execute_opcode(&mut self) {
-        if self.cpu_paused {
-            return;
-        }
+        // if self.cpu_paused {
+        //     return;
+        // }
 
         //ff10-ff14 is responsible for sound channel 1
         let pre_ff10 = self.memory[0xff10];
@@ -2442,9 +2442,9 @@ impl Gameboy {
             self.is_running = false;
         }
 
-        if instruction == 0x076 {
-            self.pause_cpu()
-        }
+        // if instruction == 0x076 {
+        //     self.pause_cpu()
+        // }
 
         if self.is_channel1_changed(pre_ff10, pre_ff11, pre_ff12, pre_ff13, pre_ff14) {
             if self.sound_dirty_flag_check_s1() {
@@ -2488,9 +2488,9 @@ impl Gameboy {
     }
 
     pub fn execute_opcodes(&mut self, count: u8) {
-        if self.cpu_paused {
-            return;
-        }
+        // if self.cpu_paused {
+        //     return;
+        // }
 
         //ff10-ff14 is responsible for sound channel 1
         let pre_ff10 = self.memory[0xff10];
@@ -2500,9 +2500,9 @@ impl Gameboy {
         let pre_ff14 = self.memory[0xff14];
 
         for _ in 0..count {
-            if self.cpu_paused {
-                break;
-            }
+            // if self.cpu_paused {
+            //     break;
+            // }
 
             let instruction = self.memory[self.registers.pc as usize];
             self.registers
@@ -2514,10 +2514,10 @@ impl Gameboy {
                 self.is_running = false;
             }
 
-            if instruction == 0x076 {
-                //HALT: Pause CPU Until Interrupt
-                self.pause_cpu()
-            }
+            // if instruction == 0x076 {
+            //     //HALT: Pause CPU Until Interrupt
+            //     self.pause_cpu()
+            // }
 
             if self.is_channel1_changed(pre_ff10, pre_ff11, pre_ff12, pre_ff13, pre_ff14) {
                 if self.sound_dirty_flag_check_s1() {
