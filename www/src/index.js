@@ -7,6 +7,7 @@ import {
   init as initEmulation,
   init_panic_hook,
   opcode_name,
+  Canvases,
 } from 'wasm-gameboy-emulator/wasm_gameboy_emulator';
 import {memory} from 'wasm-gameboy-emulator/wasm_gameboy_emulator_bg';
 import React, {useState} from 'react';
@@ -30,6 +31,7 @@ const config = {
 
 initEmulation();
 const gameboyInst = Gameboy.new();
+const canvases = Canvases.new();
 
 const makeCanvas = (canvasSelector, options) => {
   console.log('Making canvas from ', canvasSelector);
@@ -196,8 +198,10 @@ var render = function render(gameboy) {
   const next = opNum => {
     if (gameboy.is_running()) {
       gameboy.execute_opcodes(opNum ? opNum : 1000);
-      updateCharMapCanvas(gameboy);
-      renderBackgroundMap1AsImageData(gameboy, memoryBytes);
+      canvases.update_char_map_canvas(gameboy);
+      canvases.render_background_map_1_as_image_data(gameboy);
+      // updateCharMapCanvas(gameboy);
+      // renderBackgroundMap1AsImageData(gameboy, memoryBytes);
       requestAnimationFrame(() => render(gameboy, memoryBytes));
     }
   };
@@ -328,7 +332,8 @@ var render = function render(gameboy) {
       timer: timer,
       cpuClock,
       onDraw: () => {
-        updateCharMapCanvas(gameboy);
+        canvases.update_char_map_canvas(gameboy);
+        // updateCharMapCanvas(gameboy);
       },
       onClear: () => {
         clearContext(screenCanvas);
@@ -336,7 +341,8 @@ var render = function render(gameboy) {
       },
       onDrawBackground: () => {
         // updateCharMapCanvas(gameboy);
-        renderBackgroundMap1AsImageData(gameboy, memoryBytes);
+        // renderBackgroundMap1AsImageData(gameboy, memoryBytes);
+        canvases.render_background_map_1_as_image_data(gameboy);
       },
       onPlaySound: () => {
         playSound(gameboy);

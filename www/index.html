@@ -31,8 +31,23 @@
       td:hover {
         background: #cfcfcf;
       }
+
+      #gameboy-background-canvas,
+      #gameboy-background-canvas-rust {
+        border: 2px solid black;
+      }
+
       #gameboy-screen-canvas {
         border: 2px solid red;
+      }
+
+      #gameboy-screen-canvas-rust {
+        border: 2px solid pink;
+      }
+
+      #char-map-debug-canvas-rust,
+      #char-map-debug-canvas {
+        border: 2px solid green;
       }
 
       .channel .binary-val {
@@ -96,8 +111,12 @@
     </div>
     <canvas id="gameboy-background-canvas"></canvas>
     <canvas id="gameboy-screen-canvas"></canvas>
-    <canvas id="char-map-actual-canvas" style="display:none;"></canvas>
+    <canvas id="char-map-actual-canvas"></canvas>
     <canvas id="char-map-debug-canvas"></canvas>
+    <canvas id="char-map-actual-canvas-rust"></canvas>
+    <canvas id="char-map-debug-canvas-rust"></canvas>
+    <canvas id="gameboy-background-canvas-rust"></canvas>
+    <canvas id="gameboy-screen-canvas-rust"></canvas>
     <div id="pc-counter"></div>
     <div id="memory-viewer"></div>
 

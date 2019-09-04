@@ -14,8 +14,10 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook", "console_log"]
 
 [dependencies]
+js-sys = "0.3.27"
 bit-vec = "0.6.1"
 log = "0.4"
+math ="0.0.2"
 console_log = { version = "0.1", optional = true }
 serde = "^1.0.59"
 serde_derive = "^1.0.59"
@@ -34,7 +36,7 @@ console_error_panic_hook = { version = "0.1.1", optional = true }
 wee_alloc = { version = "0.4.2", optional = true }
 
 [dependencies.web-sys]
-version = "0.3.4"
+version = "0.3.27"
 features = [
   'AudioContext',
   'AudioDestinationNode',
@@ -43,6 +45,12 @@ features = [
   'GainNode',
   'OscillatorNode',
   'OscillatorType',
+  'CanvasRenderingContext2d',
+  'ImageData',
+  'Document',
+  'Element',
+  'HtmlCanvasElement',
+  'Window',
 ]
 
 [dev-dependencies]

@@ -5,9 +5,15 @@ mod utils;
 
 use bit_vec::BitVec;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 use web_sys::{AudioContext, OscillatorType};
 
 const MAX_GAMEBOY_VOLUME: u8 = 0xf;
+const PIXEL_ZOOM: u32 = 1;
+const BACKGROUND_WIDTH: u32 = 255;
+const BACKGROUND_HEIGHT: u32 = 255;
+const SCREEN_WIDTH: u32 = 160;
+const SCREEN_HEIGHT: u32 = 144;
 
 #[macro_use]
 extern crate serde_derive;
@@ -19,6 +25,221 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 enum CycleRegister {
     CpuCycle,
     VramCycle,
+}
+
+#[wasm_bindgen]
+struct Canvases {
+    background_canvas: web_sys::CanvasRenderingContext2d,
+    screen_canvas: web_sys::CanvasRenderingContext2d,
+    char_map_canvas: web_sys::CanvasRenderingContext2d,
+    char_map_debug_canvas: web_sys::CanvasRenderingContext2d,
+    // update_char_map_canvas_last_data: Vec<u8>,
+}
+
+#[wasm_bindgen]
+impl Canvases {
+    pub fn new() -> Canvases {
+        let background_canvas = Canvases::make_canvas(
+            "gameboy-background-canvas-rust",
+            PIXEL_ZOOM * BACKGROUND_WIDTH,
+            PIXEL_ZOOM * BACKGROUND_HEIGHT,
+        );
+        let screen_canvas = Canvases::make_canvas(
+            "gameboy-screen-canvas-rust",
+            PIXEL_ZOOM * SCREEN_WIDTH,
+            PIXEL_ZOOM * SCREEN_HEIGHT,
+        );
+
+        let char_map_canvas = Canvases::make_canvas("char-map-actual-canvas-rust", 8, 1024);
+
+        let char_map_debug_canvas =
+            Canvases::make_canvas("char-map-debug-canvas-rust", 8 * 12, 8 * 8);
+
+        let canvases = Canvases {
+            background_canvas,
+            screen_canvas,
+            char_map_canvas,
+            char_map_debug_canvas,
+            // update_char_map_canvas_last_data: Vec::new(),
+        };
+
+        canvases
+    }
+
+    pub fn render_background_map_1_as_image_data(&self, gameboy: &mut Gameboy) {
+        let background_map_1 = gameboy.background_map_1();
+
+        // let hasChanged =
+        //     !!lastBackgroundMap1 && !areTypedArraysEqual(lastBackgroundMap1, background_map_1);
+
+        // if (!lastBackgroundMap1) {
+        //     lastBackgroundMap1 = Uint8Array.from(background_map_1);
+        // }
+
+        // if (hasChanged) {
+        // lastBackgroundMap1 = Uint8Array.from(background_map_1);
+
+        let mut tiles = Vec::new();
+
+        for idx in 0..32 * 32 {
+            //Get tile image data
+            let y0 = (idx * 8) as f64;
+            let image_data = self.char_map_canvas.get_image_data(0.0, y0, 8.0, y0 + 8.0);
+            let tile = image_data.unwrap();
+
+            tiles.push(tile);
+        }
+
+        //Clear context
+        self.background_canvas.clear_rect(
+            0.0,
+            0.0,
+            self.background_canvas.canvas().unwrap().width() as f64,
+            self.background_canvas.canvas().unwrap().height() as f64,
+        );
+
+        let mut x = 0;
+        let mut y = 0;
+        // let a = background_map_1[0] as usize;
+        for ele in background_map_1 {
+            let tile = &tiles[ele as usize];
+            self.background_canvas
+                .put_image_data(tile, x as f64, y as f64);
+
+            x = x + 8;
+            if x >= 32 * 8 {
+                x = 0;
+                y = y + 8;
+            }
+        }
+        // }
+
+        self.draw_screen(gameboy);
+    }
+
+    pub fn update_char_map_canvas(&mut self, gameboy: &mut Gameboy) {
+        // let image_source_clone = gameboy.char_map_to_image_data().clone();
+        let mut image_source = gameboy.char_map_to_image_data();
+        let clamped_image_source = wasm_bindgen::Clamped(&mut image_source[..]);
+        // const imageSource = new Uint8ClampedArray(rustImageData);
+        // const hasChanged =
+        //     !!updateCharMapCanvas_lastData &&
+        //     !areTypedArraysEqual(updateCharMapCanvas_lastData, rustImageData);
+        // if (hasChanged) {
+        let image_data: web_sys::ImageData =
+            web_sys::ImageData::new_with_u8_clamped_array(clamped_image_source, 8).unwrap();
+
+        self.char_map_canvas
+            .put_image_data(&image_data, 0.0, 0.0)
+            .unwrap();
+
+        let tiles_per_row = 12;
+        let width = self.char_map_debug_canvas.canvas().unwrap().width() as f64;
+        let height = self.char_map_debug_canvas.canvas().unwrap().height() as f64;
+
+        self.char_map_debug_canvas
+            .clear_rect(0.0, 0.0, width, height);
+
+        for tile_idx in 0..96 {
+            //Get tile image data
+            let y0 = (tile_idx * 8) as f64;
+            let image_data = self.char_map_canvas.get_image_data(0.0, y0, 8.0, y0 + 8.0);
+            let tile = image_data.unwrap();
+
+            let x = (tile_idx % tiles_per_row) as f64;
+            let y = ((tile_idx / tiles_per_row) as f64).floor();
+            self.char_map_debug_canvas
+                .put_image_data(&tile, x * 8.0, y * 8.0)
+                .unwrap();
+        }
+        // }
+        // self.update_char_map_canvas_last_data = image_source;
+    }
+
+    // pub fn is_vec_equal(&self, vec1: &Vec<u8>, vec2: Vec<u8>) -> bool {
+    //     for (i, x) in vec1.iter().enumerate() {
+    //         if x != &vec2[i] {
+    //             return false;
+    //         }
+    //     }
+    //     return true;
+    // }
+
+    pub fn draw_screen(&self, gameboy_inst: &mut Gameboy) {
+        //Clear context
+        self.screen_canvas.clear_rect(
+            0.0,
+            0.0,
+            self.screen_canvas.canvas().unwrap().width() as f64,
+            self.screen_canvas.canvas().unwrap().height() as f64,
+        );
+
+        let is_lcd_enable = gameboy_inst.is_lcd_display_enable();
+        if !is_lcd_enable {
+            return;
+        }
+
+        let x = gameboy_inst.get_scroll_x();
+        let y = gameboy_inst.get_scroll_y();
+
+        let image_data = self
+            .background_canvas
+            .get_image_data(
+                x as f64,
+                y as f64,
+                PIXEL_ZOOM as f64 * SCREEN_WIDTH as f64,
+                PIXEL_ZOOM as f64 * SCREEN_HEIGHT as f64,
+            )
+            .unwrap();
+
+        self.screen_canvas
+            .put_image_data(&image_data, 0.0, 0.0)
+            .unwrap();
+    }
+
+    pub fn make_canvas(
+        canvas_selector: &str,
+        width: u32,
+        height: u32,
+    ) -> web_sys::CanvasRenderingContext2d {
+        let document = web_sys::window().unwrap().document().unwrap();
+
+        let el = document.get_element_by_id(canvas_selector).unwrap();
+        let el: web_sys::HtmlCanvasElement = el
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .map_err(|_| ())
+            .unwrap();
+
+        let ctx = el
+            .get_context("2d")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<web_sys::CanvasRenderingContext2d>()
+            .unwrap();
+
+        el.set_width(width);
+        el.set_height(height);
+        // el.style().width = el.width * zoom + 'px';
+        // el.style.height = el.height * zoom + 'px';
+
+        ctx.set_image_smoothing_enabled(false);
+
+        ctx
+    }
+
+    fn clear_context(
+        &self,
+        context: web_sys::CanvasRenderingContext2d,
+    ) -> web_sys::CanvasRenderingContext2d {
+        context.clear_rect(
+            0.0,
+            0.0,
+            context.canvas().unwrap().width() as f64,
+            context.canvas().unwrap().height() as f64,
+        );
+
+        context
+    }
 }
 
 #[wasm_bindgen]
@@ -1770,10 +1991,10 @@ pub struct SerializedGameboy {
 
 #[wasm_bindgen]
 pub struct Gameboy {
-    background_width: u8,
-    background_height: u8,
-    screen_width: u8,
-    screen_height: u8,
+    background_width: u32,
+    background_height: u32,
+    screen_width: u32,
+    screen_height: u32,
     image_data: Vec<u8>,
     registers: Registers,
     fm_osc: FmOsc,
@@ -1803,19 +2024,19 @@ impl Gameboy {
         serializable
     }
 
-    pub fn background_width(&self) -> u8 {
+    pub fn background_width(&self) -> u32 {
         self.background_width
     }
 
-    pub fn screen_width(&self) -> u8 {
+    pub fn screen_width(&self) -> u32 {
         self.screen_width
     }
 
-    pub fn background_height(&self) -> u8 {
+    pub fn background_height(&self) -> u32 {
         self.background_height
     }
 
-    pub fn screen_height(&self) -> u8 {
+    pub fn screen_height(&self) -> u32 {
         self.screen_height
     }
 
@@ -2544,10 +2765,6 @@ impl Gameboy {
 
     pub fn new() -> Gameboy {
         info!("Starting a new gameboy!");
-        let background_width = 255;
-        let background_height = 255;
-        let screen_width = 160;
-        let screen_height = 144;
 
         let flag = Flag {
             z: false,
@@ -2604,10 +2821,10 @@ impl Gameboy {
         };
 
         Gameboy {
-            background_width,
-            background_height,
-            screen_width,
-            screen_height,
+            background_width: BACKGROUND_WIDTH,
+            background_height: BACKGROUND_HEIGHT,
+            screen_width: SCREEN_WIDTH,
+            screen_height: SCREEN_HEIGHT,
             registers,
             fm_osc,
             image_data,
@@ -2718,10 +2935,6 @@ impl Gameboy {
 }
 
 pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
-    let background_width = 255;
-    let background_height = 255;
-    let screen_width = 160;
-    let screen_height = 144;
     let fm_osc = match Gameboy::initialize_fm_osc() {
         Ok(something) => something,
         _ => panic!("Failed initialize FmOsc"),
@@ -2742,10 +2955,10 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
         break_points: serializeable.break_points.clone(),
         memory: full_memory,
         // Default, non-serializable values
-        background_width,
-        background_height,
-        screen_width,
-        screen_height,
+        background_width: BACKGROUND_WIDTH,
+        background_height: BACKGROUND_HEIGHT,
+        screen_width: SCREEN_WIDTH,
+        screen_height: SCREEN_HEIGHT,
         fm_osc,
         image_data,
         is_running: false,
