@@ -33,148 +33,6 @@ initEmulation();
 const gameboyInst = Gameboy.new();
 const canvases = Canvases.new();
 
-const makeCanvas = (canvasSelector, options) => {
-  console.log('Making canvas from ', canvasSelector);
-  const el = document.querySelector(canvasSelector);
-  const ctx = el.getContext('2d');
-  const zoom = options.zoom || 1;
-
-  el.width = options.width;
-  el.height = options.height;
-  el.style.width = el.width * zoom + 'px';
-  el.style.height = el.height * zoom + 'px';
-
-  ctx['imageSmoothingEnabled'] = false; /* standard */
-  ctx['oImageSmoothingEnabled'] = false; /* Opera */
-  ctx['webkitImageSmoothingEnabled'] = false; /* Safari */
-  ctx['msImageSmoothingEnabled'] = false; /* IE */
-
-  return [el, ctx];
-};
-
-var background_width = gameboyInst.background_width();
-var background_height = gameboyInst.background_height();
-var screen_width = gameboyInst.screen_width();
-var screen_height = gameboyInst.screen_height();
-
-const [backgroundCanvasEl, backgroundCanvas] = makeCanvas(
-  '#gameboy-background-canvas',
-  {
-    width: config.PIXEL_ZOOM * background_width,
-    height: config.PIXEL_ZOOM * background_height,
-  },
-);
-const [screenCanvasEl, screenCanvas] = makeCanvas('#gameboy-screen-canvas', {
-  width: config.PIXEL_ZOOM * screen_width,
-  height: config.PIXEL_ZOOM * screen_height,
-});
-const [charMapCanvasEl, charMapCanvas] = makeCanvas('#char-map-actual-canvas', {
-  width: 8,
-  height: 1024,
-});
-const [charMapDebugCanvasEl, charMapDebugCanvas] = makeCanvas(
-  '#char-map-debug-canvas',
-  {width: 8 * 12, height: 8 * 8, zoom: 4},
-);
-
-const clearContext = context => {
-  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-};
-
-const getTileImageData = (canvas, tileIdx) => {
-  const y0 = tileIdx * 8;
-  const imageData = canvas.getImageData(0, y0, 8, y0 + 8);
-  return imageData;
-};
-
-// Quick hack to memoize updateCharMapCanvas
-// Should move this stuff to the Rust side later
-let updateCharMapCanvas_lastData = null;
-
-const updateCharMapCanvas = gameboy => {
-  const rustImageData = gameboy.char_map_to_image_data();
-  const imageSource = new Uint8ClampedArray(rustImageData);
-  const hasChanged =
-    !!updateCharMapCanvas_lastData &&
-    !areTypedArraysEqual(updateCharMapCanvas_lastData, rustImageData);
-  if (hasChanged) {
-    const imageData = new ImageData(imageSource, 8);
-    charMapCanvas.putImageData(imageData, 0, 0);
-    const tilesPerRow = 12;
-    clearContext(charMapDebugCanvas);
-    for (var tileIdx = 0; tileIdx < 96; tileIdx++) {
-      const tile = getTileImageData(charMapCanvas, tileIdx);
-      const x = tileIdx % tilesPerRow;
-      const y = Math.floor(tileIdx / tilesPerRow);
-      charMapDebugCanvas.putImageData(tile, x * 8, y * 8);
-    }
-  }
-  updateCharMapCanvas_lastData = rustImageData;
-};
-
-const drawScreen = () => {
-  clearContext(screenCanvas);
-  const isLcdEnable = gameboyInst.is_lcd_display_enable();
-  if (!isLcdEnable) {
-    return;
-  }
-
-  var x = gameboyInst.get_scroll_x();
-  var y = gameboyInst.get_scroll_y();
-
-  const imageData = backgroundCanvas.getImageData(
-    x,
-    y,
-    config.PIXEL_ZOOM * screen_width,
-    config.PIXEL_ZOOM * screen_height,
-  );
-
-  screenCanvas.putImageData(imageData, 0, 0);
-};
-
-// Quick hack to memoize renderBackgroundMap1AsImageData
-// Should move this stuff to the Rust side later
-let lastBackgroundMap1 = null;
-
-const renderBackgroundMap1AsImageData = (gameboy, fullMemory) => {
-  const backgroundMap1 = gameboy.background_map_1();
-
-  const hasChanged =
-    !!lastBackgroundMap1 &&
-    !areTypedArraysEqual(lastBackgroundMap1, backgroundMap1);
-
-  if (!lastBackgroundMap1) {
-    lastBackgroundMap1 = Uint8Array.from(backgroundMap1);
-  }
-
-  if (hasChanged) {
-    lastBackgroundMap1 = Uint8Array.from(backgroundMap1);
-
-    const tiles = [];
-
-    for (var idx = 0; idx < 32 * 32; idx++) {
-      tiles.push(getTileImageData(charMapCanvas, idx));
-    }
-
-    clearContext(backgroundCanvas);
-
-    let x = 0;
-    let y = 0;
-    backgroundMap1.forEach(function(ele, idx) {
-      const tile = tiles[ele];
-      backgroundCanvas.putImageData(tile, x, y);
-
-      x = x + 8;
-      if (x >= 32 * 8) {
-        x = 0;
-        y = y + 8;
-      }
-    });
-  }
-
-  drawScreen();
-};
-
 const playSound = gameboy => {
   // //TODO:Implement playsound
   console.log('js-playsound');
@@ -200,8 +58,6 @@ var render = function render(gameboy) {
       gameboy.execute_opcodes(opNum ? opNum : 1000);
       canvases.update_char_map_canvas(gameboy);
       canvases.render_background_map_1_as_image_data(gameboy);
-      // updateCharMapCanvas(gameboy);
-      // renderBackgroundMap1AsImageData(gameboy, memoryBytes);
       requestAnimationFrame(() => render(gameboy, memoryBytes));
     }
   };
@@ -333,15 +189,12 @@ var render = function render(gameboy) {
       cpuClock,
       onDraw: () => {
         canvases.update_char_map_canvas(gameboy);
-        // updateCharMapCanvas(gameboy);
       },
       onClear: () => {
         clearContext(screenCanvas);
         clearContext(backgroundCanvas);
       },
       onDrawBackground: () => {
-        // updateCharMapCanvas(gameboy);
-        // renderBackgroundMap1AsImageData(gameboy, memoryBytes);
         canvases.render_background_map_1_as_image_data(gameboy);
       },
       onPlaySound: () => {
