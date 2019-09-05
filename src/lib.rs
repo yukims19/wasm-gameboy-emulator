@@ -33,7 +33,8 @@ struct Canvases {
     screen_canvas: web_sys::CanvasRenderingContext2d,
     char_map_canvas: web_sys::CanvasRenderingContext2d,
     char_map_debug_canvas: web_sys::CanvasRenderingContext2d,
-    // update_char_map_canvas_last_data: Vec<u8>,
+    update_char_map_canvas_last_data: Vec<u8>,
+    last_background_map_1: Vec<u8>,
 }
 
 #[wasm_bindgen]
@@ -60,110 +61,118 @@ impl Canvases {
             screen_canvas,
             char_map_canvas,
             char_map_debug_canvas,
-            // update_char_map_canvas_last_data: Vec::new(),
+            update_char_map_canvas_last_data: Vec::new(),
+            last_background_map_1: Vec::new(),
         };
 
         canvases
     }
 
-    pub fn render_background_map_1_as_image_data(&self, gameboy: &mut Gameboy) {
+    pub fn render_background_map_1_as_image_data(&mut self, gameboy: &mut Gameboy) {
         let background_map_1 = gameboy.background_map_1();
 
-        // let hasChanged =
-        //     !!lastBackgroundMap1 && !areTypedArraysEqual(lastBackgroundMap1, background_map_1);
+        let has_changed = !self.last_background_map_1.is_empty()
+            && !self.is_vec_equal(&self.last_background_map_1, &background_map_1);
 
-        // if (!lastBackgroundMap1) {
-        //     lastBackgroundMap1 = Uint8Array.from(background_map_1);
-        // }
-
-        // if (hasChanged) {
-        // lastBackgroundMap1 = Uint8Array.from(background_map_1);
-
-        let mut tiles = Vec::new();
-
-        for idx in 0..32 * 32 {
-            //Get tile image data
-            let y0 = (idx * 8) as f64;
-            let image_data = self.char_map_canvas.get_image_data(0.0, y0, 8.0, y0 + 8.0);
-            let tile = image_data.unwrap();
-
-            tiles.push(tile);
+        if self.last_background_map_1.is_empty() {
+            self.last_background_map_1 = background_map_1.clone();
         }
 
-        //Clear context
-        self.background_canvas.clear_rect(
-            0.0,
-            0.0,
-            self.background_canvas.canvas().unwrap().width() as f64,
-            self.background_canvas.canvas().unwrap().height() as f64,
-        );
+        if has_changed {
+            self.last_background_map_1 = background_map_1.clone();
 
-        let mut x = 0;
-        let mut y = 0;
-        // let a = background_map_1[0] as usize;
-        for ele in background_map_1 {
-            let tile = &tiles[ele as usize];
-            self.background_canvas
-                .put_image_data(tile, x as f64, y as f64);
+            let mut tiles = Vec::new();
 
-            x = x + 8;
-            if x >= 32 * 8 {
-                x = 0;
-                y = y + 8;
+            for idx in 0..32 * 32 {
+                //Get tile image data
+                let y0 = (idx * 8) as f64;
+                let image_data = self.char_map_canvas.get_image_data(0.0, y0, 8.0, y0 + 8.0);
+                let tile = image_data.unwrap();
+
+                tiles.push(tile);
+            }
+
+            //Clear context
+            self.background_canvas.clear_rect(
+                0.0,
+                0.0,
+                self.background_canvas.canvas().unwrap().width() as f64,
+                self.background_canvas.canvas().unwrap().height() as f64,
+            );
+
+            let mut x = 0;
+            let mut y = 0;
+            for ele in background_map_1 {
+                let tile = &tiles[ele as usize];
+                self.background_canvas
+                    .put_image_data(tile, x as f64, y as f64)
+                    .unwrap();
+
+                x = x + 8;
+                if x >= 32 * 8 {
+                    x = 0;
+                    y = y + 8;
+                }
             }
         }
-        // }
 
         self.draw_screen(gameboy);
     }
 
-    pub fn update_char_map_canvas(&mut self, gameboy: &mut Gameboy) {
-        // let image_source_clone = gameboy.char_map_to_image_data().clone();
-        let mut image_source = gameboy.char_map_to_image_data();
-        let clamped_image_source = wasm_bindgen::Clamped(&mut image_source[..]);
-        // const imageSource = new Uint8ClampedArray(rustImageData);
-        // const hasChanged =
-        //     !!updateCharMapCanvas_lastData &&
-        //     !areTypedArraysEqual(updateCharMapCanvas_lastData, rustImageData);
-        // if (hasChanged) {
-        let image_data: web_sys::ImageData =
-            web_sys::ImageData::new_with_u8_clamped_array(clamped_image_source, 8).unwrap();
-
-        self.char_map_canvas
-            .put_image_data(&image_data, 0.0, 0.0)
-            .unwrap();
-
-        let tiles_per_row = 12;
-        let width = self.char_map_debug_canvas.canvas().unwrap().width() as f64;
-        let height = self.char_map_debug_canvas.canvas().unwrap().height() as f64;
-
-        self.char_map_debug_canvas
-            .clear_rect(0.0, 0.0, width, height);
-
-        for tile_idx in 0..96 {
-            //Get tile image data
-            let y0 = (tile_idx * 8) as f64;
-            let image_data = self.char_map_canvas.get_image_data(0.0, y0, 8.0, y0 + 8.0);
-            let tile = image_data.unwrap();
-
-            let x = (tile_idx % tiles_per_row) as f64;
-            let y = ((tile_idx / tiles_per_row) as f64).floor();
-            self.char_map_debug_canvas
-                .put_image_data(&tile, x * 8.0, y * 8.0)
-                .unwrap();
+    fn is_vec_equal(&self, vec1: &Vec<u8>, vec2: &Vec<u8>) -> bool {
+        if vec1.len() != vec2.len() {
+            return false;
         }
-        // }
-        // self.update_char_map_canvas_last_data = image_source;
+
+        let mut result = true;
+        for idx in 0..vec1.len() {
+            if vec1[idx] != vec2[idx] {
+                result = false;
+                break;
+            }
+        }
+        result
     }
 
-    // pub fn is_vec_equal(&self, vec1: &Vec<u8>, vec2: Vec<u8>) -> bool {
-    //     for (i, x) in vec1.iter().enumerate() {
-    //         if x != &vec2[i] {
-    //             return false;
-    //         }
-    //     }
-    //     return true;
-    // }
+    pub fn update_char_map_canvas(&mut self, gameboy: &mut Gameboy) {
+        let mut image_source = gameboy.char_map_to_image_data();
+        let image_source_copy = gameboy.char_map_to_image_data().clone();
+        let clamped_image_source = wasm_bindgen::Clamped(&mut image_source[..]);
+
+        let has_changed = !self.update_char_map_canvas_last_data.is_empty()
+            && !self.is_vec_equal(&self.update_char_map_canvas_last_data, &image_source_copy);
+
+        if has_changed {
+            let image_data: web_sys::ImageData =
+                web_sys::ImageData::new_with_u8_clamped_array(clamped_image_source, 8).unwrap();
+
+            self.char_map_canvas
+                .put_image_data(&image_data, 0.0, 0.0)
+                .unwrap();
+
+            let tiles_per_row = 12;
+            let width = self.char_map_debug_canvas.canvas().unwrap().width() as f64;
+            let height = self.char_map_debug_canvas.canvas().unwrap().height() as f64;
+
+            self.char_map_debug_canvas
+                .clear_rect(0.0, 0.0, width, height);
+
+            for tile_idx in 0..96 {
+                //Get tile image data
+                let y0 = (tile_idx * 8) as f64;
+                let image_data = self.char_map_canvas.get_image_data(0.0, y0, 8.0, y0 + 8.0);
+                let tile = image_data.unwrap();
+
+                let x = (tile_idx % tiles_per_row) as f64;
+                let y = ((tile_idx / tiles_per_row) as f64).floor();
+                self.char_map_debug_canvas
+                    .put_image_data(&tile, x * 8.0, y * 8.0)
+                    .unwrap();
+            }
+        }
+
+        self.update_char_map_canvas_last_data = image_source;
+    }
 
     pub fn draw_screen(&self, gameboy_inst: &mut Gameboy) {
         //Clear context
