@@ -175,6 +175,10 @@ impl Canvases {
     }
 
     pub fn draw_screen(&self, gameboy_inst: &mut Gameboy) {
+        if !gameboy_inst.is_vblank() {
+            return;
+        }
+
         //Clear context
         self.screen_canvas.clear_rect(
             0.0,
