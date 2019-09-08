@@ -241,20 +241,6 @@ impl Canvases {
 
         ctx
     }
-
-    fn clear_context(
-        &self,
-        context: web_sys::CanvasRenderingContext2d,
-    ) -> web_sys::CanvasRenderingContext2d {
-        context.clear_rect(
-            0.0,
-            0.0,
-            context.canvas().unwrap().width() as f64,
-            context.canvas().unwrap().height() as f64,
-        );
-
-        context
-    }
 }
 
 #[wasm_bindgen]
@@ -1939,25 +1925,6 @@ impl Registers {
 }
 
 #[wasm_bindgen]
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Pixel {
-    White = 0,
-    LightGray = 1,
-    DarkGray = 2,
-    Black = 3,
-}
-
-pub fn pixel_to_rgba(pixel: Pixel) -> [u8; 4] {
-    match pixel {
-        Pixel::White => [255, 255, 255, 255],
-        Pixel::LightGray => [191, 191, 191, 255],
-        Pixel::DarkGray => [64, 64, 64, 255],
-        Pixel::Black => [0, 0, 0, 255],
-    }
-}
-
-#[wasm_bindgen]
 pub fn pixels_to_image_data(pixels_as_byte_vec: Vec<u8>) -> Vec<u8> {
     let new_image_data = {
         let len = pixels_as_byte_vec.len();
@@ -2642,13 +2609,6 @@ impl Gameboy {
         self.registers.f.c
     }
 
-    pub fn pixels(&self) -> *const Pixel {
-        let pixel_byte_vec = self.memory[0x8000..0x9800].to_vec();
-        let pixels = Gameboy::tile(pixel_byte_vec);
-
-        pixels.as_ptr()
-    }
-
     pub fn memory(&self) -> *const u8 {
         self.memory.as_ptr()
     }
@@ -2766,13 +2726,13 @@ impl Gameboy {
     }
 
     pub fn execute_opcodes_no_stop(&mut self) {
-        // if self.cpu_paused {
-        //     return;
-        // }
+        if self.cpu_paused {
+            return;
+        }
 
         let mut canvases = Canvases::new();
 
-        //ff10-ff14 is responsible for sound channel 1
+        //#ff10-ff14 is responsible for sound channel 1
         let pre_ff10 = self.memory[0xff10];
         let pre_ff11 = self.memory[0xff11];
         let pre_ff12 = self.memory[0xff12];
@@ -2941,8 +2901,6 @@ impl Gameboy {
         let pixel_byte_vec = full_memory[0x8000..0x8800].to_vec();
         let image_data = pixels_to_image_data(pixel_byte_vec.clone());
 
-        let _pixels = Gameboy::tile(pixel_byte_vec);
-
         //FmOsc Here
 
         let fm_osc = match Gameboy::initialize_fm_osc() {
@@ -3018,41 +2976,6 @@ impl Gameboy {
             fm_freq_ratio: 0.0,
             fm_gain_ratio: 0.0,
         })
-    }
-
-    fn tile_row(first_b: u8, second_b: u8) -> Vec<Pixel> {
-        let low_bits = BitVec::from_bytes(&[first_b]);
-        let high_bits = BitVec::from_bytes(&[second_b]);
-        let mut row = Vec::new();
-
-        for idx in 0..8 {
-            match (low_bits[idx], high_bits[idx]) {
-                (false, false) => row.push(Pixel::White),
-                (false, true) => row.push(Pixel::LightGray),
-                (true, false) => row.push(Pixel::DarkGray),
-                (true, true) => row.push(Pixel::Black),
-            }
-        }
-        row
-    }
-
-    fn tile(byte_vec: Vec<u8>) -> Vec<Pixel> {
-        let mut tile = Vec::new();
-        let mut tile_vec = Vec::new();
-        let mut idx = 0;
-
-        // console_log("Tile: idx={}")
-
-        while idx < byte_vec.len() {
-            for i in (idx..idx + 16).step_by(2) {
-                let row = Gameboy::tile_row(byte_vec[i], byte_vec[i + 1]);
-                tile.extend(row);
-            }
-            idx = idx + 16;
-
-            tile_vec.append(&mut tile);
-        }
-        tile_vec
     }
 
     pub fn char_map_to_image_data(&mut self) -> Vec<u8> {
