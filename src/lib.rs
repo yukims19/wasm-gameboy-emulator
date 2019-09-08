@@ -36,7 +36,6 @@ struct Canvases {
     char_map_canvas: web_sys::CanvasRenderingContext2d,
     char_map_debug_canvas: web_sys::CanvasRenderingContext2d,
     update_char_map_canvas_last_data: Vec<u8>,
-    last_background_map_1: Vec<u8>,
 }
 
 #[wasm_bindgen]
@@ -64,7 +63,6 @@ impl Canvases {
             char_map_canvas,
             char_map_debug_canvas,
             update_char_map_canvas_last_data: Vec::new(),
-            last_background_map_1: Vec::new(),
         };
 
         canvases
@@ -143,56 +141,35 @@ impl Canvases {
         self.draw_screen(gameboy);
     }
 
-    fn is_vec_equal(&self, vec1: &Vec<u8>, vec2: &Vec<u8>) -> bool {
-        if vec1.len() != vec2.len() {
-            return false;
-        }
-
-        let mut result = true;
-        for idx in 0..vec1.len() {
-            if vec1[idx] != vec2[idx] {
-                result = false;
-                break;
-            }
-        }
-        result
-    }
-
     pub fn update_char_map_canvas(&mut self, gameboy: &mut Gameboy) {
         let mut image_source = gameboy.char_map_to_image_data();
-        let image_source_copy = gameboy.char_map_to_image_data().clone();
         let clamped_image_source = wasm_bindgen::Clamped(&mut image_source[..]);
 
-        let has_changed = !self.update_char_map_canvas_last_data.is_empty()
-            && !self.is_vec_equal(&self.update_char_map_canvas_last_data, &image_source_copy);
+        let image_data: web_sys::ImageData =
+            web_sys::ImageData::new_with_u8_clamped_array(clamped_image_source, 8).unwrap();
 
-        if has_changed {
-            let image_data: web_sys::ImageData =
-                web_sys::ImageData::new_with_u8_clamped_array(clamped_image_source, 8).unwrap();
+        self.char_map_canvas
+            .put_image_data(&image_data, 0.0, 0.0)
+            .unwrap();
 
-            self.char_map_canvas
-                .put_image_data(&image_data, 0.0, 0.0)
-                .unwrap();
+        let tiles_per_row = 12;
+        let width = self.char_map_debug_canvas.canvas().unwrap().width() as f64;
+        let height = self.char_map_debug_canvas.canvas().unwrap().height() as f64;
 
-            let tiles_per_row = 12;
-            let width = self.char_map_debug_canvas.canvas().unwrap().width() as f64;
-            let height = self.char_map_debug_canvas.canvas().unwrap().height() as f64;
+        self.char_map_debug_canvas
+            .clear_rect(0.0, 0.0, width, height);
 
+        for tile_idx in 0..96 {
+            //Get tile image data
+            let y0 = (tile_idx * 8) as f64;
+            let image_data = self.char_map_canvas.get_image_data(0.0, y0, 8.0, y0 + 8.0);
+            let tile = image_data.unwrap();
+
+            let x = (tile_idx % tiles_per_row) as f64;
+            let y = ((tile_idx / tiles_per_row) as f64).floor();
             self.char_map_debug_canvas
-                .clear_rect(0.0, 0.0, width, height);
-
-            for tile_idx in 0..96 {
-                //Get tile image data
-                let y0 = (tile_idx * 8) as f64;
-                let image_data = self.char_map_canvas.get_image_data(0.0, y0, 8.0, y0 + 8.0);
-                let tile = image_data.unwrap();
-
-                let x = (tile_idx % tiles_per_row) as f64;
-                let y = ((tile_idx / tiles_per_row) as f64).floor();
-                self.char_map_debug_canvas
-                    .put_image_data(&tile, x * 8.0, y * 8.0)
-                    .unwrap();
-            }
+                .put_image_data(&tile, x * 8.0, y * 8.0)
+                .unwrap();
         }
 
         self.update_char_map_canvas_last_data = image_source;
@@ -2873,6 +2850,7 @@ impl Gameboy {
             break_points: vec![],
             cpu_clock: 0,
             cpu_paused: false,
+            should_draw: false,
         }
     }
 
