@@ -443,14 +443,14 @@ const Controls = props => {
         <tr>
           <th>
             <button onClick={onPlaySound}>Sound</button>
-            <button onClick={onDraw}>Draw</button>
+            <button onClick={() => onDraw()}>Draw</button>
             {toggleButton}
             {stepButton}
           </th>
         </tr>
         <tr>
           <th>
-            <button onClick={onDrawBackground}>DrawBackground</button>
+            <button onClick={() => onDrawBackground()}>DrawBackground</button>
             <button onClick={onClear}>Clear</button>
           </th>
         </tr>

@@ -179,6 +179,7 @@ impl Canvases {
         if !gameboy_inst.is_vblank() {
             return;
         }
+        info!("Rust draw screen");
 
         //Clear context
         self.screen_canvas.clear_rect(
@@ -2017,6 +2018,7 @@ pub struct Gameboy {
     timer: usize,
     cpu_clock: usize,
     is_running: bool,
+    should_draw: bool,
     break_points: Vec<u16>,
     memory: Vec<u8>,
     cpu_paused: bool,
@@ -2140,6 +2142,7 @@ impl Gameboy {
     }
 
     pub fn request_vblank(&mut self) {
+        self.should_draw = true;
         self.memory[0xff0f] = self.memory[0xff0f] | 0b1000000
     }
 
@@ -2154,7 +2157,7 @@ impl Gameboy {
 
         if self.memory[0xff44] == ly_max {
             self.memory[0xff44] = 0;
-            self.disable_vblank()
+            self.disable_vblank();
         } else {
             self.memory[0xff44] = self.memory[0xff44] + 1;
             if self.memory[0xff44] == vblank_start {
@@ -2762,6 +2765,119 @@ impl Gameboy {
         }
     }
 
+    pub fn execute_opcodes_no_stop(&mut self) {
+        // if self.cpu_paused {
+        //     return;
+        // }
+
+        let mut canvases = Canvases::new();
+
+        //ff10-ff14 is responsible for sound channel 1
+        let pre_ff10 = self.memory[0xff10];
+        let pre_ff11 = self.memory[0xff11];
+        let pre_ff12 = self.memory[0xff12];
+        let pre_ff13 = self.memory[0xff13];
+        let pre_ff14 = self.memory[0xff14];
+
+        let window = web_sys::window().expect("should have a window in this context");
+        let performance = window
+            .performance()
+            .expect("performance should be available");
+
+        let start_cycle_count = self.total_cycle();
+        let start_time = performance.now();
+        let mut last_time = start_time;
+        let mut last_cycle_count = 0;
+        let cycle_log_target = 50_000;
+        let mut last_cycle_ly = 0;
+        let mut time_last_draw = performance.now();
+
+        loop {
+            // if self.cpu_paused {
+            //     break;
+            // }
+
+            let ly = self.ly();
+
+            if self.is_lcd_display_enable() && self.should_draw {
+                // info!(
+                //     "LY = {:?}, drawing: elapsed cycle count: {:?}, total: {:?}",
+                //     ly,
+                //     self.total_cycle() - last_cycle_ly,
+                //     self.total_cycle()
+                // );
+                last_cycle_ly = self.total_cycle();
+                let start_draw_time = performance.now();
+                let start_draw_char_time = performance.now();
+                canvases.update_char_map_canvas(self);
+                let end_draw_char_time = performance.now();
+                let start_draw_bg_time = performance.now();
+                canvases.render_background_map_1_as_image_data(self);
+                let end_draw_bg_time = performance.now();
+                let end_draw_time = performance.now();
+                info!(
+                    "Drawing time: char={:?}ms, bg={:?}ms, total={:?}ms",
+                    end_draw_char_time - start_draw_char_time,
+                    end_draw_bg_time - start_draw_bg_time,
+                    end_draw_time - start_draw_time
+                );
+                self.should_draw = false;
+                let now = performance.now();
+                let elapsed = now - time_last_draw;
+                let time_to_sleep = 16.66 - elapsed;
+                // if time_to_sleep > 0.0 {
+                //     TimeoutFuture::new(time_to_sleep).and_then(|_| self.execute_opcodes_no_stop())
+                // }
+                break;
+            }
+
+            if self.total_cycle() - last_cycle_count > cycle_log_target {
+                last_cycle_count = self.total_cycle();
+                let now = performance.now();
+                let elapsed = now - last_time;
+                last_time = now;
+                info!(
+                    "Executed {:?} cycles in {:?}ms, total: {:?}, ly: {:?}",
+                    cycle_log_target,
+                    elapsed,
+                    self.total_cycle(),
+                    self.ly()
+                );
+            }
+
+            let instruction = self.memory[self.registers.pc as usize];
+            self.registers
+                .execute_instruction(instruction, &mut self.memory);
+            self.add_cycles(instruction, CycleRegister::CpuCycle);
+            self.cycle_based_vram_operation(instruction);
+
+            if self.break_points.contains(&self.registers.pc) {
+                self.is_running = false;
+            }
+
+            // if instruction == 0x076 {
+            //     //HALT: Pause CPU Until Interrupt
+            //     self.pause_cpu()
+            // }
+
+            // if self.is_channel1_changed(pre_ff10, pre_ff11, pre_ff12, pre_ff13, pre_ff14) {
+            //     if self.sound_dirty_flag_check_s1() {
+            //         self.reset_fm_osc(self.square1());
+            //     }
+            // }
+
+            if self.total_cycle() - start_cycle_count > 15_000_000 {
+                let elapsed = performance.now() - start_time;
+                info!(
+                    "Executed {:?} cycles in {:?}ms",
+                    self.total_cycle(),
+                    elapsed
+                );
+                break;
+            }
+        }
+    }
+
     pub fn reset_fm_osc(&mut self, square1: Channel) {
         self.fm_osc.set_primary_frequency(square1.frequency());
         self.fm_osc.set_gain_shift(
@@ -2940,7 +3056,7 @@ impl Gameboy {
     }
 
     pub fn char_map_to_image_data(&mut self) -> Vec<u8> {
-        let pixels_vec = self.memory[0x8000..0x8800].to_vec();
+        let pixels_vec = self.memory[0x8000..0x9000].to_vec();
         let new_image_data = pixels_to_image_data(pixels_vec);
 
         self.image_data = new_image_data.clone();
@@ -2976,6 +3092,7 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
         screen_height: SCREEN_HEIGHT,
         fm_osc,
         image_data,
+        should_draw: false,
         is_running: false,
         cpu_paused: false,
     };

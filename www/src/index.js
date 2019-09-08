@@ -55,10 +55,17 @@ var render = function render(gameboy) {
 
   const next = opNum => {
     if (gameboy.is_running()) {
-      gameboy.execute_opcodes(opNum ? opNum : 1000);
-      canvases.update_char_map_canvas(gameboy);
-      canvases.render_background_map_1_as_image_data(gameboy);
-      requestAnimationFrame(() => render(gameboy, memoryBytes));
+      const startTime = Date.now();
+      gameboy.execute_opcodes_no_stop();
+      // if (gameboy.is_vblank()) {
+      //   canvases.update_char_map_canvas(gameboy);
+      //   canvases.render_background_map_1_as_image_data(gameboy);
+      // }
+      const elapsed = Date.now() - startTime;
+      setTimeout(
+        () => requestAnimationFrame(() => render(gameboy, memoryBytes)),
+        16.6 - elapsed,
+      );
     }
   };
 
@@ -188,13 +195,15 @@ var render = function render(gameboy) {
       timer: timer,
       cpuClock,
       onDraw: () => {
+        console.log('on draw');
         canvases.update_char_map_canvas(gameboy);
       },
       onClear: () => {
-        clearContext(screenCanvas);
-        clearContext(backgroundCanvas);
+        // clearContext(screenCanvas);
+        // clearContext(backgroundCanvas);
       },
       onDrawBackground: () => {
+        console.log('on Draw back');
         canvases.render_background_map_1_as_image_data(gameboy);
       },
       onPlaySound: () => {
@@ -209,4 +218,7 @@ var render = function render(gameboy) {
 
 init_panic_hook();
 
+// gameboyInst.start_running();
+// gameboyInst.execute_opcodes_no_stop();
+window.gb = gameboyInst;
 requestAnimationFrame(() => render(gameboyInst));
