@@ -14,6 +14,8 @@ const BACKGROUND_WIDTH: u32 = 255;
 const BACKGROUND_HEIGHT: u32 = 255;
 const SCREEN_WIDTH: u32 = 160;
 const SCREEN_HEIGHT: u32 = 144;
+const BYTES_PER_TILE: usize = 16;
+const BYTES_PER_8_PIXEL: usize = 2;
 
 #[macro_use]
 extern crate serde_derive;
@@ -69,52 +71,74 @@ impl Canvases {
     }
 
     pub fn render_background_map_1_as_image_data(&mut self, gameboy: &mut Gameboy) {
+        // if !gameboy.is_vblank() {
+        //     return;
+        // }
+
         let background_map_1 = gameboy.background_map_1();
 
-        let has_changed = !self.last_background_map_1.is_empty()
-            && !self.is_vec_equal(&self.last_background_map_1, &background_map_1);
+        //TODO: need to check which charmap is used
+        let char_map_vec = gameboy.memory[0x8000..0x9000].to_vec();
+        let mut char_map_tiles_bytes = Vec::new();
 
-        if self.last_background_map_1.is_empty() {
-            self.last_background_map_1 = background_map_1.clone();
-        }
+        //Get Tiles
+        for idx in (0..char_map_vec.len()).step_by(BYTES_PER_TILE) {
+            let tile_bytes = &char_map_vec[idx..idx + BYTES_PER_TILE];
+            let mut image_data_source = Vec::new();
+            //Get Tile Pixel rgba data
+            for i in (0..tile_bytes.len()).step_by(BYTES_PER_8_PIXEL) {
+                let low_bits = BitVec::from_bytes(&[tile_bytes[i]]);
+                let high_bits = BitVec::from_bytes(&[tile_bytes[i + 1]]);
 
-        if has_changed {
-            self.last_background_map_1 = background_map_1.clone();
+                for pixel_index in 0..8 {
+                    let [r, g, b, a] = match (low_bits[pixel_index], high_bits[pixel_index]) {
+                        (false, false) => [255, 255, 255, 255],
+                        (false, true) => [191, 191, 191, 255],
+                        (true, false) => [64, 64, 64, 255],
+                        (true, true) => [0, 0, 0, 255],
+                    };
 
-            let mut tiles = Vec::new();
-
-            for idx in 0..32 * 32 {
-                //Get tile image data
-                let y0 = (idx * 8) as f64;
-                let image_data = self.char_map_canvas.get_image_data(0.0, y0, 8.0, y0 + 8.0);
-                let tile = image_data.unwrap();
-
-                tiles.push(tile);
-            }
-
-            //Clear context
-            self.background_canvas.clear_rect(
-                0.0,
-                0.0,
-                self.background_canvas.canvas().unwrap().width() as f64,
-                self.background_canvas.canvas().unwrap().height() as f64,
-            );
-
-            let mut x = 0;
-            let mut y = 0;
-            for ele in background_map_1 {
-                let tile = &tiles[ele as usize];
-                self.background_canvas
-                    .put_image_data(tile, x as f64, y as f64)
-                    .unwrap();
-
-                x = x + 8;
-                if x >= 32 * 8 {
-                    x = 0;
-                    y = y + 8;
+                    image_data_source.push(r);
+                    image_data_source.push(g);
+                    image_data_source.push(b);
+                    image_data_source.push(a);
                 }
             }
+
+            char_map_tiles_bytes.push(image_data_source);
         }
+
+        //Clear context
+        self.background_canvas.clear_rect(
+            0.0,
+            0.0,
+            self.background_canvas.canvas().unwrap().width() as f64,
+            self.background_canvas.canvas().unwrap().height() as f64,
+        );
+
+        let mut x = 0;
+        let mut y = 0;
+
+        for ele in background_map_1 {
+            // Generate Tile Image data
+            let tile_bytes = &mut char_map_tiles_bytes[ele as usize];
+            let clamped_image_source = wasm_bindgen::Clamped(&mut tile_bytes[..]);
+
+            let tile_image_data =
+                web_sys::ImageData::new_with_u8_clamped_array(clamped_image_source, 8).unwrap();
+
+            self.background_canvas
+                .put_image_data(&tile_image_data, x as f64, y as f64)
+                .unwrap();
+
+            x = x + 8;
+            if x >= 32 * 8 {
+                x = 0;
+                y = y + 8;
+            }
+        }
+
+        info!("Rust draw background");
 
         self.draw_screen(gameboy);
     }
