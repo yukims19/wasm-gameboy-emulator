@@ -16,6 +16,14 @@ const SCREEN_WIDTH: u32 = 160;
 const SCREEN_HEIGHT: u32 = 144;
 const BYTES_PER_TILE: usize = 16;
 const BYTES_PER_8_PIXEL: usize = 2;
+const BackgroundTileNumberPerRow: usize = 32;
+const BytesPerTile: usize = 16;
+const BytesPerTileRow: usize = 2;
+const ScreenTileNumPerRow: usize = 20;
+const ScreenPixelNumPerRow: usize = 160;
+const ImageDataLengthPerPixel: usize = 4; //r,g,b,a
+const PixelNumPerTile: usize = 64;
+const PixelNumPerTileRow: usize = 8;
 
 #[macro_use]
 extern crate serde_derive;
@@ -210,6 +218,97 @@ impl Canvases {
         self.screen_canvas
             .put_image_data(&image_data, 0.0, 0.0)
             .unwrap();
+    }
+
+    pub fn draw_screen_from_memory(&self, gameboy: &mut Gameboy) {
+        // if !gameboy_inst.is_vblank() {
+        //     return;
+        // }
+
+        let is_lcd_enable = gameboy.is_lcd_display_enable();
+        // if !is_lcd_enable {
+        //     return;
+        // }
+
+        let background_map_1 = gameboy.background_map_1();
+        let char_map_vec = gameboy.bg_window_char_map_bytes();
+
+        //Generate background bytes from char map
+        let mut background_pixels_rgba_vec: Vec<u8> = Vec::new();
+        for ele in background_map_1 {
+            let tile_start_idx = ele as usize * BYTES_PER_TILE;
+            let tile_end_idx = tile_start_idx + BYTES_PER_TILE;
+
+            let tile_bytes = &char_map_vec[tile_start_idx..tile_end_idx];
+            for i in (0..tile_bytes.len()).step_by(BYTES_PER_8_PIXEL) {
+                let low_bits = BitVec::from_bytes(&[tile_bytes[i]]);
+                let high_bits = BitVec::from_bytes(&[tile_bytes[i + 1]]);
+
+                for pixel_index in 0..8 {
+                    let [r, g, b, a] = match (low_bits[pixel_index], high_bits[pixel_index]) {
+                        (false, false) => [255, 255, 255, 255],
+                        (false, true) => [191, 191, 191, 255],
+                        (true, false) => [64, 64, 64, 255],
+                        (true, true) => [0, 0, 0, 255],
+                    };
+
+                    background_pixels_rgba_vec.push(r);
+                    background_pixels_rgba_vec.push(g);
+                    background_pixels_rgba_vec.push(b);
+                    background_pixels_rgba_vec.push(a);
+                }
+            }
+        }
+
+        //Get screen bytes from background bytes
+        let scroll_x = gameboy.get_scroll_x() as usize;
+        let scroll_y = gameboy.get_scroll_y() as usize;
+        let mut screen_pixels_rgba_vec: Vec<u8> = Vec::new();
+
+        for screen_y in 0..144 {
+            let x = scroll_x;
+            let y = scroll_y + screen_y;
+            let tile_row_num = y + 1 / 8;
+            let tile_col_num = x / 8;
+            let row_reminder = y + 1 % 8;
+            let col_reminder = x % 8;
+
+            let start = tile_row_num
+                * BackgroundTileNumberPerRow
+                * PixelNumPerTile
+                * ImageDataLengthPerPixel
+                + tile_col_num * PixelNumPerTile * ImageDataLengthPerPixel
+                + row_reminder * PixelNumPerTileRow * ImageDataLengthPerPixel
+                + col_reminder * ImageDataLengthPerPixel;
+
+            let end = start + ScreenPixelNumPerRow * ImageDataLengthPerPixel;
+
+            let screen_row_bytes = &background_pixels_rgba_vec[start..end];
+            screen_pixels_rgba_vec.extend_from_slice(&screen_row_bytes);
+        }
+
+        //####Drawing screen
+        self.screen_canvas.clear_rect(
+            0.0,
+            0.0,
+            self.screen_canvas.canvas().unwrap().width() as f64,
+            self.screen_canvas.canvas().unwrap().height() as f64,
+        );
+
+        for screen_y in 0..144 {
+            let start_row = screen_y * ScreenPixelNumPerRow * ImageDataLengthPerPixel;
+            let end_row = start_row + ScreenPixelNumPerRow * ImageDataLengthPerPixel;
+            let clamped_image_source =
+                wasm_bindgen::Clamped(&mut screen_pixels_rgba_vec[start_row..end_row]);
+
+            let pixel_row_image_data =
+                web_sys::ImageData::new_with_u8_clamped_array(clamped_image_source, 8).unwrap();
+            self.screen_canvas
+                .put_image_data(&pixel_row_image_data, 0.0, screen_y as f64)
+                .unwrap();
+        }
+
+        info!("Rust draw screen");
     }
 
     pub fn make_canvas(
