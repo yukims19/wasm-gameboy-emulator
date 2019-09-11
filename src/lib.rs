@@ -24,6 +24,7 @@ const ScreenPixelNumPerRow: usize = 160;
 const ImageDataLengthPerPixel: usize = 4; //r,g,b,a
 const PixelNumPerTile: usize = 64;
 const PixelNumPerTileRow: usize = 8;
+const BackgroundPixelNumPerRow: usize = 256;
 
 #[macro_use]
 extern crate serde_derive;
@@ -234,13 +235,17 @@ impl Canvases {
         let char_map_vec = gameboy.bg_window_char_map_bytes();
 
         //Generate background bytes from char map
-        let mut background_pixels_rgba_vec: Vec<u8> = Vec::new();
+        let mut background_pixels_row_rgba: Vec<Vec<u8>> = Vec::new();
+        background_pixels_row_rgba.resize(256, Vec::new());
+
+        let mut idx = 0;
         for ele in background_map_1 {
             let tile_start_idx = ele as usize * BYTES_PER_TILE;
             let tile_end_idx = tile_start_idx + BYTES_PER_TILE;
 
             let tile_bytes = &char_map_vec[tile_start_idx..tile_end_idx];
             for i in (0..tile_bytes.len()).step_by(BYTES_PER_8_PIXEL) {
+                let background_y = (idx / 32) + i;
                 let low_bits = BitVec::from_bytes(&[tile_bytes[i]]);
                 let high_bits = BitVec::from_bytes(&[tile_bytes[i + 1]]);
 
@@ -252,14 +257,19 @@ impl Canvases {
                         (true, true) => [0, 0, 0, 255],
                     };
 
-                    background_pixels_rgba_vec.push(r);
-                    background_pixels_rgba_vec.push(g);
-                    background_pixels_rgba_vec.push(b);
-                    background_pixels_rgba_vec.push(a);
+                    // info!("idx: {}, i: {}, y:{}", idx, i, background_y);
+                    background_pixels_row_rgba[background_y].push(r);
+                    background_pixels_row_rgba[background_y].push(g);
+                    background_pixels_row_rgba[background_y].push(b);
+                    background_pixels_row_rgba[background_y].push(a);
                 }
             }
+            idx = idx + 1
         }
 
+        let background_pixels_rgba_vec: Vec<u8> = background_pixels_row_rgba.concat();
+
+        info!("1111111111");
         //Get screen bytes from background bytes
         let scroll_x = gameboy.get_scroll_x() as usize;
         let scroll_y = gameboy.get_scroll_y() as usize;
@@ -268,24 +278,21 @@ impl Canvases {
         for screen_y in 0..144 {
             let x = scroll_x;
             let y = scroll_y + screen_y;
-            let tile_row_num = y + 1 / 8;
+            let tile_row_num = y / 8;
             let tile_col_num = x / 8;
-            let row_reminder = y + 1 % 8;
+            let row_reminder = y % 8;
             let col_reminder = x % 8;
 
-            let start = tile_row_num
-                * BackgroundTileNumberPerRow
-                * PixelNumPerTile
-                * ImageDataLengthPerPixel
-                + tile_col_num * PixelNumPerTile * ImageDataLengthPerPixel
-                + row_reminder * PixelNumPerTileRow * ImageDataLengthPerPixel
-                + col_reminder * ImageDataLengthPerPixel;
-
+            let start = y * BackgroundPixelNumPerRow * ImageDataLengthPerPixel
+                + x * ImageDataLengthPerPixel;
             let end = start + ScreenPixelNumPerRow * ImageDataLengthPerPixel;
 
+            info!("2222222");
+            info!("x: {}, y: {}, start: {}, end: {}", x, y, start, end);
             let screen_row_bytes = &background_pixels_rgba_vec[start..end];
             screen_pixels_rgba_vec.extend_from_slice(&screen_row_bytes);
         }
+        info!("333333");
 
         //####Drawing screen
         self.screen_canvas.clear_rect(
@@ -300,9 +307,11 @@ impl Canvases {
             let end_row = start_row + ScreenPixelNumPerRow * ImageDataLengthPerPixel;
             let clamped_image_source =
                 wasm_bindgen::Clamped(&mut screen_pixels_rgba_vec[start_row..end_row]);
+            info!("length: {:?}", clamped_image_source.len());
 
             let pixel_row_image_data =
-                web_sys::ImageData::new_with_u8_clamped_array(clamped_image_source, 8).unwrap();
+                web_sys::ImageData::new_with_u8_clamped_array_and_sh(clamped_image_source, 160, 1)
+                    .unwrap();
             self.screen_canvas
                 .put_image_data(&pixel_row_image_data, 0.0, screen_y as f64)
                 .unwrap();
