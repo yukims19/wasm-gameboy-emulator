@@ -24,6 +24,7 @@ const ScreenPixelNumPerRow: usize = 160;
 const ImageDataLengthPerPixel: usize = 4; //r,g,b,a
 const PixelNumPerTile: usize = 64;
 const PixelNumPerTileRow: usize = 8;
+const PixelNumPerTileCol: usize = 8;
 const BackgroundPixelNumPerRow: usize = 256;
 
 #[macro_use]
@@ -245,7 +246,7 @@ impl Canvases {
 
             let tile_bytes = &char_map_vec[tile_start_idx..tile_end_idx];
             for i in (0..tile_bytes.len()).step_by(BYTES_PER_8_PIXEL) {
-                let background_y = (idx / 32) + i;
+                let background_y = (idx / 32) * PixelNumPerTileCol + i / BYTES_PER_8_PIXEL;
                 let low_bits = BitVec::from_bytes(&[tile_bytes[i]]);
                 let high_bits = BitVec::from_bytes(&[tile_bytes[i + 1]]);
 
