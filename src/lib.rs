@@ -84,9 +84,7 @@ impl Canvases {
         // }
 
         let background_map_1 = gameboy.background_map_1();
-
-        //TODO: need to check which charmap is used
-        let char_map_vec = gameboy.memory[0x8000..0x9000].to_vec();
+        let char_map_vec = gameboy.bg_window_char_map_bytes();
         let mut char_map_tiles_bytes = Vec::new();
 
         //Get Tiles
@@ -147,8 +145,6 @@ impl Canvases {
         }
 
         info!("Rust draw background");
-
-        self.draw_screen(gameboy);
     }
 
     pub fn update_char_map_canvas(&mut self, gameboy: &mut Gameboy) {
@@ -185,52 +181,15 @@ impl Canvases {
         self.update_char_map_canvas_last_data = image_source;
     }
 
-    pub fn draw_screen(&self, gameboy_inst: &mut Gameboy) {
-        if !gameboy_inst.is_vblank() {
+    pub fn draw_screen_from_memory(&self, gameboy: &mut Gameboy) {
+        if !gameboy.is_vblank() {
             return;
         }
-        info!("Rust draw screen");
 
-        //Clear context
-        self.screen_canvas.clear_rect(
-            0.0,
-            0.0,
-            self.screen_canvas.canvas().unwrap().width() as f64,
-            self.screen_canvas.canvas().unwrap().height() as f64,
-        );
-
-        let is_lcd_enable = gameboy_inst.is_lcd_display_enable();
+        let is_lcd_enable = gameboy.is_lcd_display_enable();
         if !is_lcd_enable {
             return;
         }
-
-        let x = gameboy_inst.get_scroll_x();
-        let y = gameboy_inst.get_scroll_y();
-
-        let image_data = self
-            .background_canvas
-            .get_image_data(
-                x as f64,
-                y as f64,
-                PIXEL_ZOOM as f64 * SCREEN_WIDTH as f64,
-                PIXEL_ZOOM as f64 * SCREEN_HEIGHT as f64,
-            )
-            .unwrap();
-
-        self.screen_canvas
-            .put_image_data(&image_data, 0.0, 0.0)
-            .unwrap();
-    }
-
-    pub fn draw_screen_from_memory(&self, gameboy: &mut Gameboy) {
-        // if !gameboy_inst.is_vblank() {
-        //     return;
-        // }
-
-        let is_lcd_enable = gameboy.is_lcd_display_enable();
-        // if !is_lcd_enable {
-        //     return;
-        // }
 
         let background_map_1 = gameboy.background_map_1();
         let char_map_vec = gameboy.bg_window_char_map_bytes();
@@ -258,7 +217,6 @@ impl Canvases {
                         (true, true) => [0, 0, 0, 255],
                     };
 
-                    // info!("idx: {}, i: {}, y:{}", idx, i, background_y);
                     background_pixels_row_rgba[background_y].push(r);
                     background_pixels_row_rgba[background_y].push(g);
                     background_pixels_row_rgba[background_y].push(b);
@@ -270,7 +228,6 @@ impl Canvases {
 
         let background_pixels_rgba_vec: Vec<u8> = background_pixels_row_rgba.concat();
 
-        info!("1111111111");
         //Get screen bytes from background bytes
         let scroll_x = gameboy.get_scroll_x() as usize;
         let scroll_y = gameboy.get_scroll_y() as usize;
@@ -288,12 +245,9 @@ impl Canvases {
                 + x * ImageDataLengthPerPixel;
             let end = start + ScreenPixelNumPerRow * ImageDataLengthPerPixel;
 
-            info!("2222222");
-            info!("x: {}, y: {}, start: {}, end: {}", x, y, start, end);
             let screen_row_bytes = &background_pixels_rgba_vec[start..end];
             screen_pixels_rgba_vec.extend_from_slice(&screen_row_bytes);
         }
-        info!("333333");
 
         //####Drawing screen
         self.screen_canvas.clear_rect(
@@ -308,7 +262,6 @@ impl Canvases {
             let end_row = start_row + ScreenPixelNumPerRow * ImageDataLengthPerPixel;
             let clamped_image_source =
                 wasm_bindgen::Clamped(&mut screen_pixels_rgba_vec[start_row..end_row]);
-            info!("length: {:?}", clamped_image_source.len());
 
             let pixel_row_image_data =
                 web_sys::ImageData::new_with_u8_clamped_array_and_sh(clamped_image_source, 160, 1)
@@ -2542,13 +2495,11 @@ impl Gameboy {
         self.memory[0xff40] & 0x80 == 0x80
     }
 
-    pub fn window_tile_map(&self) -> *const u8 {
+    pub fn window_map(&self) -> Vec<u8> {
         if self.memory[0xff40] & 0x40 == 0x40 {
-            let window_tile_map = self.memory[0x9c00..0xa000].to_vec();
-            window_tile_map.as_ptr()
+            return self.memory[0x9c00..0xa000].to_vec();
         } else {
-            let window_tile_map = self.memory[0x9800..0x9c00].to_vec();
-            window_tile_map.as_ptr()
+            return self.memory[0x9800..0x9c00].to_vec();
         }
     }
 
@@ -2556,13 +2507,11 @@ impl Gameboy {
         self.memory[0xff40] & 0x20 == 0x20
     }
 
-    pub fn bg_window_tile_data(&self) -> *const u8 {
+    pub fn bg_window_char_map_bytes(&self) -> Vec<u8> {
         if self.memory[0xff40] & 0x10 == 0x10 {
-            let bg_window_tile_data = self.memory[0x8000..0x9000].to_vec();
-            bg_window_tile_data.as_ptr()
+            return self.memory[0x8000..0x9000].to_vec();
         } else {
-            let bg_window_tile_data = self.memory[0x8800..0x9800].to_vec();
-            bg_window_tile_data.as_ptr()
+            return self.memory[0x8800..0x9800].to_vec();
         }
     }
 
@@ -2883,11 +2832,15 @@ impl Gameboy {
                 let start_draw_bg_time = performance.now();
                 canvases.render_background_map_1_as_image_data(self);
                 let end_draw_bg_time = performance.now();
+                let start_draw_screen_time = performance.now();
+                canvases.draw_screen_from_memory(self);
+                let end_draw_screen_time = performance.now();
                 let end_draw_time = performance.now();
                 info!(
-                    "Drawing time: char={:?}ms, bg={:?}ms, total={:?}ms",
+                    "Drawing time: char={:?}ms, bg={:?}ms, screen={:?}ms, total={:?}ms",
                     end_draw_char_time - start_draw_char_time,
                     end_draw_bg_time - start_draw_bg_time,
+                    end_draw_screen_time - start_draw_screen_time,
                     end_draw_time - start_draw_time
                 );
                 self.should_draw = false;
@@ -3088,7 +3041,7 @@ impl Gameboy {
     }
 
     pub fn char_map_to_image_data(&mut self) -> Vec<u8> {
-        let pixels_vec = self.memory[0x8000..0x9000].to_vec();
+        let pixels_vec = self.bg_window_char_map_bytes();
         let new_image_data = pixels_to_image_data(pixels_vec);
 
         self.image_data = new_image_data.clone();
