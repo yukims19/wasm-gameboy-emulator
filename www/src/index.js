@@ -194,8 +194,12 @@ var render = function render(gameboy) {
       ly: ly,
       timer: timer,
       cpuClock,
-      onDraw: () => {
-        console.log('on draw');
+      onDrawScreen: () => {
+        console.log('on draw screen');
+        canvases.draw_screen_from_memory(gameboy);
+      },
+      onDrawCharMap: () => {
+        console.log('on draw charmap');
         canvases.update_char_map_canvas(gameboy);
       },
       onClear: () => {
