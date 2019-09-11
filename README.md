@@ -1,3 +1,4 @@
+
 <div align="center">
 
   <h1><code>wasm-pack-template</code></h1>
@@ -67,3 +68,6 @@ wasm-pack publish
   for logging panic messages to the developer console.
 * [`wee_alloc`](https://github.com/rustwasm/wee_alloc), an allocator optimized
   for small code size.
+
+# Auto-build npm package on Rust change
+`nodemon --watch src/ -e rs --exec "wasm-pack build"`

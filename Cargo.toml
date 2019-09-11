@@ -21,6 +21,7 @@ math ="0.0.2"
 console_log = { version = "0.1", optional = true }
 serde = "^1.0.59"
 serde_derive = "^1.0.59"
+wasm-bindgen-futures = "0.3.27"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -51,6 +52,8 @@ features = [
   'Element',
   'HtmlCanvasElement',
   'Window',
+  'Performance',
+  'PerformanceTiming'
 ]
 
 [dev-dependencies]
