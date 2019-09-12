@@ -16,16 +16,10 @@ const SCREEN_WIDTH: u32 = 160;
 const SCREEN_HEIGHT: u32 = 144;
 const BYTES_PER_TILE: usize = 16;
 const BYTES_PER_8_PIXEL: usize = 2;
-const BackgroundTileNumberPerRow: usize = 32;
-const BytesPerTile: usize = 16;
-const BytesPerTileRow: usize = 2;
-const ScreenTileNumPerRow: usize = 20;
-const ScreenPixelNumPerRow: usize = 160;
-const ImageDataLengthPerPixel: usize = 4; //r,g,b,a
-const PixelNumPerTile: usize = 64;
-const PixelNumPerTileRow: usize = 8;
-const PixelNumPerTileCol: usize = 8;
-const BackgroundPixelNumPerRow: usize = 256;
+const SCREEN_PIXEL_NUM_PER_ROW: usize = 160;
+const IMAGE_DATA_LENGTH_PER_PIXEL: usize = 4; //r,g,b,a
+const PIXEL_NUM_PER_TILE_COL: usize = 8;
+const BACKGROUND_PIXEL_NUM_PER_ROW: usize = 256;
 
 #[macro_use]
 extern crate serde_derive;
@@ -205,7 +199,7 @@ impl Canvases {
 
             let tile_bytes = &char_map_vec[tile_start_idx..tile_end_idx];
             for i in (0..tile_bytes.len()).step_by(BYTES_PER_8_PIXEL) {
-                let background_y = (idx / 32) * PixelNumPerTileCol + i / BYTES_PER_8_PIXEL;
+                let background_y = (idx / 32) * PIXEL_NUM_PER_TILE_COL + i / BYTES_PER_8_PIXEL;
                 let low_bits = BitVec::from_bytes(&[tile_bytes[i]]);
                 let high_bits = BitVec::from_bytes(&[tile_bytes[i + 1]]);
 
@@ -236,14 +230,10 @@ impl Canvases {
         for screen_y in 0..144 {
             let x = scroll_x;
             let y = scroll_y + screen_y;
-            let tile_row_num = y / 8;
-            let tile_col_num = x / 8;
-            let row_reminder = y % 8;
-            let col_reminder = x % 8;
 
-            let start = y * BackgroundPixelNumPerRow * ImageDataLengthPerPixel
-                + x * ImageDataLengthPerPixel;
-            let end = start + ScreenPixelNumPerRow * ImageDataLengthPerPixel;
+            let start = y * BACKGROUND_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL
+                + x * IMAGE_DATA_LENGTH_PER_PIXEL;
+            let end = start + SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
 
             let screen_row_bytes = &background_pixels_rgba_vec[start..end];
             screen_pixels_rgba_vec.extend_from_slice(&screen_row_bytes);
@@ -258,8 +248,8 @@ impl Canvases {
         );
 
         for screen_y in 0..144 {
-            let start_row = screen_y * ScreenPixelNumPerRow * ImageDataLengthPerPixel;
-            let end_row = start_row + ScreenPixelNumPerRow * ImageDataLengthPerPixel;
+            let start_row = screen_y * SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
+            let end_row = start_row + SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
             let clamped_image_source =
                 wasm_bindgen::Clamped(&mut screen_pixels_rgba_vec[start_row..end_row]);
 
@@ -2788,7 +2778,7 @@ impl Gameboy {
             return;
         }
 
-        let mut canvases = Canvases::new();
+        let canvases = Canvases::new();
 
         //#ff10-ff14 is responsible for sound channel 1
         let pre_ff10 = self.memory[0xff10];
@@ -2808,7 +2798,7 @@ impl Gameboy {
         let mut last_cycle_count = 0;
         let cycle_log_target = 50_000;
         let mut last_cycle_ly = 0;
-        let mut time_last_draw = performance.now();
+        let time_last_draw = performance.now();
 
         loop {
             // if self.cpu_paused {
@@ -2827,10 +2817,10 @@ impl Gameboy {
                 last_cycle_ly = self.total_cycle();
                 let start_draw_time = performance.now();
                 let start_draw_char_time = performance.now();
-                canvases.update_char_map_canvas(self);
+                // canvases.update_char_map_canvas(self);
                 let end_draw_char_time = performance.now();
                 let start_draw_bg_time = performance.now();
-                canvases.render_background_map_1_as_image_data(self);
+                // canvases.render_background_map_1_as_image_data(self);
                 let end_draw_bg_time = performance.now();
                 let start_draw_screen_time = performance.now();
                 canvases.draw_screen_from_memory(self);
