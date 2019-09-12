@@ -72,12 +72,12 @@ impl Canvases {
         canvases
     }
 
-    pub fn render_background_map_1_as_image_data(&mut self, gameboy: &mut Gameboy) {
+    pub fn render_background_map_as_image_data(&mut self, gameboy: &mut Gameboy) {
         // if !gameboy.is_vblank() {
         //     return;
         // }
 
-        let background_map_1 = gameboy.background_map_1();
+        let background_map = gameboy.bg_map();
         let char_map_vec = gameboy.bg_window_char_map_bytes();
         let mut char_map_tiles_bytes = Vec::new();
 
@@ -119,7 +119,7 @@ impl Canvases {
         let mut x = 0;
         let mut y = 0;
 
-        for ele in background_map_1 {
+        for ele in background_map {
             // Generate Tile Image data
             let tile_bytes = &mut char_map_tiles_bytes[ele as usize];
             let clamped_image_source = wasm_bindgen::Clamped(&mut tile_bytes[..]);
@@ -185,7 +185,7 @@ impl Canvases {
             return;
         }
 
-        let background_map_1 = gameboy.background_map_1();
+        let background_map = gameboy.bg_map();
         let char_map_vec = gameboy.bg_window_char_map_bytes();
 
         //Generate background bytes from char map
@@ -193,7 +193,7 @@ impl Canvases {
         background_pixels_row_rgba.resize(256, Vec::new());
 
         let mut idx = 0;
-        for ele in background_map_1 {
+        for ele in background_map {
             let tile_start_idx = ele as usize * BYTES_PER_TILE;
             let tile_end_idx = tile_start_idx + BYTES_PER_TILE;
 
@@ -2505,13 +2505,11 @@ impl Gameboy {
         }
     }
 
-    pub fn bg_tile_map(&self) -> *const u8 {
+    pub fn bg_map(&self) -> Vec<u8> {
         if self.memory[0xff40] & 0x08 == 0x08 {
-            let bg_tile_map = self.memory[0x9c00..0xa000].to_vec();
-            bg_tile_map.as_ptr()
+            return self.memory[0x9c00..0xa000].to_vec();
         } else {
-            let bg_tile_map = self.memory[0x9800..0x9c00].to_vec();
-            bg_tile_map.as_ptr()
+            return self.memory[0x9800..0x9c00].to_vec();
         }
     }
 

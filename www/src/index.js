@@ -208,7 +208,7 @@ var render = function render(gameboy) {
       },
       onDrawBackground: () => {
         console.log('on Draw back');
-        canvases.render_background_map_1_as_image_data(gameboy);
+        canvases.render_background_map_as_image_data(gameboy);
       },
       onPlaySound: () => {
         playSound(gameboy);
