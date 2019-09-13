@@ -2751,7 +2751,7 @@ impl Gameboy {
         self.registers
             .execute_instruction(instruction, &mut self.memory);
         self.add_cycles(instruction, CycleRegister::CpuCycle);
-        self.cycle_based_vram_operation(instruction);
+        self.cycle_based_gpu_operation(instruction);
 
         if self.break_points.contains(&self.registers.pc) {
             self.is_running = false;
@@ -2789,7 +2789,7 @@ impl Gameboy {
             || pre_ff14 != after_ff14
     }
 
-    pub fn cycle_based_vram_operation(&mut self, instruction: u8) {
+    pub fn cycle_based_gpu_operation(&mut self, instruction: u8) {
         let vram_cycle_per_ly_inc = 456;
 
         if self.is_lcd_display_enable() {
@@ -2826,7 +2826,7 @@ impl Gameboy {
             self.registers
                 .execute_instruction(instruction, &mut self.memory);
             self.add_cycles(instruction, CycleRegister::CpuCycle);
-            self.cycle_based_vram_operation(instruction);
+            self.cycle_based_gpu_operation(instruction);
 
             if self.break_points.contains(&self.registers.pc) {
                 self.is_running = false;
@@ -2933,7 +2933,7 @@ impl Gameboy {
             self.registers
                 .execute_instruction(instruction, &mut self.memory);
             self.add_cycles(instruction, CycleRegister::CpuCycle);
-            self.cycle_based_vram_operation(instruction);
+            self.cycle_based_gpu_operation(instruction);
 
             if self.break_points.contains(&self.registers.pc) {
                 self.is_running = false;
