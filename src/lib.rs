@@ -33,6 +33,13 @@ enum CycleRegister {
     VramCycle,
 }
 
+enum LcdMode {
+    Vblank,
+    Hblank,
+    SearchOAM,
+    DataTransfer,
+}
+
 #[wasm_bindgen]
 struct Canvases {
     background_canvas: web_sys::CanvasRenderingContext2d,
@@ -2477,6 +2484,7 @@ impl Gameboy {
         self.memory[0xff26] & 0b00000001 == 0b10000001
     }
 
+    //##LCD Control Register $0xff40
     pub fn get_lcd(&self) -> u8 {
         self.memory[0xff40]
     }
@@ -2511,6 +2519,69 @@ impl Gameboy {
         } else {
             return self.memory[0x9800..0x9c00].to_vec();
         }
+    }
+
+    //##LCD Status - STAT $0xff41
+    pub fn ly_conincidence_interrupt_enabled(&self) -> bool {
+        self.memory[0xff41] & 0b01000000 == 0b01000000
+    }
+
+    pub fn oam_interrupt_enabled(&self) -> bool {
+        self.memory[0xff41] & 0b00100000 == 0b00100000
+    }
+
+    pub fn vblank_interrupt_enabled(&self) -> bool {
+        self.memory[0xff41] & 0b00010000 == 0b00010000
+    }
+
+    pub fn hblank_interrupt_enabled(&self) -> bool {
+        self.memory[0xff41] & 0b00001000 == 0b00001000
+    }
+
+    pub fn is_conincidence_flag_on(&self) -> bool {
+        self.memory[0xff41] & 0b00000100 == 0b00000100
+    }
+
+    fn lcd_mode(&self) -> LcdMode {
+        let mode_flag = self.memory[0xff41] & 0b00000011;
+        match mode_flag {
+            0 => LcdMode::Hblank,
+            1 => LcdMode::Vblank,
+            2 => LcdMode::SearchOAM,
+            3 => LcdMode::DataTransfer,
+            _ => {
+                info!("Invalide lcd mode value");
+                std::process::exit(1)
+            }
+        }
+    }
+
+    fn set_lcd_mode_with_gpu_cycle(&mut self, gpu_cycle: u16) {
+        //##This function is GPU emulation. Mode Flag is read only for gameboy
+        let lcdc = self.memory[0xff41].clone();
+        let mut bv = BitVec::from_bytes(&[lcdc]);
+        if gpu_cycle >= 0 && gpu_cycle < 80 {
+            bv.set(7, false);
+            bv.set(6, true);
+        } else if gpu_cycle >= 80 && gpu_cycle < 172 {
+            bv.set(7, true);
+            bv.set(6, true);
+        } else if gpu_cycle >= 172 {
+            bv.set(7, false);
+            bv.set(6, false);
+        }
+
+        self.memory[0xff41] = bv.to_bytes()[0];
+    }
+
+    fn set_lcd_mode_to_vblank(&mut self) {
+        //##This function is GPU emulation. Mode Flag is read only for gameboy
+        let lcdc = self.memory[0xff41].clone();
+        let mut bv = BitVec::from_bytes(&[lcdc]);
+        bv.set(7, true);
+        bv.set(6, false);
+
+        self.memory[0xff41] = bv.to_bytes()[0];
     }
 
     pub fn is_sprite_display_enable(&self) -> bool {
@@ -2723,11 +2794,14 @@ impl Gameboy {
 
         if self.is_lcd_display_enable() {
             self.add_cycles(instruction, CycleRegister::VramCycle);
+            self.set_lcd_mode_with_gpu_cycle(self.vram_cycle_num);
             if self.vram_cycle_num >= vram_cycle_per_ly_inc {
                 self.inc_ly();
                 //Resetting vram cycle here
                 self.set_vram_cycle(self.vram_cycle_num - vram_cycle_per_ly_inc);
             }
+        } else {
+            self.set_lcd_mode_to_vblank();
         }
     }
 
