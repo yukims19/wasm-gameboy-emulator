@@ -2048,6 +2048,7 @@ pub struct Gameboy {
     break_points: Vec<u16>,
     memory: Vec<u8>,
     cpu_paused: bool,
+    ime: bool, //Interrupt Master Enable Flag
 }
 
 #[wasm_bindgen]
@@ -2084,6 +2085,10 @@ impl Gameboy {
 
     pub fn ly(&self) -> u8 {
         self.memory[0xff44]
+    }
+
+    pub fn ime(&self) -> bool {
+        self.ime
     }
 
     pub fn is_running(&self) -> bool {
@@ -2168,11 +2173,19 @@ impl Gameboy {
     }
 
     pub fn request_vblank(&mut self) {
+        info!("request vblank");
         self.should_draw = true;
-        self.memory[0xff0f] = self.memory[0xff0f] | 0b1000000
+        self.memory[0xff0f] = self.memory[0xff0f] | 0b1000000;
+
+        if self.ime() && self.vblank_interrupt_enabled() {
+            self.registers
+                .push_stack(&mut self.memory, self.registers.pc);
+            self.registers.set_pc(0x40);
+        }
     }
 
     pub fn disable_vblank(&mut self) {
+        info!("disable vblank");
         self.memory[0xff0f] = self.memory[0xff0f] ^ 0b1000000
     }
 
