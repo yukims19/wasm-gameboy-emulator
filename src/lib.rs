@@ -2049,7 +2049,7 @@ pub struct Gameboy {
     break_points: Vec<u16>,
     memory: Vec<u8>,
     cpu_paused: bool,
-    ime: bool, //Interrupt Master Enable Flag
+    cartridge: Vec<u8>,
 }
 
 #[wasm_bindgen]
@@ -2891,9 +2891,27 @@ impl Gameboy {
         let time_last_draw = performance.now();
 
         loop {
-            // if self.cpu_paused {
-            //     break;
-            // }
+            if self.cpu_paused || !self.is_running {
+                break;
+            }
+
+            let instruction = self.memory[self.registers.pc as usize];
+
+            // FIXME: Only do this on first time through when the bootrom unmaps itself
+            if self.registers.pc == 0xfe {
+                info!("PC: 0xfe, instruction: {:x}", instruction);
+                if (instruction == 0x00e0) {
+                    info!("PC: 0xfe, instruction: e0, reg a: {:?}", self.registers.a);
+                    // && self.registers.a == 1
+                    {
+                        info!("Unmapping bootrom...");
+                        for idx in 0x00..0xff {
+                            info!("\t{:?} -> {:?}", idx, self.cartridge[idx]);
+                            self.memory[idx] = self.cartridge[idx];
+                        }
+                    }
+                }
+            }
 
             let ly = self.ly();
 
@@ -3003,7 +3021,7 @@ impl Gameboy {
             n: false,
             h: false,
             c: false,
-            interuption: false,
+            ime: true,
         };
 
         let mut registers = Registers {
@@ -3067,6 +3085,7 @@ impl Gameboy {
             cpu_clock: 0,
             cpu_paused: false,
             should_draw: false,
+            cartridge: cartridge_content.to_vec(),
         }
     }
 
@@ -3140,6 +3159,8 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
 
     let pixel_byte_vec = full_memory[0x8000..0x8800].to_vec();
     let image_data = pixels_to_image_data(pixel_byte_vec.clone());
+    let cartridge_content = include_bytes!("cpu_instrs.gb");
+    let cartridge = &cartridge_content[0x0..(cartridge_content.len())];
 
     let gameboy = Gameboy {
         // From serialized
@@ -3160,6 +3181,7 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
         should_draw: false,
         is_running: false,
         cpu_paused: false,
+        cartridge: cartridge.to_vec(),
     };
 
     gameboy
