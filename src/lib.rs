@@ -530,11 +530,11 @@ impl Channel {
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 struct Flag {
-    z: bool, //(0x80) if zero
-    n: bool, //(0x40) if subtraction
-    h: bool, //(0x20) if the lower half of the byte overflowed past 15
-    c: bool, //(0x10) if result over 255 or under 0
-    interuption: bool,
+    z: bool,   //(0x80) if zero
+    n: bool,   //(0x40) if subtraction
+    h: bool,   //(0x20) if the lower half of the byte overflowed past 15
+    c: bool,   //(0x10) if result over 255 or under 0
+    ime: bool, //Interrupt Master Enable Flag
 }
 
 impl Flag {
@@ -545,8 +545,8 @@ impl Flag {
         self.c = c;
     }
 
-    fn set_interuption(&mut self, interupt: bool) {
-        self.interuption = interupt
+    fn set_ime(&mut self, interupt_enabled: bool) {
+        self.ime = interupt_enabled
     }
 }
 
@@ -1209,13 +1209,14 @@ impl Registers {
                 }
 
                 0x0D9 => {
+                    info!(">>>>>>>>..RETI");
                     //RETI
                     // info!("0x0DD -> 0x0D9, sp:{:x}", self.sp);
                     //TODO: stack set & pop
                     let address = self.pop_stack(self.sp, memory);
                     self.set_pc(address);
                     //Endable interrupts
-                    self.f.set_interuption(true);
+                    self.f.set_ime(true);
                     info!("enable interrupts");
                     std::process::exit(1)
                 }
@@ -1235,7 +1236,7 @@ impl Registers {
             0x0f3 => {
                 // DI
                 //Interrupts are disabled after instruction after DI is executed.
-                self.f.set_interuption(false);
+                self.f.set_ime(false);
                 self.inc_pc();
             }
 
@@ -2088,7 +2089,7 @@ impl Gameboy {
     }
 
     pub fn ime(&self) -> bool {
-        self.ime
+        self.registers.f.ime
     }
 
     pub fn is_running(&self) -> bool {
@@ -2156,37 +2157,41 @@ impl Gameboy {
     //     */
     // }
 
-    // fn execute_interuption(&self) {
-    //     let interupt_register = self.memory[0xff0f];
-    //     if ((interupt_register & 0b00000001u8) == 0b00000001u8) {
-    //         //v_blank
-    //         self.memory[0x040]
-    //     }
-    //     // lcd => self.memory[0x048],
-    //     // timer => self.memory[0x50],
-    //     // serial => self.memory[0x58],
-    //     // joypad => self.memory[0x60],
-    // }
+    fn execute_interuption(&mut self) {
+        if self.registers.f.ime {
+            if self.memory[0xff0f] & 0b1000000 == 0b1000000 {
+                info!("Vblank Interuption Triggered");
+                self.registers.f.set_ime(false);
+
+                //#In Case of Vblank
+                self.memory[0xff0f] = self.memory[0xff0f] ^ 0b1000000;
+                self.registers
+                    .push_stack(&mut self.memory, self.registers.pc);
+                self.registers.set_pc(0x40);
+            }
+        }
+
+        // v_blank => self.pc[0x040]
+        // lcd => self.memory[0x048],
+        // timer => self.memory[0x50],
+        // serial => self.memory[0x58],
+        // joypad => self.memory[0x60],
+    }
 
     pub fn set_vram_cycle(&mut self, value: u16) {
         self.vram_cycle_num = value
     }
 
     pub fn request_vblank(&mut self) {
-        info!("request vblank");
+        info!(
+            "request vblank, ime: {}, v interupt enabled: {}",
+            self.registers.f.ime,
+            self.vblank_interrupt_enabled()
+        );
         self.should_draw = true;
         self.memory[0xff0f] = self.memory[0xff0f] | 0b1000000;
 
-        if self.ime() && self.vblank_interrupt_enabled() {
-            self.registers
-                .push_stack(&mut self.memory, self.registers.pc);
-            self.registers.set_pc(0x40);
-        }
-    }
-
-    pub fn disable_vblank(&mut self) {
-        info!("disable vblank");
-        self.memory[0xff0f] = self.memory[0xff0f] ^ 0b1000000
+        // self.execute_interuption();
     }
 
     //LCDC Y-Coordinate : LY
