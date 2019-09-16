@@ -56,7 +56,7 @@ var render = function render(gameboy) {
   const next = opNum => {
     if (gameboy.is_running()) {
       const startTime = Date.now();
-      gameboy.execute_opcodes_no_stop();
+      gameboy.execute_opcodes_no_stop(opNum ? opNum : 15000000);
       // if (gameboy.is_vblank()) {
       //   canvases.update_char_map_canvas(gameboy);
       //   canvases.render_background_map_1_as_image_data(gameboy);
@@ -86,6 +86,14 @@ var render = function render(gameboy) {
   var nextPc = gameboy.get_pc();
 
   const onStep = () => {
+    console.log('onStep');
+    gameboy.start_running();
+    next(15000000);
+    gameboy.stop_running();
+  };
+
+  const onStep1 = () => {
+    console.log('onStep1');
     gameboy.start_running();
     next(1);
     gameboy.stop_running();
@@ -106,6 +114,13 @@ var render = function render(gameboy) {
       n: gameboy.get_flag_n(),
       h: gameboy.get_flag_h(),
       c: gameboy.get_flag_c(),
+      ime: gameboy.get_flag_ime(),
+      interruptEnabledVblank: gameboy.get_interrupt_enabled_vblank(),
+      interruptEnabledLcd: gameboy.get_interrupt_enabled_lcd(),
+      interruptEnabledTimer: gameboy.get_interrupt_enabled_timer(),
+      interruptEnabledSerial: gameboy.get_interrupt_enabled_serial(),
+      interruptEnabledJoypad: gameboy.get_interrupt_enabled_joypad(),
+      halt: gameboy.cpu_paused(),
     },
   };
 
@@ -179,6 +194,7 @@ var render = function render(gameboy) {
       tick: tick,
       isPlaying: gameboy.is_running(),
       onStep: onStep,
+      onStep1: onStep1,
       onTogglePlay,
       fullMemory: memoryBytes,
       gameboy: gameboy,

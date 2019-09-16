@@ -192,6 +192,8 @@ const CPUViewer = props => {
   const {registers, pc, fullMemory, gameboy} = props;
   const pcValue = fullMemory[pc];
 
+  window.me = props;
+
   const makeRegister = (bits, name, value, isEditing, onEdit) => {
     const maxWidth = bits === 16 ? '4ch' : '2ch';
     const padding = bits === 16 ? 5 : 2;
@@ -405,6 +407,48 @@ const CPUViewer = props => {
           editingFlags.includes('c'),
           newValue => gameboy.set_flag_c(newValue),
         )}
+        {makeFlag(
+          'ime',
+          registers.flags.ime,
+          editingFlags.includes('ime'),
+          newValue => gameboy.set_ime(newValue === 'true' || newValue === '1'),
+        )}
+        {makeFlag(
+          'Vblank',
+          registers.flags.interruptEnabledVblank,
+          editingFlags.includes('Vblank'),
+          newValue => gameboy.set_ime(newValue === 'true' || newValue === '1'),
+        )}
+        {makeFlag(
+          'Lcd',
+          registers.flags.interruptEnabledLcd,
+          editingFlags.includes('Lcd'),
+          newValue => gameboy.set_ime(newValue === 'true' || newValue === '1'),
+        )}
+        {makeFlag(
+          'Timer',
+          registers.flags.interruptEnabledTimer,
+          editingFlags.includes('Timer'),
+          newValue => gameboy.set_ime(newValue === 'true' || newValue === '1'),
+        )}
+        {makeFlag(
+          'Serial',
+          registers.flags.interruptEnabledSerial,
+          editingFlags.includes('Serial'),
+          newValue => gameboy.set_ime(newValue === 'true' || newValue === '1'),
+        )}
+        {makeFlag(
+          'Joypad',
+          registers.flags.interruptEnabledJoypad,
+          editingFlags.includes('Joypad'),
+          newValue => gameboy.set_ime(newValue === 'true' || newValue === '1'),
+        )}
+        {makeFlag(
+          'Halt?',
+          registers.flags.halt,
+          editingFlags.includes('Halt'),
+          newValue => gameboy.set_ime(newValue === 'true' || newValue === '1'),
+        )}
       </tbody>
     </table>
   );
@@ -415,6 +459,7 @@ const Controls = props => {
     pc,
     fullMemory,
     onStep,
+    onStep1,
     onTogglePlay,
     isPlaying,
     isVblank,
@@ -436,6 +481,7 @@ const Controls = props => {
     <button onClick={onTogglePlay}>{isPlaying ? '❙❙' : '▶'}</button>
   );
   const stepButton = <button onClick={onStep}>{'>>'}</button>;
+  const stepButton1 = <button onClick={onStep1}>{'>> 1'}</button>;
 
   const opcodeDesc = opcode_name(pcValue);
   return (
@@ -448,6 +494,7 @@ const Controls = props => {
             <button onClick={() => onDrawCharMap()}>Draw CharMap</button>
             {toggleButton}
             {stepButton}
+            {stepButton1}
           </th>
         </tr>
         <tr>
@@ -556,6 +603,7 @@ const Debugger = props => {
           onDrawBackground={props.onDrawBackground}
           onPlaySound={props.onPlaySound}
           onStep={props.onStep}
+          onStep1={props.onStep1}
           onTogglePlay={props.onTogglePlay}
           isPlaying={props.isPlaying}
           pc={props.pc}
