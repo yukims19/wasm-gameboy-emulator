@@ -2678,6 +2678,30 @@ impl Gameboy {
         self.registers.f.c
     }
 
+    pub fn get_flag_ime(&self) -> bool {
+        self.registers.f.ime
+    }
+
+    pub fn get_interrupt_enabled_vblank(&self) -> bool {
+        self.memory[0xffff] & 0b1000000 == 0b1000000
+    }
+
+    pub fn get_interrupt_enabled_lcd(&self) -> bool {
+        self.memory[0xffff] & 0b0100000 == 0b0100000
+    }
+
+    pub fn get_interrupt_enabled_timer(&self) -> bool {
+        self.memory[0xffff] & 0b00100000 == 0b00100000
+    }
+
+    pub fn get_interrupt_enabled_serial(&self) -> bool {
+        self.memory[0xffff] & 0b0001000 == 0b0001000
+    }
+
+    pub fn get_interrupt_enabled_joypad(&self) -> bool {
+        self.memory[0xffff] & 0b0000100 == 0b0000100
+    }
+
     // Setters
     pub fn set_a(&mut self, value: u8) -> u8 {
         self.registers.a = value;
@@ -2828,6 +2852,8 @@ impl Gameboy {
         //     return;
         // }
 
+        let mut canvases = Canvases::new();
+
         //ff10-ff14 is responsible for sound channel 1
         let pre_ff10 = self.memory[0xff10];
         let pre_ff11 = self.memory[0xff11];
@@ -2846,6 +2872,12 @@ impl Gameboy {
             self.add_cycles(instruction, CycleRegister::CpuCycle);
             self.cycle_based_gpu_operation(instruction);
 
+            if self.is_lcd_display_enable() && self.should_draw {
+                canvases.update_char_map_canvas(self);
+                canvases.render_background_map_as_image_data(self);
+                canvases.draw_screen_from_memory(self);
+            }
+
             if self.break_points.contains(&self.registers.pc) {
                 self.is_running = false;
             }
@@ -2863,8 +2895,8 @@ impl Gameboy {
         }
     }
 
-    pub fn execute_opcodes_no_stop(&mut self) {
-        if self.cpu_paused {
+    pub fn execute_opcodes_no_stop(&mut self, count: usize) {
+        if self.cpu_paused || !self.is_running {
             return;
         }
 
@@ -2986,13 +3018,17 @@ impl Gameboy {
             //     }
             // }
 
-            if self.total_cycle() - start_cycle_count > 15_000_000 {
+            // self.execute_interuption();
+            //Check IME -> set when return from interuption
+
+            // info!("count: {}", count);
+            if self.total_cycle() - start_cycle_count > count {
                 let elapsed = performance.now() - start_time;
-                info!(
-                    "Executed {:?} cycles in {:?}ms",
-                    self.total_cycle(),
-                    elapsed
-                );
+                // info!(
+                //     "Executed {:?} cycles in {:?}ms",
+                //     self.total_cycle(),
+                //     elapsed
+                // );
                 break;
             }
         }
