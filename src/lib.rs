@@ -268,7 +268,11 @@ impl Canvases {
                 .unwrap();
         }
 
-        info!("Rust draw screen");
+        info!(
+            "Rust draw screen. x: {}, y:{}",
+            gameboy.get_scroll_x(),
+            gameboy.get_scroll_y()
+        );
     }
 
     pub fn make_canvas(
@@ -830,6 +834,7 @@ impl Registers {
             }
             0x0C9 => {
                 //RET
+                info!(">>>>>>>RET Here!!");
                 let address = self.pop_stack(self.sp, memory);
                 self.set_pc(address);
             }
@@ -1541,6 +1546,7 @@ impl Registers {
                 //Implementation escalated to Gameboy. Checking at fn execute_opcodes()
                 println!("NEED TO IMPLEMENT HALT FUNCTION FOR 0x076");
                 self.inc_pc();
+                std::process::exit(1);
             }
 
             0x079 => {
@@ -2201,7 +2207,7 @@ impl Gameboy {
 
         if self.memory[0xff44] == ly_max {
             self.memory[0xff44] = 0;
-            self.disable_vblank();
+        // self.disable_vblank();
         } else {
             self.memory[0xff44] = self.memory[0xff44] + 1;
             if self.memory[0xff44] == vblank_start {
@@ -2575,7 +2581,7 @@ impl Gameboy {
     }
 
     fn set_lcd_mode_with_gpu_cycle(&mut self, gpu_cycle: u16) {
-        //##This function is GPU emulation. Mode Flag is read only for gameboy
+        // //##This function is GPU emulation. Mode Flag is read only for gameboy
         let lcdc = self.memory[0xff41].clone();
         let mut bv = BitVec::from_bytes(&[lcdc]);
         if gpu_cycle >= 0 && gpu_cycle < 80 {
@@ -2590,6 +2596,7 @@ impl Gameboy {
         }
 
         self.memory[0xff41] = bv.to_bytes()[0];
+        // info!("LCD Status: {:b}", self.memory[0xff41]);
     }
 
     fn set_lcd_mode_to_vblank(&mut self) {
@@ -2966,13 +2973,13 @@ impl Gameboy {
                 canvases.draw_screen_from_memory(self);
                 let end_draw_screen_time = performance.now();
                 let end_draw_time = performance.now();
-                info!(
-                    "Drawing time: char={:?}ms, bg={:?}ms, screen={:?}ms, total={:?}ms",
-                    end_draw_char_time - start_draw_char_time,
-                    end_draw_bg_time - start_draw_bg_time,
-                    end_draw_screen_time - start_draw_screen_time,
-                    end_draw_time - start_draw_time
-                );
+                // info!(
+                //     "Drawing time: char={:?}ms, bg={:?}ms, screen={:?}ms, total={:?}ms",
+                //     end_draw_char_time - start_draw_char_time,
+                //     end_draw_bg_time - start_draw_bg_time,
+                //     end_draw_screen_time - start_draw_screen_time,
+                //     end_draw_time - start_draw_time
+                // );
                 self.should_draw = false;
                 let now = performance.now();
                 let elapsed = now - time_last_draw;
@@ -2997,7 +3004,6 @@ impl Gameboy {
                 );
             }
 
-            let instruction = self.memory[self.registers.pc as usize];
             self.registers
                 .execute_instruction(instruction, &mut self.memory);
             self.add_cycles(instruction, CycleRegister::CpuCycle);
@@ -3074,7 +3080,7 @@ impl Gameboy {
         };
 
         let boot_rom_content = include_bytes!("boot-rom.gb");
-        let cartridge_content = include_bytes!("mario.gb");
+        let cartridge_content = include_bytes!("cpu_instrs.gb");
 
         let _head = boot_rom_content;
         let _body = &cartridge_content[0x100..(cartridge_content.len())];
@@ -3084,12 +3090,13 @@ impl Gameboy {
         let head = boot_rom_content;
         let body = &cartridge_content[0x100..(cartridge_content.len())];
 
-        let mut full_memory: Vec<u8> = Vec::with_capacity(full_memory_capacity);
+        let mut full_memory: Vec<u8> = Vec::new();
 
         full_memory.extend_from_slice(head);
         full_memory.extend_from_slice(body);
 
         full_memory.resize_with(full_memory_capacity, || 0);
+        info!("memory size: {:x}", full_memory.len());
 
         // Vblank
         // full_memory[0xff44] = 0x90;
