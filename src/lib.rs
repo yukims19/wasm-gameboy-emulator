@@ -834,10 +834,10 @@ impl Registers {
             }
             0x0C9 => {
                 //RET
-                info!(">>>>>>>RET Here!!");
                 let address = self.pop_stack(self.sp, memory);
                 self.set_pc(address);
             }
+
             0x0C5 => {
                 //PUSH BC
                 let bc_value = self.combine_two_bytes(self.b, self.c);
