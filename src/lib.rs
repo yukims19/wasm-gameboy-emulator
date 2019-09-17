@@ -1850,6 +1850,13 @@ impl Registers {
                 self.inc_pc();
             }
 
+            0x0e5 => {
+                // PUSH HL -> 16
+                let value = self.combine_two_bytes(self.h, self.l);
+                self.push_stack(memory, value);
+                self.inc_pc();
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -2426,6 +2433,7 @@ impl Gameboy {
             0x096 => 8,
             0x041 => 4,
             0x044 => 4,
+            0x0e5 => 16,
             other => {
                 println!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
