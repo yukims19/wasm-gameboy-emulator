@@ -1029,10 +1029,10 @@ impl Registers {
                     flag_z = true;
                 }
                 flag_n = false;
-                if self.check_half_carry(self.a, value) {
+                if self.check_half_carry(self.a, memory[h_l as usize]) {
                     flag_h = true
                 }
-                if self.check_carry(self.a, value) {
+                if self.check_carry(self.a, memory[h_l as usize]) {
                     flag_c = true;
                 }
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
@@ -1048,17 +1048,18 @@ impl Registers {
             0x0CE => {
                 //ADC A,#
                 let following_byte = self.following_byte(pointer, memory);
-                let value = self.f.c as u8 + following_byte;
+                let value_to_add = self.f.c as u8 + following_byte;
+                let value = self.a + value_to_add;
                 self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
                 }
                 flag_n = false;
-                if self.check_half_carry(self.a, 1u8) {
+                if self.check_half_carry(self.a, value_to_add) {
                     flag_h = true;
                 }
-                if self.check_carry(self.a, value) {
+                if self.check_carry(self.a, value_to_add) {
                     flag_c = true;
                 }
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
@@ -1115,10 +1116,10 @@ impl Registers {
                     flag_z = true;
                 }
                 flag_n = false;
-                if self.check_half_carry(self.a, value) {
+                if self.check_half_carry(self.a, self.e) {
                     flag_h = true
                 }
-                if self.check_carry(self.a, value) {
+                if self.check_carry(self.a, self.e) {
                     flag_c = true;
                 }
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
@@ -1149,17 +1150,18 @@ impl Registers {
             }
             0x088 => {
                 // ADC A,B - 4
-                let value = self.f.c as u8 + self.b;
+                let value_to_add = self.f.c as u8 + self.b;
+                let value = self.a + value_to_add;
                 self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
                 }
                 flag_n = false;
-                if self.check_half_carry(self.a, 1u8) {
+                if self.check_half_carry(self.a, value_to_add) {
                     flag_h = true;
                 }
-                if self.check_carry(self.a, value) {
+                if self.check_carry(self.a, value_to_add) {
                     flag_c = true;
                 }
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
@@ -1167,17 +1169,18 @@ impl Registers {
             }
             0x089 => {
                 // ADC A,C - 4
-                let value = self.f.c as u8 + self.c;
+                let value_to_add = self.f.c as u8 + self.c;
+                let value = self.a + value_to_add;
                 self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
                 }
                 flag_n = false;
-                if self.check_half_carry(self.a, 1u8) {
+                if self.check_half_carry(self.a, value_to_add) {
                     flag_h = true;
                 }
-                if self.check_carry(self.a, value) {
+                if self.check_carry(self.a, value_to_add) {
                     flag_c = true;
                 }
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
@@ -1201,9 +1204,7 @@ impl Registers {
                 if value == 0 {
                     flag_z = true;
                 };
-                if self.check_half_carry(self.c, 1) {
-                    flag_h = true;
-                }
+                flag_h = true;
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1451,9 +1452,7 @@ impl Registers {
                 if value == 0 {
                     flag_z = true;
                 };
-                if self.check_half_carry(self.c, 1) {
-                    flag_h = true;
-                }
+                flag_h = true;
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1570,10 +1569,10 @@ impl Registers {
                     flag_z = true;
                 }
                 flag_n = false;
-                if self.check_half_carry(self.a, value) {
+                if self.check_half_carry(self.a, self.l) {
                     flag_h = true
                 }
-                if self.check_carry(self.a, value) {
+                if self.check_carry(self.a, self.l) {
                     flag_c = true;
                 }
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
@@ -1615,10 +1614,10 @@ impl Registers {
                     flag_z = true;
                 }
                 flag_n = false;
-                if self.check_half_carry(self.a, value) {
+                if self.check_half_carry(self.a, self.c) {
                     flag_h = true
                 }
-                if self.check_carry(self.a, value) {
+                if self.check_carry(self.a, self.c) {
                     flag_c = true;
                 }
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
