@@ -2334,6 +2334,41 @@ impl Registers {
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
+
+            0x062 => {
+                //LD H,D -> 4
+                self.set_h(self.d);
+                self.inc_pc();
+            }
+
+            0x06B => {
+                //LD H,E -> 4
+                self.set_h(self.e);
+                self.inc_pc();
+            }
+
+            0x012 => {
+                //LD (DE), A
+                let d_e = self.combine_two_bytes(self.d, self.e);
+                memory[d_e as usize] = self.a;
+                self.inc_pc();
+            }
+
+            0x01C => {
+                //INC E
+                let value = self.e + 1;
+                if value == 0 {
+                    flag_z = true;
+                };
+                if self.check_half_carry(self.e, 1) {
+                    flag_h = true;
+                }
+                flag_c = self.f.c;
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.set_c(value);
+                self.inc_pc();
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -2975,8 +3010,12 @@ impl Gameboy {
             0x029 => 8,
             0x0E9 => 4,
             0x0F8 => 12,
+            0x062 => 4,
+            0x06B => 4,
+            0x012 => 8,
+            0x01C => 4,
             other => {
-                println!("Cycle calc - No opcode found for {:x}", other);
+                info!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
             }
         };
