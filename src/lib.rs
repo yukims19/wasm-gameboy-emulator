@@ -235,12 +235,22 @@ impl Canvases {
         let mut screen_pixels_rgba_vec: Vec<u8> = Vec::new();
 
         for screen_y in 0..144 {
+            //TODO: need to handle x overflow
             let x = scroll_x;
-            let y = scroll_y + screen_y;
+            let y = if scroll_y + screen_y > 255 {
+                scroll_y + screen_y - 256
+            } else {
+                scroll_y + screen_y
+            };
 
             let start = y * BACKGROUND_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL
                 + x * IMAGE_DATA_LENGTH_PER_PIXEL;
             let end = start + SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
+
+            info!(
+                "1->y:{}, scroll_y:{}, start: {:?}, end:{:?} ",
+                y, scroll_y, start, end
+            );
 
             let screen_row_bytes = &background_pixels_rgba_vec[start..end];
             screen_pixels_rgba_vec.extend_from_slice(&screen_row_bytes);
