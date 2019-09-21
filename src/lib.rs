@@ -746,42 +746,108 @@ impl Registers {
                         self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
                     }
                     0x011 => {
-                        self.c = self.c.rotate_left(1);
-                        if self.c & 0x001 == 0 {
-                            flag_c = false
-                        } else {
-                            flag_c = true
+                        //RL C -> 8
+                        let shifted_value = self.c << 1;
+                        let result = shifted_value
+                            | match self.f.c {
+                                true => 0b00000001,
+                                false => 0b00000000,
+                            };
+                        if result == 0 {
+                            flag_z = true
                         }
-                        self.c = self.c | self.f.c as u8;
+
+                        if self.c & 0b10000000 == 0b10000000 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        self.set_c(result);
                         self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
                     }
-                    other => println!("Unrecogized opcode (CB: {:x})", other),
+
+                    0x038 => {
+                        //SRL B -> 8
+                        let result = self.b >> 1;
+                        if result == 0 {
+                            flag_z = true;
+                        }
+                        if self.b & 0b00000001 == 1 {
+                            flag_c = true;
+                        }
+                        self.set_b(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x019 => {
+                        //RR C -> 8
+                        let shifted_value = self.c >> 1;
+                        let result = shifted_value
+                            | match self.f.c {
+                                true => 0b10000000,
+                                false => 0b00000000,
+                            };
+
+                        if result == 0 {
+                            flag_z = true
+                        }
+                        if self.c & 0b00000001 == 1 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        self.set_c(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                    }
+
+                    other => {
+                        info!("Unrecogized opcode (CB: {:x})", other);
+                        std::process::exit(1)
+                    }
                 }
 
                 self.inc_pc();
             }
+
             0x017 => {
                 // RLA: Rotate A left through Carry flag.
-                // 1. Note current carry-flag value:
-                let msb_is_set = 0b10000000 & self.a == 0b10000000;
-                self.a = (self.a << 1) | self.f.c as u8;
+                let shifted_value = self.a << 1;
+                let result = shifted_value
+                    | match self.f.c {
+                        true => 0b00000001,
+                        false => 0b00000000,
+                    };
 
-                flag_c = msb_is_set;
+                if result == 0 {
+                    flag_z = true
+                }
 
+                if self.a & 0b10000000 == 0b10000000 {
+                    flag_c = true
+                } else {
+                    flag_c = false
+                }
+                self.set_a(result);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
             0x020 => {
                 //JR NZ,*one byte
                 if !self.f.z {
-                    let n_param = self.following_byte(pointer, memory) as i8;
+                    let n_param = self.following_byte(pointer, memory); // as i8;
                     self.inc_pc();
-                    let destination = self.pc as i16 + n_param as i16;
+                    let destination = self.add_signed_number(self.pc, n_param as i8);
+                    // info!(
+                    //     "PC: {:b}, n: {:b}, result: {:b}",
+                    //     self.pc, n_param, destination
+                    // );
+
+                    //let destination = self.pc as i16 + n_param as i16;
                     // info!(
                     //     "PC: {:x}, n: {:x}, destination: {:x}",
                     //     self.pc, n_param, destination
                     // );
-                    self.set_pc(destination as u16);
+                    self.set_pc(destination);
                 } else {
                     self.inc_pc();
                     self.inc_pc();
@@ -790,10 +856,11 @@ impl Registers {
             0x028 => {
                 //JR Z,*
                 if self.f.z {
-                    let value = self.following_byte(pointer, memory) as i8;
+                    let value = self.following_byte(pointer, memory); // as i8;
                     self.inc_pc();
-                    let address = self.pc as i16 + value as i16;
-                    self.set_pc(address as u16);
+                    let address = self.add_signed_number(self.pc, value as i8);
+                    // let address = self.pc as i16 + value as i16;
+                    self.set_pc(address);
                 } else {
                     self.inc_pc();
                     self.inc_pc();
@@ -801,10 +868,11 @@ impl Registers {
             }
             0x018 => {
                 //JR n
-                let value = self.following_byte(pointer, memory) as i8;
+                let value = self.following_byte(pointer, memory); // as i8;
                 self.inc_pc();
-                let address = self.pc as i16 + value as i16;
-                self.set_pc(address as u16);
+                let address = self.add_signed_number(self.pc, value as i8);
+                // let address = self.pc as i16 + value as i16;
+                self.set_pc(address);
             }
             0x00C => {
                 //INC C
@@ -864,7 +932,6 @@ impl Registers {
             0x005 => {
                 //DEC B
                 let value = self.b.wrapping_sub(1);
-                self.set_b(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -873,13 +940,13 @@ impl Registers {
                     flag_h = true;
                 }
                 flag_c = self.f.c;
+                self.set_b(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
             0x00D => {
                 //DEC C
                 let value = self.c.wrapping_sub(1);
-                self.set_c(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -888,13 +955,14 @@ impl Registers {
                     flag_h = true;
                 }
                 flag_c = self.f.c;
+                self.set_c(value);
+
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
             0x01D => {
                 //DEC E
                 let value = self.e.wrapping_sub(1);
-                self.set_e(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -903,13 +971,13 @@ impl Registers {
                     flag_h = true;
                 }
                 flag_c = self.f.c;
+                self.set_e(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
             0x03D => {
                 //DEC A
                 let value = self.a.wrapping_sub(1);
-                self.set_a(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -918,13 +986,13 @@ impl Registers {
                     flag_h = true;
                 }
                 flag_c = self.f.c;
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
             0x015 => {
                 //DEC D
                 let value = self.d.wrapping_sub(1);
-                self.set_d(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -933,6 +1001,7 @@ impl Registers {
                     flag_h = true;
                 }
                 flag_c = self.f.c;
+                self.set_d(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -951,8 +1020,6 @@ impl Registers {
             0x024 => {
                 //INC H
                 let value = self.h + 1;
-                self.set_h(value);
-
                 if value == 0 {
                     flag_z = true;
                 }
@@ -961,6 +1028,7 @@ impl Registers {
                     flag_h = true;
                 }
                 flag_c = self.f.c;
+                self.set_h(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1012,7 +1080,6 @@ impl Registers {
             0x090 => {
                 // SUB B
                 let value = self.a - self.b;
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1024,6 +1091,7 @@ impl Registers {
                 if self.a < self.b {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1032,8 +1100,6 @@ impl Registers {
                 let h_l = self.combine_two_bytes(self.h, self.l);
                 //info!("HL: {:x}, A:{:?}, $14D:{:?}", h_l, self.a, memory[0x014d]);
                 let value = self.a.wrapping_add(memory[h_l as usize]);
-
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1045,6 +1111,7 @@ impl Registers {
                 if self.check_carry(self.a, memory[h_l as usize]) {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1060,8 +1127,6 @@ impl Registers {
                 let following_byte = self.following_byte(pointer, memory);
                 let value_to_add = self.f.c as u8 + following_byte;
                 let value = self.a + value_to_add;
-                self.set_a(value);
-
                 if value == 0 {
                     flag_z = true;
                 }
@@ -1069,9 +1134,11 @@ impl Registers {
                 if self.check_half_carry(self.a, value_to_add) {
                     flag_h = true;
                 }
+
                 if self.check_carry(self.a, value_to_add) {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1121,7 +1188,6 @@ impl Registers {
             0x083 => {
                 //ADD A,E
                 let value = self.a.wrapping_add(self.e);
-                self.set_a(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -1132,6 +1198,7 @@ impl Registers {
                 if self.check_carry(self.a, self.e) {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1148,13 +1215,23 @@ impl Registers {
             }
             0x01F => {
                 //RRA
-                self.a = self.a.rotate_right(1);
-                if self.a & 0x001 == 0 {
-                    flag_c = false
-                } else {
-                    flag_c = true
+                let shifted_value = self.a >> 1;
+                let result = shifted_value
+                    | match self.f.c {
+                        true => 0b10000000,
+                        false => 0b00000000,
+                    };
+
+                if result == 0 {
+                    flag_z = true
                 }
-                self.a = self.a | self.f.c as u8;
+
+                if self.a & 0b00000001 == 0b00000001 {
+                    flag_c = true
+                } else {
+                    flag_c = false
+                }
+                self.set_a(result);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1162,7 +1239,6 @@ impl Registers {
                 // ADC A,B - 4
                 let value_to_add = self.f.c as u8 + self.b;
                 let value = self.a + value_to_add;
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1174,6 +1250,8 @@ impl Registers {
                 if self.check_carry(self.a, value_to_add) {
                     flag_c = true;
                 }
+                self.set_a(value);
+
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1181,7 +1259,6 @@ impl Registers {
                 // ADC A,C - 4
                 let value_to_add = self.f.c as u8 + self.c;
                 let value = self.a + value_to_add;
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1193,6 +1270,7 @@ impl Registers {
                 if self.check_carry(self.a, value_to_add) {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1497,10 +1575,11 @@ impl Registers {
             0x038 => {
                 //JR C,*one byte -> 8
                 if !self.f.c {
-                    let n_param = self.following_byte(pointer, memory) as i8;
+                    let n_param = self.following_byte(pointer, memory); // as i8;
                     self.inc_pc();
-                    let destination = self.pc as i16 + n_param as i16;
-                    self.set_pc(destination as u16);
+                    let destination = self.add_signed_number(self.pc, n_param as i8);
+                    // let destination = self.pc as i16 + n_param as i16;
+                    self.set_pc(destination);
                 } else {
                     self.inc_pc();
                     self.inc_pc();
@@ -1574,7 +1653,6 @@ impl Registers {
             0x085 => {
                 //ADD A,L
                 let value = self.a.wrapping_add(self.l);
-                self.set_a(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -1585,6 +1663,7 @@ impl Registers {
                 if self.check_carry(self.a, self.l) {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1619,7 +1698,6 @@ impl Registers {
             0x081 => {
                 //ADD A,C
                 let value = self.a.wrapping_add(self.c);
-                self.set_a(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -1630,6 +1708,7 @@ impl Registers {
                 if self.check_carry(self.a, self.c) {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1716,7 +1795,6 @@ impl Registers {
             0x092 => {
                 // SUB D -> 4
                 let value = self.a.wrapping_sub(self.d);
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1728,6 +1806,7 @@ impl Registers {
                 if self.a < self.d {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1735,7 +1814,6 @@ impl Registers {
             0x097 => {
                 // SUB A -> 4
                 let value = self.a.wrapping_sub(self.a);
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1747,6 +1825,7 @@ impl Registers {
                 if self.a < self.a {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1754,7 +1833,6 @@ impl Registers {
             0x091 => {
                 // SUB C -> 4
                 let value = self.a.wrapping_sub(self.c);
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1766,6 +1844,8 @@ impl Registers {
                 if self.a < self.c {
                     flag_c = true;
                 }
+                self.set_a(value);
+
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1773,7 +1853,6 @@ impl Registers {
             0x093 => {
                 // SUB E -> 4
                 let value = self.a.wrapping_sub(self.e);
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1785,6 +1864,8 @@ impl Registers {
                 if self.a < self.e {
                     flag_c = true;
                 }
+
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1792,7 +1873,6 @@ impl Registers {
             0x094 => {
                 // SUB H -> 4
                 let value = self.a.wrapping_sub(self.h);
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1804,6 +1884,8 @@ impl Registers {
                 if self.a < self.h {
                     flag_c = true;
                 }
+
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1811,7 +1893,6 @@ impl Registers {
             0x095 => {
                 // SUB L -> 4
                 let value = self.a.wrapping_sub(self.l);
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1823,6 +1904,8 @@ impl Registers {
                 if self.a < self.l {
                     flag_c = true;
                 }
+                self.set_a(value);
+
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1832,7 +1915,6 @@ impl Registers {
                 let h_l = self.combine_two_bytes(self.h, self.l);
                 let address_value = memory[h_l as usize];
                 let value = self.a.wrapping_sub(address_value);
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -1844,6 +1926,7 @@ impl Registers {
                 if self.a < address_value {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -1981,7 +2064,6 @@ impl Registers {
                 //ADD A,n
                 let following_byte = self.following_byte(pointer, memory);
                 let value = self.a.wrapping_add(following_byte);
-                self.set_a(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -1992,6 +2074,7 @@ impl Registers {
                 if self.check_carry(self.a, following_byte) {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -2000,7 +2083,6 @@ impl Registers {
                 // SUB n -> 8
                 let following_byte = self.following_byte(pointer, memory);
                 let value = self.a.wrapping_sub(following_byte);
-                self.set_a(value);
 
                 if value == 0 {
                     flag_z = true;
@@ -2012,6 +2094,7 @@ impl Registers {
                 if self.a < following_byte {
                     flag_c = true;
                 }
+                self.set_a(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -2084,7 +2167,6 @@ impl Registers {
             0x02D => {
                 //DEC L -> 4
                 let value = self.l.wrapping_sub(1);
-                self.set_l(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -2093,6 +2175,7 @@ impl Registers {
                     flag_h = true;
                 }
                 flag_c = self.f.c;
+                self.set_l(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -2100,7 +2183,6 @@ impl Registers {
             0x025 => {
                 //DEC H -> 4
                 let value = self.h.wrapping_sub(1);
-                self.set_h(value);
                 if value == 0 {
                     flag_z = true;
                 }
@@ -2109,6 +2191,7 @@ impl Registers {
                     flag_h = true;
                 }
                 flag_c = self.f.c;
+                self.set_h(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -2148,10 +2231,11 @@ impl Registers {
             0x030 => {
                 //JR NC,*one byte -> 8
                 if !self.f.c {
-                    let n_param = self.following_byte(pointer, memory) as i8;
+                    let n_param = self.following_byte(pointer, memory); // as i8;
                     self.inc_pc();
-                    let destination = self.pc as i16 + n_param as i16;
-                    self.set_pc(destination as u16);
+                    let destination = self.add_signed_number(self.pc, n_param as i8);
+                    // let destination = self.pc as i16 + n_param as i16;
+                    self.set_pc(destination);
                 } else {
                     self.inc_pc();
                     self.inc_pc();
@@ -2257,7 +2341,6 @@ impl Registers {
                 let b_c = self.combine_two_bytes(self.b, self.c);
                 let h_l = self.combine_two_bytes(self.h, self.l);
                 let value = h_l + b_c;
-                self.set_hl(value);
 
                 flag_z = self.f.z;
                 flag_n = false;
@@ -2268,6 +2351,7 @@ impl Registers {
                 if self.check_carry_two_bytes(h_l, b_c) {
                     flag_c = true;
                 }
+                self.set_hl(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -2277,7 +2361,6 @@ impl Registers {
                 let d_e = self.combine_two_bytes(self.d, self.e);
                 let h_l = self.combine_two_bytes(self.h, self.l);
                 let value = h_l + d_e;
-                self.set_hl(value);
 
                 flag_z = self.f.z;
                 flag_n = false;
@@ -2288,6 +2371,7 @@ impl Registers {
                 if self.check_carry_two_bytes(h_l, d_e) {
                     flag_c = true;
                 }
+                self.set_hl(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -2296,7 +2380,6 @@ impl Registers {
                 //ADD HL, HL -> 8
                 let h_l = self.combine_two_bytes(self.h, self.l);
                 let value = h_l + h_l;
-                self.set_hl(value);
 
                 flag_z = self.f.z;
                 flag_n = false;
@@ -2307,6 +2390,7 @@ impl Registers {
                 if self.check_carry_two_bytes(h_l, h_l) {
                     flag_c = true;
                 }
+                self.set_hl(value);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -2321,8 +2405,8 @@ impl Registers {
                 //LDHL SP,n
                 let following_byte = self.following_byte(pointer, memory);
                 //TODO: u8 + i8
-                let value = self.sp as i16 + following_byte as i16;
-                self.set_hl(value as u16);
+                let value = self.add_signed_number(self.sp, following_byte as i8);
+                // let value = self.sp as i16 + following_byte as i16;
 
                 if self.check_half_carry_two_bytes(self.sp, following_byte as u16) {
                     flag_h = true;
@@ -2331,6 +2415,7 @@ impl Registers {
                 if self.check_carry_two_bytes(self.sp, following_byte as u16) {
                     flag_c = true;
                 }
+                self.set_hl(value as u16);
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -2365,7 +2450,30 @@ impl Registers {
                 }
                 flag_c = self.f.c;
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.set_c(value);
+                self.set_e(value);
+                self.inc_pc();
+            }
+
+            0x014 => {
+                //INC D
+                let value = self.d + 1;
+                if value == 0 {
+                    flag_z = true;
+                };
+                if self.check_half_carry(self.d, 1) {
+                    flag_h = true;
+                }
+                flag_c = self.f.c;
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.set_d(value);
+                self.inc_pc();
+            }
+
+            0x07E => {
+                //LD A, (HL)
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.set_a(value);
                 self.inc_pc();
             }
 
@@ -2373,6 +2481,18 @@ impl Registers {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
             }
+        }
+    }
+
+    fn add_signed_number(&self, unsigned: u16, signed: i8) -> u16 {
+        let is_minus = signed.signum() == -1; //false-> +, true-> -
+        let value = signed.abs() as u16;
+        if is_minus {
+            let result = unsigned - (value as u16);
+            result
+        } else {
+            let result = unsigned + value as u16;
+            result
         }
     }
 
@@ -2385,11 +2505,11 @@ impl Registers {
     }
 
     fn check_half_carry(&self, num_a: u8, num_b: u8) -> bool {
-        (num_a & 0x00f) + (num_b & 0x00f) & 0x010 == 0x010
+        (num_a & 0xf) + (num_b & 0xf) & 0x010 == 0x010
     }
 
     fn check_half_carry_sub(&self, num_a: u8, num_b: u8) -> bool {
-        (num_a & 0x00f) + (!num_b & 0x00f) & 0x010 == 0x010
+        (num_a & 0xf) < (num_b & 0xf)
     }
 
     fn check_carry_two_bytes(&self, num_a: u16, num_b: u16) -> bool {
@@ -3014,6 +3134,8 @@ impl Gameboy {
             0x06B => 4,
             0x012 => 8,
             0x01C => 4,
+            0x014 => 4,
+            0x07E => 8,
             other => {
                 info!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
@@ -3171,7 +3293,7 @@ impl Gameboy {
         // //##This function is GPU emulation. Mode Flag is read only for gameboy
         let lcdc = self.memory[0xff41].clone();
         let mut bv = BitVec::from_bytes(&[lcdc]);
-        if gpu_cycle >= 0 && gpu_cycle < 80 {
+        if gpu_cycle < 80 {
             bv.set(7, false);
             bv.set(6, true);
         } else if gpu_cycle >= 80 && gpu_cycle < 172 {
@@ -4024,6 +4146,8 @@ pub fn opcode_name(opcode: u8) -> String {
         0x06B => "LD H,E",
         0x012 => "LD (DE), A",
         0x01C => "INC E",
+        0x014 => "INC D",
+        0x07E => "LD A, (HL)",
         _other => "???",
     };
 
