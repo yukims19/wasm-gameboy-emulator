@@ -1887,7 +1887,7 @@ impl Registers {
             0x076 => {
                 //HALT Power down CPU until interrupt occurs -> 4
                 //Implementation escalated to Gameboy. Checking at fn execute_opcodes()
-                println!("NEED TO IMPLEMENT HALT FUNCTION FOR 0x076");
+                info!("NEED TO IMPLEMENT HALT FUNCTION FOR 0x076");
                 self.inc_pc();
                 std::process::exit(1);
             }
@@ -2730,6 +2730,62 @@ impl Registers {
                 self.inc_pc();
             }
 
+            0x0f9 => {
+                //LD SP, HL
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                self.set_sp(h_l);
+                self.inc_pc();
+            }
+
+            0x033 => {
+                //INC SP -> 8
+                let value = self.sp.wrapping_add(1);
+                self.set_sp(value);
+                self.inc_pc();
+            }
+
+            0x03B => {
+                //DEC SP -> 8
+                let value = self.sp.wrapping_sub(1);
+                self.set_sp(value);
+                self.inc_pc();
+            }
+
+            0x039 => {
+                //ADD HL, SP -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = h_l.wrapping_add(self.sp);
+
+                flag_z = self.f.z;
+                flag_n = false;
+
+                if self.check_half_carry_two_bytes(h_l, self.sp) {
+                    flag_h = true
+                }
+                if self.check_carry_two_bytes(h_l, self.sp) {
+                    flag_c = true;
+                }
+                self.set_hl(value);
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x0E8 => {
+                //ADD SP, n -> 16
+                let following_value = self.following_byte(pointer, memory);
+                let value = self.add_signed_number(self.sp, following_value as i8);
+
+                if self.check_half_carry_u16_plus_i8(self.sp, following_value as i8, value) {
+                    flag_h = true
+                }
+                if self.check_carry_u16_plus_i8(self.sp, following_value as i8, value) {
+                    flag_c = true;
+                }
+                self.set_hl(value);
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -3303,7 +3359,7 @@ impl Gameboy {
             0x06E => 8,
             0x0E6 => 8,
             0x0dd => {
-                println!("Not sure what's the cycle for 0x0DD");
+                info!("Not sure what's the cycle for 0x0DD");
                 std::process::exit(1)
             }
             0x0C3 => 12,
@@ -3428,6 +3484,11 @@ impl Gameboy {
             0x01C => 4,
             0x014 => 4,
             0x07E => 8,
+            0x0f9 => 8,
+            0x033 => 8,
+            0x03B => 8,
+            0x039 => 8,
+            0x0E8 => 16,
             other => {
                 info!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
@@ -4480,6 +4541,11 @@ pub fn opcode_name(opcode: u8) -> String {
         0x01C => "INC E",
         0x014 => "INC D",
         0x07E => "LD A, (HL)",
+        0x0f9 => "LD SP, HL",
+        0x033 => "INC SP",
+        0x03B => "DEC SP",
+        0x039 => "ADD HL, SP",
+        0x0E8 => "ADD SP, n",
         _other => "???",
     };
 
