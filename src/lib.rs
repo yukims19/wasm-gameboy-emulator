@@ -2786,6 +2786,27 @@ impl Registers {
                 self.inc_pc();
             }
 
+            0x0de => {
+                //SCB A,n
+                let following_byte = self.following_byte(pointer, memory);
+                let value_to_sub = (self.f.c as u8).wrapping_add(following_byte);
+                let value = self.a.wrapping_sub(value_to_sub);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = false;
+                if self.check_half_carry_sub(self.a, value_to_sub) {
+                    flag_h = true;
+                }
+                if self.a < value_to_sub {
+                    flag_c = true;
+                }
+                self.set_a(value);
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
