@@ -2659,15 +2659,13 @@ impl Registers {
             0x0F8 => {
                 //LDHL SP,n
                 let following_byte = self.following_byte(pointer, memory);
-                //TODO: u8 + i8
                 let value = self.add_signed_number(self.sp, following_byte as i8);
-                // let value = self.sp as i16 + following_byte as i16;
 
-                if self.check_half_carry_two_bytes(self.sp, following_byte as u16) {
+                if self.check_half_carry_u16_plus_i8(self.sp, following_byte as i8, value) {
                     flag_h = true;
                 }
 
-                if self.check_carry_two_bytes(self.sp, following_byte as u16) {
+                if self.check_carry_u16_plus_i8(self.sp, following_byte as i8, value) {
                     flag_c = true;
                 }
                 self.set_hl(value as u16);
@@ -2753,6 +2751,22 @@ impl Registers {
 
     fn inc_pc(&mut self) {
         self.pc = self.pc + 1;
+    }
+
+    fn check_half_carry_u16_plus_i8(&self, unsigned: u16, signed: i8, sum_value: u16) -> bool {
+        if signed >= 0 {
+            ((unsigned & 0xF) + (signed as u16 & 0xF)) > 0xF
+        } else {
+            (sum_value & 0xF) <= (unsigned & 0xF)
+        }
+    }
+
+    fn check_carry_u16_plus_i8(&self, unsigned: u16, signed: i8, sum_value: u16) -> bool {
+        if signed >= 0 {
+            ((unsigned & 0xFF) + signed as u16) > 0xFF
+        } else {
+            (sum_value & 0xFF) <= (unsigned & 0xFF)
+        }
     }
 
     fn check_carry(&self, num_a: u8, num_b: u8) -> bool {
