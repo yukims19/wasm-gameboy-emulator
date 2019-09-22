@@ -229,6 +229,7 @@ var render = function render(gameboy) {
       onPlaySound: () => {
         playSound(gameboy);
       },
+      gameboy,
     }),
     domContainer,
   );

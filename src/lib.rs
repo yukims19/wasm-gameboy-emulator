@@ -278,11 +278,11 @@ impl Canvases {
                 .unwrap();
         }
 
-        info!(
-            "Rust draw screen. x: {}, y:{}",
-            gameboy.get_scroll_x(),
-            gameboy.get_scroll_y()
-        );
+        // info!(
+        //     "Rust draw screen. x: {}, y:{}",
+        //     gameboy.get_scroll_x(),
+        //     gameboy.get_scroll_y()
+        // );
     }
 
     pub fn make_canvas(
@@ -3179,11 +3179,11 @@ impl Gameboy {
     }
 
     pub fn request_vblank(&mut self) {
-        info!(
-            "request vblank, ime: {}, v interupt enabled: {}",
-            self.registers.f.ime,
-            self.vblank_interrupt_enabled()
-        );
+        // info!(
+        //     "request vblank, ime: {}, v interupt enabled: {}",
+        //     self.registers.f.ime,
+        //     self.vblank_interrupt_enabled()
+        // );
         self.should_draw = true;
         self.memory[0xff0f] = self.memory[0xff0f] | 0b1000000;
 
@@ -3964,6 +3964,20 @@ impl Gameboy {
         }
     }
 
+    pub fn debug_serial_value(&mut self) {
+        let character = (self.memory[0xff01] as char).to_string();
+
+        let document = web_sys::window().unwrap().document().unwrap();
+        let serial_debug_id = "serial-debug";
+
+        let el = document.get_element_by_id(serial_debug_id).unwrap();
+
+        let current_html = el.inner_html().clone();
+        let new_html = format!("{}{}", current_html, character);
+        info!("{}", new_html);
+        el.set_inner_html(&new_html);
+    }
+
     pub fn execute_opcodes_no_stop(&mut self, count: usize) {
         if self.cpu_paused || !self.is_running {
             return;
@@ -4105,6 +4119,12 @@ impl Gameboy {
                 // );
                 break;
             }
+
+            // TODO: Move this to a handle-serial-bus function
+            if self.memory[0xff02] == 0x81 {
+                self.debug_serial_value();
+                self.memory[0xff02] = 0x0;
+            }
         }
     }
 
@@ -4149,10 +4169,11 @@ impl Gameboy {
 
         let boot_rom_content = include_bytes!("boot-rom.gb");
         // let boot_rom_content = include_bytes!("test_rom.gb");
-        let cartridge_content = include_bytes!("cpu_instrs.gb");
+        //        let cartridge_content = include_bytes!("mario.gb");
+        // let cartridge_content = include_bytes!("cpu_instrs.gb");
         // let cartridge_content = include_bytes!("01-special.gb");
         // let cartridge_content = include_bytes!("02-interrupts.gb");
-        // let cartridge_content = include_bytes!("03-op sp,hl.gb");
+        let cartridge_content = include_bytes!("03-op sp,hl.gb");
         // let cartridge_content = include_bytes!("04-op r,imm.gb");
         // let cartridge_content = include_bytes!("05-op rp.gb");
         // let cartridge_content = include_bytes!("06-ld r,r.gb");

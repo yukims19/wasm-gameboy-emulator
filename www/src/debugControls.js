@@ -305,7 +305,7 @@ const CPUViewer = props => {
     }
   };
 
-  const opcodeDesc = opcode_name(pcValue);
+  const opcodeDesc = opcode_name(pcValue, props.gameboy);
   return (
     <table id="cpu-view">
       <thead>
@@ -474,6 +474,7 @@ const Controls = props => {
     onClear,
     onDrawBackground,
     onPlaySound,
+    gameboy,
   } = props;
   const pcValue = fullMemory[pc];
 
@@ -483,7 +484,7 @@ const Controls = props => {
   const stepButton = <button onClick={onStep}>{'>>'}</button>;
   const stepButton1 = <button onClick={onStep1}>{'>> 1'}</button>;
 
-  const opcodeDesc = opcode_name(pcValue);
+  const opcodeDesc = opcode_name(pcValue, gameboy);
   return (
     <table id="control-view">
       <thead>
@@ -563,7 +564,7 @@ const OpLogViewer = props => {
         <td>{log.tick}</td>
         <td>{toHex(log.pc, 4)}</td>
         <td>{toHex(log.opcode, 2)}</td>
-        <td>{opcode_name(log.opcode)}</td>
+        <td>{opcode_name(log.opcode, props.gameboy)}</td>
         <td>{idx > 0 ? <button onClick={logDiff(idx)}>Diff</button> : null}</td>
       </tr>
     );
@@ -602,6 +603,7 @@ const Debugger = props => {
           onClear={props.onDrawCharMap}
           onDrawBackground={props.onDrawBackground}
           onPlaySound={props.onPlaySound}
+          gameboy={props.gameboy}
           onStep={props.onStep}
           onStep1={props.onStep1}
           onTogglePlay={props.onTogglePlay}
