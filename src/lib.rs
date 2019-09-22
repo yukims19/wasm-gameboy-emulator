@@ -800,6 +800,261 @@ impl Registers {
                         self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                     }
 
+                    0x01F => {
+                        //RR A -> 8
+                        let shifted_value = self.a >> 1;
+                        let result = shifted_value
+                            | match self.f.c {
+                                true => 0b10000000,
+                                false => 0b00000000,
+                            };
+
+                        if result == 0 {
+                            flag_z = true
+                        }
+                        if self.a & 0b00000001 == 1 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        self.set_a(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                    }
+
+                    0x018 => {
+                        //RR B -> 8
+                        let shifted_value = self.b >> 1;
+                        let result = shifted_value
+                            | match self.f.c {
+                                true => 0b10000000,
+                                false => 0b00000000,
+                            };
+
+                        if result == 0 {
+                            flag_z = true
+                        }
+                        if self.b & 0b00000001 == 1 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        self.set_b(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                    }
+
+                    0x01A => {
+                        //RR D -> 8
+                        let shifted_value = self.d >> 1;
+                        let result = shifted_value
+                            | match self.f.c {
+                                true => 0b10000000,
+                                false => 0b00000000,
+                            };
+
+                        if result == 0 {
+                            flag_z = true
+                        }
+                        if self.d & 0b00000001 == 1 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        self.set_d(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                    }
+
+                    0x01B => {
+                        //RR E -> 8
+                        let shifted_value = self.e >> 1;
+                        let result = shifted_value
+                            | match self.f.c {
+                                true => 0b10000000,
+                                false => 0b00000000,
+                            };
+
+                        if result == 0 {
+                            flag_z = true
+                        }
+                        if self.e & 0b00000001 == 1 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        self.set_e(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                    }
+
+                    0x01C => {
+                        //RR H -> 8
+                        let shifted_value = self.h >> 1;
+                        let result = shifted_value
+                            | match self.f.c {
+                                true => 0b10000000,
+                                false => 0b00000000,
+                            };
+
+                        if result == 0 {
+                            flag_z = true
+                        }
+                        if self.h & 0b00000001 == 1 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        self.set_h(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                    }
+
+                    0x01D => {
+                        //RR L -> 8
+                        let shifted_value = self.l >> 1;
+                        let result = shifted_value
+                            | match self.f.c {
+                                true => 0b10000000,
+                                false => 0b00000000,
+                            };
+
+                        if result == 0 {
+                            flag_z = true
+                        }
+                        if self.l & 0b00000001 == 1 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        self.set_l(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                    }
+
+                    0x01E => {
+                        //RR (HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let memory_value = memory[h_l as usize];
+                        let shifted_value = memory_value >> 1;
+                        let result = shifted_value
+                            | match self.f.c {
+                                true => 0b10000000,
+                                false => 0b00000000,
+                            };
+
+                        if result == 0 {
+                            flag_z = true
+                        }
+                        if memory_value & 0b00000001 == 1 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        memory[h_l as usize] = result;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                    }
+
+                    0x03F => {
+                        //SRL A -> 8
+                        let result = self.a >> 1;
+                        if result == 0 {
+                            flag_z = true;
+                        }
+                        if self.a & 0b00000001 == 1 {
+                            flag_c = true;
+                        }
+                        self.set_a(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x039 => {
+                        //SRL C -> 8
+                        let result = self.c >> 1;
+                        if result == 0 {
+                            flag_z = true;
+                        }
+                        if self.c & 0b00000001 == 1 {
+                            flag_c = true;
+                        }
+                        self.set_c(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x03A => {
+                        //SRL D -> 8
+                        let result = self.d >> 1;
+                        if result == 0 {
+                            flag_z = true;
+                        }
+                        if self.d & 0b00000001 == 1 {
+                            flag_c = true;
+                        }
+                        self.set_d(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x03B => {
+                        //SRL E -> 8
+                        let result = self.e >> 1;
+                        if result == 0 {
+                            flag_z = true;
+                        }
+                        if self.e & 0b00000001 == 1 {
+                            flag_c = true;
+                        }
+                        self.set_e(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x03C => {
+                        //SRL H -> 8
+                        let result = self.h >> 1;
+                        if result == 0 {
+                            flag_z = true;
+                        }
+                        if self.h & 0b00000001 == 1 {
+                            flag_c = true;
+                        }
+                        self.set_h(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x03D => {
+                        //SRL L -> 8
+                        let result = self.l >> 1;
+                        if result == 0 {
+                            flag_z = true;
+                        }
+                        if self.l & 0b00000001 == 1 {
+                            flag_c = true;
+                        }
+                        self.set_l(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x03E => {
+                        //SRL (HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let memory_value = memory[h_l as usize];
+                        let result = memory_value >> 1;
+                        if result == 0 {
+                            flag_z = true;
+                        }
+                        if memory_value & 0b00000001 == 1 {
+                            flag_c = true;
+                        }
+                        memory[h_l as usize] = result;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    //##New CB
+                    0x037 => {
+                        //SWAP A -> 8
+                        let temp = self.a & 0b01111110;
+                        let lsb = (self.a & 0b10000000) >> 7;
+                        let msb = (self.a & 0b00000001) << 7;
+                        let result = temp | lsb | msb;
+                        if result == 0 {
+                            flag_z = true;
+                        }
+                        self.set_a(result);
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
                     other => {
                         info!("Unrecogized opcode (CB: {:x})", other);
                         std::process::exit(1)
@@ -2965,18 +3220,31 @@ impl Gameboy {
             0x0f0 => 12,
             0x0E2 => 8,
             0x0E0 => 12,
-            0x0CB => // match self
-            //     .registers
-            //     .following_byte(self.registers.pc as usize, &self.memory)
-            // {
-            //     0x07c => 8,
-            //     0x011 => 8,
-            //     other => {
-            //         println!("Unrecogized opcode (CB: {:x})", other);
-            //         std::process::exit(1)
-            //     }
-            // }
-                8,
+            0x0CB => match self.memory[self.registers.pc as usize + 1] {
+                0x07c => 8,
+                0x011 => 8,
+                0x038 => 8,
+                0x019 => 8,
+                0x01F => 8,
+                0x018 => 8,
+                0x01A => 8,
+                0x01B => 8,
+                0x01C => 8,
+                0x01D => 8,
+                0x01E => 16,
+                0x03F => 8,
+                0x039 => 8,
+                0x03A => 8,
+                0x03B => 8,
+                0x03C => 8,
+                0x03D => 8,
+                0x03E => 16,
+                0x037 => 8,
+                other => {
+                    info!("Unrecogized opcode (CB: {:x})", other);
+                    std::process::exit(1)
+                }
+            },
             0x017 => 4,
             0x020 => 8,
             0x028 => 8,
@@ -3003,8 +3271,13 @@ impl Gameboy {
             0x000 => 4,
             0x0CE => 8,
             0x066 => 8,
-            0x0CC =>
-            { if self.registers.f.z  {24} else {12}  },
+            0x0CC => {
+                if self.registers.f.z {
+                    24
+                } else {
+                    12
+                }
+            }
             0x00B => 8,
             0x003 => 8,
             0x073 => 8,
@@ -3021,11 +3294,11 @@ impl Gameboy {
             }
             0x0C3 => 12,
             0x0f3 => 4,
-            0x036 =>  12,
+            0x036 => 12,
             0x02a => 8,
             0x047 => 4,
             0x002 => 8,
-                        //New Round
+            //New Round
             0x0fd => 0,
             0x06d => 4,
             0x06c => 4,
@@ -3054,7 +3327,7 @@ impl Gameboy {
             0x0a6 => 8,
             0x05d => 4,
             0x03a => 8,
-                        //New Round 2
+            //New Round 2
             0x040 => 4,
             0x043 => 4,
             0x038 => 8,
@@ -3076,8 +3349,13 @@ impl Gameboy {
             0x0b5 => 4,
             0x070 => 8,
             0x048 => 4,
-            0x0C4 =>
-            { if !self.registers.f.z  {24} else {12}  },
+            0x0C4 => {
+                if !self.registers.f.z {
+                    24
+                } else {
+                    12
+                }
+            }
             0x069 => 4,
             0x06a => 4,
             0x06f => 4,
@@ -3506,9 +3784,9 @@ impl Gameboy {
         let pre_ff14 = self.memory[0xff14];
 
         let instruction = self.memory[self.registers.pc as usize];
+        self.add_cycles(instruction, CycleRegister::CpuCycle);
         self.registers
             .execute_instruction(instruction, &mut self.memory);
-        self.add_cycles(instruction, CycleRegister::CpuCycle);
         self.cycle_based_gpu_operation(instruction);
 
         if self.break_points.contains(&self.registers.pc) {
@@ -3583,10 +3861,10 @@ impl Gameboy {
             // }
 
             let instruction = self.memory[self.registers.pc as usize];
-            self.registers
-                .execute_instruction(instruction, &mut self.memory);
             self.add_cycles(instruction, CycleRegister::CpuCycle);
             self.cycle_based_gpu_operation(instruction);
+            self.registers
+                .execute_instruction(instruction, &mut self.memory);
 
             if self.is_lcd_display_enable() && self.should_draw {
                 canvases.update_char_map_canvas(self);
@@ -3713,10 +3991,10 @@ impl Gameboy {
                 // );
             }
 
-            self.registers
-                .execute_instruction(instruction, &mut self.memory);
             self.add_cycles(instruction, CycleRegister::CpuCycle);
             self.cycle_based_gpu_operation(instruction);
+            self.registers
+                .execute_instruction(instruction, &mut self.memory);
 
             if self.break_points.contains(&self.registers.pc) {
                 self.is_running = false;
@@ -4014,7 +4292,29 @@ pub fn opcode_name(opcode: u8) -> String {
         0x0f0 => "LD A, ($ff00+n)",
         0x0E2 => "LD ($ff00+C), A",
         0x0E0 => "LD ($ff00+n), A",
-        0x0CB => "BIT (7, H)",
+        0x0CB =>//  match gameboy.memory[gameboy.registers.pc as usize + 1] {
+        //     0x07c => "BIT (7, H)",
+        //     0x011 => "RL C",
+        //     0x038 => "SRL B",
+        //     0x019 => "RR C",
+        //     0x01F => "RR A",
+        //     0x018 => "RR B",
+        //     0x01A => "RR D",
+        //     0x01B => "RR E",
+        //     0x01C => "RR H",
+        //     0x01D => "RR L",
+        //     0x01E => "RR (HL)",
+        //     0x03F => "SRL A",
+        //     0x039 => "SRL C",
+        //     0x03A => "SRL D",
+        //     0x03B => "SRL E",
+        //     0x03C => "SRL H",
+        //     0x03D => "SRL L",
+        //     0x03E => "SRL (HL)",
+        //     _other => "CB unknown??",
+        // }
+            "CB function"
+        ,
         0x017 => "RLA", // Rotate A left through Carry flag
         0x020 => "JR NZ,*one byte",
         0x028 => "JR Z,*",
