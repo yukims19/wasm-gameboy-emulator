@@ -88,7 +88,7 @@ var render = function render(gameboy) {
   const onStep = () => {
     console.log('onStep');
     gameboy.start_running();
-    next(15000000);
+    next(100);
     gameboy.stop_running();
   };
 

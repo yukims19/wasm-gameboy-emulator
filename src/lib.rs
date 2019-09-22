@@ -247,10 +247,10 @@ impl Canvases {
                 + x * IMAGE_DATA_LENGTH_PER_PIXEL;
             let end = start + SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
 
-            info!(
-                "1->y:{}, scroll_y:{}, start: {:?}, end:{:?} ",
-                y, scroll_y, start, end
-            );
+            // info!(
+            //     "1->y:{}, scroll_y:{}, scroll_x:{}, start: {:?}, end:{:?} ",
+            //     y, scroll_y, scroll_x, start, end
+            // );
 
             let screen_row_bytes = &background_pixels_rgba_vec[start..end];
             screen_pixels_rgba_vec.extend_from_slice(&screen_row_bytes);
@@ -3648,13 +3648,13 @@ impl Gameboy {
             // FIXME: Only do this on first time through when the bootrom unmaps itself
             if self.registers.pc == 0xfe {
                 info!("PC: 0xfe, instruction: {:x}", instruction);
-                if (instruction == 0x00e0) {
+                if instruction == 0x00e0 {
                     info!("PC: 0xfe, instruction: e0, reg a: {:?}", self.registers.a);
                     // && self.registers.a == 1
                     {
                         info!("Unmapping bootrom...");
                         for idx in 0x00..0xff {
-                            info!("\t{:?} -> {:?}", idx, self.cartridge[idx]);
+                            // info!("\t{:?} -> {:?}", idx, self.cartridge[idx]);
                             self.memory[idx] = self.cartridge[idx];
                         }
                     }
@@ -3704,13 +3704,13 @@ impl Gameboy {
                 let now = performance.now();
                 let elapsed = now - last_time;
                 last_time = now;
-                info!(
-                    "Executed {:?} cycles in {:?}ms, total: {:?}, ly: {:?}",
-                    cycle_log_target,
-                    elapsed,
-                    self.total_cycle(),
-                    self.ly()
-                );
+                // info!(
+                //     "Executed {:?} cycles in {:?}ms, total: {:?}, ly: {:?}",
+                //     cycle_log_target,
+                //     elapsed,
+                //     self.total_cycle(),
+                //     self.ly()
+                // );
             }
 
             self.registers
@@ -3720,6 +3720,12 @@ impl Gameboy {
 
             if self.break_points.contains(&self.registers.pc) {
                 self.is_running = false;
+            }
+
+            if count == 1 {
+                canvases.draw_screen_from_memory(self);
+                // canvases.update_char_map_canvas(self);
+                // canvases.render_background_map_as_image_data(self);
             }
 
             // if instruction == 0x076 {
@@ -3789,7 +3795,19 @@ impl Gameboy {
         };
 
         let boot_rom_content = include_bytes!("boot-rom.gb");
+        // let boot_rom_content = include_bytes!("test_rom.gb");
         let cartridge_content = include_bytes!("cpu_instrs.gb");
+        // let cartridge_content = include_bytes!("01-special.gb");
+        // let cartridge_content = include_bytes!("02-interrupts.gb");
+        // let cartridge_content = include_bytes!("03-op sp,hl.gb");
+        // let cartridge_content = include_bytes!("04-op r,imm.gb");
+        // let cartridge_content = include_bytes!("05-op rp.gb");
+        // let cartridge_content = include_bytes!("06-ld r,r.gb");
+        // let cartridge_content = include_bytes!("07-jr,jp,call,ret,rst.gb");
+        // let cartridge_content = include_bytes!("08-misc instrs.gb");
+        // let cartridge_content = include_bytes!("09-op r,r.gb");
+        // let cartridge_content = include_bytes!("10-bit ops.gb");
+        // let cartridge_content = include_bytes!("11-op a,(hl).gb");
 
         let _head = boot_rom_content;
         let _body = &cartridge_content[0x100..(cartridge_content.len())];
