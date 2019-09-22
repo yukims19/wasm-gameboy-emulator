@@ -1620,7 +1620,8 @@ impl Registers {
             //New Round
             0x0fd => {
                 //No operation?
-                println!("no operation with opcode 0xfd");
+                info!("no operation with opcode 0xfd");
+                std::process::exit(1);
                 self.inc_pc();
             }
 
@@ -1781,7 +1782,8 @@ impl Registers {
 
             0x0d3 => {
                 //No operation?
-                println!("no operation with opcode 0xd3");
+                info!("no operation with opcode 0xd3");
+                std::process::exit(1);
                 self.inc_pc();
             }
 
@@ -1853,7 +1855,8 @@ impl Registers {
 
             0x0f4 => {
                 //No operation?
-                println!("no operation with opcode 0xf4");
+                info!("no operation with opcode 0xf4");
+                std::process::exit(1);
                 self.inc_pc();
             }
 
