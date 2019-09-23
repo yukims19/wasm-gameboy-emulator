@@ -739,12 +739,12 @@ impl Registers {
             }
             0x0CB => {
                 match self.following_byte(pointer, memory) {
-                    0x07c => {
-                        if self.h & 0x80 == 0x00 {
-                            flag_z = true;
-                        }
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
+                    // 0x07c => {
+                    //     if self.h & 0x80 == 0x00 {
+                    //         flag_z = true;
+                    //     }
+                    //     self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    // }
                     0x011 => {
                         //RL C -> 8
                         let shifted_value = self.c << 1;
@@ -1042,7 +1042,6 @@ impl Registers {
                         self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
                     }
 
-                    //##New CB
                     0x037 => {
                         //SWAP A -> 8
                         let temp = self.a & 0b01111110;
@@ -1054,6 +1053,816 @@ impl Registers {
                         }
                         self.set_a(result);
                         self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x047 => {
+                        //BIT b(0),A -> 8
+                        let bit = self.a & 0b00000001;
+                        if bit == 0 {
+                            flag_z = true;
+                        }
+                        flag_h = true;
+                        flag_c = self.f.c;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x040 => {
+                        //BIT b(0),B -> 8
+                        let bit = self.b & 0b00000001;
+                        if bit == 0 {
+                            flag_z = true;
+                        }
+                        flag_h = true;
+                        flag_c = self.f.c;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x041 => {
+                        //BIT b(0),C -> 8
+                        let bit = self.c & 0b00000001;
+                        if bit == 0 {
+                            flag_z = true;
+                        }
+                        flag_h = true;
+                        flag_c = self.f.c;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x042 => {
+                        //BIT b(0),D -> 8
+                        let bit = self.d & 0b00000001;
+                        if bit == 0 {
+                            flag_z = true;
+                        }
+                        flag_h = true;
+                        flag_c = self.f.c;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x043 => {
+                        //BIT b(0),E -> 8
+                        let bit = self.e & 0b00000001;
+                        if bit == 0 {
+                            flag_z = true;
+                        }
+                        flag_h = true;
+                        flag_c = self.f.c;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x044 => {
+                        //BIT b(0),H -> 8
+                        let bit = self.h & 0b00000001;
+                        if bit == 0 {
+                            flag_z = true;
+                        }
+                        flag_h = true;
+                        flag_c = self.f.c;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x045 => {
+                        //BIT b(0),L -> 8
+                        let bit = self.l & 0b00000001;
+                        if bit == 0 {
+                            flag_z = true;
+                        }
+                        flag_h = true;
+                        flag_c = self.f.c;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x046 => {
+                        //BIT b(0),(HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let value = memory[h_l as usize];
+                        let bit = value & 0b00000001;
+                        if bit == 0 {
+                            flag_z = true;
+                        }
+                        flag_h = true;
+                        flag_c = self.f.c;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x048 => {
+                        //BIT b(1),B -> 8
+                        self.bit_b_r(1, self.b);
+                    }
+                    0x049 => {
+                        //BIT b(1),C -> 8
+                        self.bit_b_r(1, self.c);
+                    }
+                    0x04a => {
+                        //BIT b(1),D -> 8
+                        self.bit_b_r(1, self.d);
+                    }
+                    0x04b => {
+                        //BIT b(1),E -> 8
+                        self.bit_b_r(1, self.e);
+                    }
+                    0x04c => {
+                        //BIT b(1),H -> 8
+                        self.bit_b_r(1, self.h);
+                    }
+                    0x04d => {
+                        //BIT b(1),L -> 8
+                        self.bit_b_r(1, self.l);
+                    }
+                    0x04f => {
+                        //BIT b(1),A -> 8
+                        self.bit_b_r(1, self.a);
+                    }
+                    0x050 => {
+                        //BIT b(2),B -> 8
+                        self.bit_b_r(2, self.b);
+                    }
+
+                    0x051 => {
+                        //BIT b(2),C -> 8
+                        self.bit_b_r(2, self.c);
+                    }
+
+                    0x052 => {
+                        //BIT b(2),D -> 8
+                        self.bit_b_r(2, self.d);
+                    }
+
+                    0x053 => {
+                        //BIT b(2),E -> 8
+                        self.bit_b_r(2, self.e);
+                    }
+
+                    0x054 => {
+                        //BIT b(2),H -> 8
+                        self.bit_b_r(2, self.h);
+                    }
+
+                    0x055 => {
+                        //BIT b(2),L -> 8
+                        self.bit_b_r(2, self.l);
+                    }
+                    0x057 => {
+                        //BIT b(2),A -> 8
+                        self.bit_b_r(2, self.a);
+                    }
+
+                    0x058 => {
+                        //BIT b(3),B -> 8
+                        self.bit_b_r(3, self.b);
+                    }
+                    0x059 => {
+                        //BIT b(3),C -> 8
+                        self.bit_b_r(3, self.c);
+                    }
+                    0x05a => {
+                        //BIT b(3),D -> 8
+                        self.bit_b_r(3, self.d);
+                    }
+                    0x05b => {
+                        //BIT b(3),E -> 8
+                        self.bit_b_r(3, self.e);
+                    }
+                    0x05c => {
+                        //BIT b(3),H -> 8
+                        self.bit_b_r(3, self.h);
+                    }
+                    0x05d => {
+                        //BIT b(3),L -> 8
+                        self.bit_b_r(3, self.l);
+                    }
+                    0x05f => {
+                        //BIT b(3),A -> 8
+                        self.bit_b_r(3, self.a);
+                    }
+
+                    0x060 => {
+                        //BIT b(4),B -> 8
+                        self.bit_b_r(4, self.b);
+                    }
+
+                    0x061 => {
+                        //BIT b(4),C -> 8
+                        self.bit_b_r(4, self.c);
+                    }
+
+                    0x062 => {
+                        //BIT b(4),D -> 8
+                        self.bit_b_r(4, self.d);
+                    }
+
+                    0x063 => {
+                        //BIT b(4),E -> 8
+                        self.bit_b_r(4, self.e);
+                    }
+
+                    0x064 => {
+                        //BIT b(4),H -> 8
+                        self.bit_b_r(4, self.h);
+                    }
+
+                    0x065 => {
+                        //BIT b(4),L -> 8
+                        self.bit_b_r(4, self.l);
+                    }
+                    0x067 => {
+                        //BIT b(4),A -> 8
+                        self.bit_b_r(4, self.a);
+                    }
+
+                    0x068 => {
+                        //BIT b(5),B -> 8
+                        self.bit_b_r(5, self.b);
+                    }
+                    0x069 => {
+                        //BIT b(5),C -> 8
+                        self.bit_b_r(5, self.c);
+                    }
+                    0x06a => {
+                        //BIT b(5),D -> 8
+                        self.bit_b_r(5, self.d);
+                    }
+                    0x06b => {
+                        //BIT b(5),E -> 8
+                        self.bit_b_r(5, self.e);
+                    }
+                    0x06c => {
+                        //BIT b(5),H -> 8
+                        self.bit_b_r(5, self.h);
+                    }
+                    0x06d => {
+                        //BIT b(5),L -> 8
+                        self.bit_b_r(5, self.l);
+                    }
+                    0x06f => {
+                        //BIT b(5),A -> 8
+                        self.bit_b_r(5, self.a);
+                    }
+
+                    0x070 => {
+                        //BIT b(6),B -> 8
+                        self.bit_b_r(6, self.b);
+                    }
+
+                    0x071 => {
+                        //BIT b(6),C -> 8
+                        self.bit_b_r(6, self.c);
+                    }
+
+                    0x072 => {
+                        //BIT b(6),D -> 8
+                        self.bit_b_r(6, self.d);
+                    }
+
+                    0x073 => {
+                        //BIT b(6),E -> 8
+                        self.bit_b_r(6, self.e);
+                    }
+
+                    0x074 => {
+                        //BIT b(6),H -> 8
+                        self.bit_b_r(6, self.h);
+                    }
+
+                    0x075 => {
+                        //BIT b(6),L -> 8
+                        self.bit_b_r(6, self.l);
+                    }
+                    0x077 => {
+                        //BIT b(6),A -> 8
+                        self.bit_b_r(6, self.a);
+                    }
+
+                    0x078 => {
+                        //BIT b(7),B -> 8
+                        self.bit_b_r(7, self.b);
+                    }
+                    0x079 => {
+                        //BIT b(7),C -> 8
+                        self.bit_b_r(7, self.c);
+                    }
+                    0x07a => {
+                        //BIT b(7),D -> 8
+                        self.bit_b_r(7, self.d);
+                    }
+                    0x07b => {
+                        //BIT b(7),E -> 8
+                        self.bit_b_r(7, self.e);
+                    }
+                    0x07c => {
+                        //BIT b(7),H -> 8
+                        self.bit_b_r(7, self.h);
+                    }
+                    0x07d => {
+                        //BIT b(7),L -> 8
+                        self.bit_b_r(7, self.l);
+                    }
+                    0x07f => {
+                        //BIT b(7),A -> 8
+                        self.bit_b_r(7, self.a);
+                    }
+
+                    0x080 => {
+                        //RES b(0),B -> 8
+                        self.res_b_r(0, self.b, 'b');
+                    }
+
+                    0x081 => {
+                        //RES b(0),C -> 8
+                        self.res_b_r(0, self.c, 'c');
+                    }
+
+                    0x082 => {
+                        //RES b(0),D -> 8
+                        self.res_b_r(0, self.d, 'd');
+                    }
+
+                    0x083 => {
+                        //RES b(0),E -> 8
+                        self.res_b_r(0, self.e, 'e');
+                    }
+
+                    0x084 => {
+                        //RES b(0),H -> 8
+                        self.res_b_r(0, self.h, 'h');
+                    }
+
+                    0x085 => {
+                        //RES b(0),L -> 8
+                        self.res_b_r(0, self.l, 'l');
+                    }
+                    0x087 => {
+                        //RES b(0),A -> 8
+                        self.res_b_r(0, self.a, 'a');
+                    }
+
+                    0x088 => {
+                        //RES b(1),B -> 8
+                        self.res_b_r(1, self.b, 'b');
+                    }
+                    0x089 => {
+                        //RES b(1),C -> 8
+                        self.res_b_r(1, self.c, 'c');
+                    }
+                    0x08a => {
+                        //RES b(1),D -> 8
+                        self.res_b_r(1, self.d, 'd');
+                    }
+                    0x08b => {
+                        //RES b(1),E -> 8
+                        self.res_b_r(1, self.e, 'e');
+                    }
+                    0x08c => {
+                        //RES b(1),H -> 8
+                        self.res_b_r(1, self.h, 'h');
+                    }
+                    0x08d => {
+                        //RES b(1),L -> 8
+                        self.res_b_r(1, self.l, 'l');
+                    }
+                    0x08f => {
+                        //RES b(1),A -> 8
+                        self.res_b_r(1, self.a, 'a');
+                    }
+
+                    0x090 => {
+                        //RES b(2),B -> 8
+                        self.res_b_r(2, self.b, 'b');
+                    }
+
+                    0x091 => {
+                        //RES b(2),C -> 8
+                        self.res_b_r(2, self.c, 'c');
+                    }
+
+                    0x092 => {
+                        //RES b(2),D -> 8
+                        self.res_b_r(2, self.d, 'd');
+                    }
+
+                    0x093 => {
+                        //RES b(2),E -> 8
+                        self.res_b_r(2, self.e, 'e');
+                    }
+
+                    0x094 => {
+                        //RES b(2),H -> 8
+                        self.res_b_r(2, self.h, 'h');
+                    }
+
+                    0x095 => {
+                        //RES b(2),L -> 8
+                        self.res_b_r(2, self.l, 'l');
+                    }
+                    0x097 => {
+                        //RES b(2),A -> 8
+                        self.res_b_r(2, self.a, 'a');
+                    }
+
+                    0x098 => {
+                        //RES b(3),B -> 8
+                        self.res_b_r(3, self.b, 'b');
+                    }
+                    0x099 => {
+                        //RES b(3),C -> 8
+                        self.res_b_r(3, self.c, 'c');
+                    }
+                    0x09a => {
+                        //RES b(3),D -> 8
+                        self.res_b_r(3, self.d, 'd');
+                    }
+                    0x09b => {
+                        //RES b(3),E -> 8
+                        self.res_b_r(3, self.e, 'e');
+                    }
+                    0x09c => {
+                        //RES b(3),H -> 8
+                        self.res_b_r(3, self.h, 'h');
+                    }
+                    0x09d => {
+                        //RES b(3),L -> 8
+                        self.res_b_r(3, self.l, 'l');
+                    }
+                    0x09f => {
+                        //RES b(3),A -> 8
+                        self.res_b_r(3, self.a, 'a');
+                    }
+
+                    0x0a0 => {
+                        //RES b(4),B -> 8
+                        self.res_b_r(4, self.b, 'b');
+                    }
+
+                    0x0a1 => {
+                        //RES b(4),C -> 8
+                        self.res_b_r(4, self.c, 'c');
+                    }
+
+                    0x0a2 => {
+                        //RES b(4),D -> 8
+                        self.res_b_r(4, self.d, 'd');
+                    }
+
+                    0x0a3 => {
+                        //RES b(4),E -> 8
+                        self.res_b_r(4, self.e, 'e');
+                    }
+
+                    0x0a4 => {
+                        //RES b(4),H -> 8
+                        self.res_b_r(4, self.h, 'h');
+                    }
+
+                    0x0a5 => {
+                        //RES b(4),L -> 8
+                        self.res_b_r(4, self.l, 'l');
+                    }
+                    0x0a7 => {
+                        //RES b(4),A -> 8
+                        self.res_b_r(4, self.a, 'a');
+                    }
+
+                    0x0a8 => {
+                        //RES b(5),B -> 8
+                        self.res_b_r(5, self.b, 'b');
+                    }
+                    0x0a9 => {
+                        //RES b(5),C -> 8
+                        self.res_b_r(5, self.c, 'c');
+                    }
+                    0x0aa => {
+                        //RES b(5),D -> 8
+                        self.res_b_r(5, self.d, 'd');
+                    }
+                    0x0ab => {
+                        //RES b(5),E -> 8
+                        self.res_b_r(5, self.e, 'e');
+                    }
+                    0x0ac => {
+                        //RES b(5),H -> 8
+                        self.res_b_r(5, self.h, 'h');
+                    }
+                    0x0ad => {
+                        //RES b(5),L -> 8
+                        self.res_b_r(5, self.l, 'l');
+                    }
+                    0x0af => {
+                        //RES b(5),A -> 8
+                        self.res_b_r(5, self.a, 'a');
+                    }
+
+                    0x0b0 => {
+                        //RES b(6),B -> 8
+                        self.res_b_r(6, self.b, 'b');
+                    }
+
+                    0x0b1 => {
+                        //RES b(6),C -> 8
+                        self.res_b_r(6, self.c, 'c');
+                    }
+
+                    0x0b2 => {
+                        //RES b(6),D -> 8
+                        self.res_b_r(6, self.d, 'd');
+                    }
+
+                    0x0b3 => {
+                        //RES b(6),E -> 8
+                        self.res_b_r(6, self.e, 'e');
+                    }
+
+                    0x0b4 => {
+                        //RES b(6),H -> 8
+                        self.res_b_r(6, self.h, 'h');
+                    }
+
+                    0x0b5 => {
+                        //RES b(6),L -> 8
+                        self.res_b_r(6, self.l, 'l');
+                    }
+                    0x0b7 => {
+                        //RES b(6),A -> 8
+                        self.res_b_r(6, self.a, 'a');
+                    }
+
+                    0x0b8 => {
+                        //RES b(7),B -> 8
+                        self.res_b_r(7, self.b, 'b');
+                    }
+                    0x0b9 => {
+                        //RES b(7),C -> 8
+                        self.res_b_r(7, self.c, 'c');
+                    }
+                    0x0ba => {
+                        //RES b(7),D -> 8
+                        self.res_b_r(7, self.d, 'd');
+                    }
+                    0x0bb => {
+                        //RES b(7),E -> 8
+                        self.res_b_r(7, self.e, 'e');
+                    }
+                    0x0bc => {
+                        //RES b(7),H -> 8
+                        self.res_b_r(7, self.h, 'h');
+                    }
+                    0x0bd => {
+                        //RES b(7),L -> 8
+                        self.res_b_r(7, self.l, 'l');
+                    }
+                    0x0bf => {
+                        //RES b(7),A -> 8
+                        self.res_b_r(7, self.a, 'a');
+                    }
+
+                    0x0c0 => {
+                        //SET b(0),B -> 8
+                        self.set_b_r(0, self.b, 'b');
+                    }
+
+                    0x0c1 => {
+                        //SET b(0),C -> 8
+                        self.set_b_r(0, self.c, 'c');
+                    }
+
+                    0x0c2 => {
+                        //SET b(0),D -> 8
+                        self.set_b_r(0, self.d, 'd');
+                    }
+
+                    0x0c3 => {
+                        //SET b(0),E -> 8
+                        self.set_b_r(0, self.e, 'e');
+                    }
+
+                    0x0c4 => {
+                        //SET b(0),H -> 8
+                        self.set_b_r(0, self.h, 'h');
+                    }
+
+                    0x0c5 => {
+                        //SET b(0),L -> 8
+                        self.set_b_r(0, self.l, 'l');
+                    }
+                    0x0c7 => {
+                        //SET b(0),A -> 8
+                        self.set_b_r(0, self.a, 'a');
+                    }
+
+                    0x0c8 => {
+                        //SET b(1),B -> 8
+                        self.set_b_r(1, self.b, 'b');
+                    }
+                    0x0c9 => {
+                        //SET b(1),C -> 8
+                        self.set_b_r(1, self.c, 'c');
+                    }
+                    0x0ca => {
+                        //SET b(1),D -> 8
+                        self.set_b_r(1, self.d, 'd');
+                    }
+                    0x0cb => {
+                        //SET b(1),E -> 8
+                        self.set_b_r(1, self.e, 'e');
+                    }
+                    0x0cc => {
+                        //SET b(1),H -> 8
+                        self.set_b_r(1, self.h, 'h');
+                    }
+                    0x0cd => {
+                        //SET b(1),L -> 8
+                        self.set_b_r(1, self.l, 'l');
+                    }
+                    0x0cf => {
+                        //SET b(1),A -> 8
+                        self.set_b_r(1, self.a, 'a');
+                    }
+
+                    0x0d0 => {
+                        //SET b(2),B -> 8
+                        self.set_b_r(2, self.b, 'b');
+                    }
+
+                    0x0d1 => {
+                        //SET b(2),C -> 8
+                        self.set_b_r(2, self.c, 'c');
+                    }
+
+                    0x0d2 => {
+                        //SET b(2),D -> 8
+                        self.set_b_r(2, self.d, 'd');
+                    }
+
+                    0x0d3 => {
+                        //SET b(2),E -> 8
+                        self.set_b_r(2, self.e, 'e');
+                    }
+
+                    0x0d4 => {
+                        //SET b(2),H -> 8
+                        self.set_b_r(2, self.h, 'h');
+                    }
+
+                    0x0d5 => {
+                        //SET b(2),L -> 8
+                        self.set_b_r(2, self.l, 'l');
+                    }
+                    0x0d7 => {
+                        //SET b(2),A -> 8
+                        self.set_b_r(2, self.a, 'a');
+                    }
+
+                    0x0d8 => {
+                        //SET b(3),B -> 8
+                        self.set_b_r(3, self.b, 'b');
+                    }
+                    0x0d9 => {
+                        //SET b(3),C -> 8
+                        self.set_b_r(3, self.c, 'c');
+                    }
+                    0x0da => {
+                        //SET b(3),D -> 8
+                        self.set_b_r(3, self.d, 'd');
+                    }
+                    0x0db => {
+                        //SET b(3),E -> 8
+                        self.set_b_r(3, self.e, 'e');
+                    }
+                    0x0dc => {
+                        //SET b(3),H -> 8
+                        self.set_b_r(3, self.h, 'h');
+                    }
+                    0x0dd => {
+                        //SET b(3),L -> 8
+                        self.set_b_r(3, self.l, 'l');
+                    }
+                    0x0df => {
+                        //SET b(3),A -> 8
+                        self.set_b_r(3, self.a, 'a');
+                    }
+
+                    0x0e0 => {
+                        //SET b(4),B -> 8
+                        self.set_b_r(4, self.b, 'b');
+                    }
+
+                    0x0e1 => {
+                        //SET b(4),C -> 8
+                        self.set_b_r(4, self.c, 'c');
+                    }
+
+                    0x0e2 => {
+                        //SET b(4),D -> 8
+                        self.set_b_r(4, self.d, 'd');
+                    }
+
+                    0x0e3 => {
+                        //SET b(4),E -> 8
+                        self.set_b_r(4, self.e, 'e');
+                    }
+
+                    0x0e4 => {
+                        //SET b(4),H -> 8
+                        self.set_b_r(4, self.h, 'h');
+                    }
+
+                    0x0e5 => {
+                        //SET b(4),L -> 8
+                        self.set_b_r(4, self.l, 'l');
+                    }
+                    0x0e7 => {
+                        //SET b(4),A -> 8
+                        self.set_b_r(4, self.a, 'a');
+                    }
+
+                    0x0e8 => {
+                        //SET b(5),B -> 8
+                        self.set_b_r(5, self.b, 'b');
+                    }
+                    0x0e9 => {
+                        //SET b(5),C -> 8
+                        self.set_b_r(5, self.c, 'c');
+                    }
+                    0x0ea => {
+                        //SET b(5),D -> 8
+                        self.set_b_r(5, self.d, 'd');
+                    }
+                    0x0eb => {
+                        //SET b(5),E -> 8
+                        self.set_b_r(5, self.e, 'e');
+                    }
+                    0x0ec => {
+                        //SET b(5),H -> 8
+                        self.set_b_r(5, self.h, 'h');
+                    }
+                    0x0ed => {
+                        //SET b(5),L -> 8
+                        self.set_b_r(5, self.l, 'l');
+                    }
+                    0x0ef => {
+                        //SET b(5),A -> 8
+                        self.set_b_r(5, self.a, 'a');
+                    }
+                    0x0f0 => {
+                        //SET b(6),B -> 8
+                        self.set_b_r(6, self.b, 'b');
+                    }
+
+                    0x0f1 => {
+                        //SET b(6),C -> 8
+                        self.set_b_r(6, self.c, 'c');
+                    }
+
+                    0x0f2 => {
+                        //SET b(6),D -> 8
+                        self.set_b_r(6, self.d, 'd');
+                    }
+
+                    0x0f3 => {
+                        //SET b(6),E -> 8
+                        self.set_b_r(6, self.e, 'e');
+                    }
+
+                    0x0f4 => {
+                        //SET b(6),H -> 8
+                        self.set_b_r(6, self.h, 'h');
+                    }
+
+                    0x0f5 => {
+                        //SET b(6),L -> 8
+                        self.set_b_r(6, self.l, 'l');
+                    }
+                    0x0f7 => {
+                        //SET b(6),A -> 8
+                        self.set_b_r(6, self.a, 'a');
+                    }
+
+                    0x0f8 => {
+                        //SET b(7),B -> 8
+                        self.set_b_r(7, self.b, 'b');
+                    }
+                    0x0f9 => {
+                        //SET b(7),C -> 8
+                        self.set_b_r(7, self.c, 'c');
+                    }
+                    0x0fa => {
+                        //SET b(7),D -> 8
+                        self.set_b_r(7, self.d, 'd');
+                    }
+                    0x0fb => {
+                        //SET b(7),E -> 8
+                        self.set_b_r(7, self.e, 'e');
+                    }
+                    0x0fc => {
+                        //SET b(7),H -> 8
+                        self.set_b_r(7, self.h, 'h');
+                    }
+                    0x0fd => {
+                        //SET b(7),L -> 8
+                        self.set_b_r(7, self.l, 'l');
+                    }
+                    0x0ff => {
+                        //SET b(7),A -> 8
+                        self.set_b_r(7, self.a, 'a');
                     }
                     other => {
                         info!("Unrecogized opcode (CB: {:x})", other);
@@ -2895,6 +3704,100 @@ impl Registers {
 
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
+                std::process::exit(1)
+            }
+        }
+    }
+
+    fn bit_b_r(&mut self, bit_idx: u8, register: u8) {
+        let mut flag_z = false;
+        let mut flag_n = false;
+        let mut flag_h = false;
+        let mut flag_c = false;
+
+        let check_bits = match bit_idx {
+            0 => 0b00000001,
+            1 => 0b00000010,
+            2 => 0b00000100,
+            3 => 0b00001000,
+            4 => 0b00010000,
+            5 => 0b00100000,
+            6 => 0b01000000,
+            7 => 0b10000000,
+            _ => {
+                println!("Invalid bit index");
+                std::process::exit(1)
+            }
+        };
+
+        let bit = register & check_bits;
+        if bit == 0 {
+            flag_z = true;
+        }
+        flag_h = true;
+        flag_c = self.f.c;
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn res_b_r(&mut self, bit_idx: u8, register_value: u8, register_name: char) {
+        let check_bits = match bit_idx {
+            0 => 0b11111110,
+            1 => 0b11111101,
+            2 => 0b11111011,
+            3 => 0b11110111,
+            4 => 0b11101111,
+            5 => 0b11011111,
+            6 => 0b10111111,
+            7 => 0b01111111,
+            _ => {
+                println!("Invalid bit index");
+                std::process::exit(1)
+            }
+        };
+
+        let value = register_value & check_bits;
+        match register_name {
+            'a' => self.set_a(value),
+            'b' => self.set_b(value),
+            'c' => self.set_c(value),
+            'd' => self.set_d(value),
+            'e' => self.set_e(value),
+            'h' => self.set_h(value),
+            'l' => self.set_l(value),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+    }
+
+    fn set_b_r(&mut self, bit_idx: u8, register_value: u8, register_name: char) {
+        let check_bits = match bit_idx {
+            0 => 0b00000001,
+            1 => 0b00000010,
+            2 => 0b00000100,
+            3 => 0b00001000,
+            4 => 0b00010000,
+            5 => 0b00100000,
+            6 => 0b01000000,
+            7 => 0b10000000,
+            _ => {
+                println!("Invalid bit index");
+                std::process::exit(1)
+            }
+        };
+
+        let value = register_value | check_bits;
+        match register_name {
+            'a' => self.set_a(value),
+            'b' => self.set_b(value),
+            'c' => self.set_c(value),
+            'd' => self.set_d(value),
+            'e' => self.set_e(value),
+            'h' => self.set_h(value),
+            'l' => self.set_l(value),
+            _ => {
+                println!("Invalid register name");
                 std::process::exit(1)
             }
         }
