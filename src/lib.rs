@@ -2808,6 +2808,91 @@ impl Registers {
                 self.inc_pc();
             }
 
+            0x0BB => {
+                //CP E
+                if self.a == self.e {
+                    flag_z = true
+                }
+                flag_n = true;
+
+                if self.check_half_carry_sub(self.a, self.e) {
+                    //TODO:  Set if no borrow from bit 4.
+                    //- why set if no borrow instead of borrow?
+                    flag_h = true
+                }
+
+                if self.a < self.e {
+                    flag_c = true;
+                }
+
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x01B => {
+                //DEC DE -> 8
+                let d_e = self.combine_two_bytes(self.d, self.e);
+                let value = d_e.wrapping_sub(1);
+                self.set_de(value);
+                self.inc_pc();
+            }
+
+            0x02B => {
+                //DEC HL -> 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = h_l.wrapping_sub(1);
+                self.set_hl(value);
+                self.inc_pc();
+            }
+
+            0x045 => {
+                //LD B, L -> 4
+                self.set_b(self.l);
+                self.inc_pc();
+            }
+
+            0x04A => {
+                //LD C, D -> 4
+                self.set_c(self.d);
+                self.inc_pc();
+            }
+
+            0x04B => {
+                //LD C, E -> 4
+                self.set_c(self.e);
+                self.inc_pc();
+            }
+
+            0x060 => {
+                //LD H, B -> 4
+                self.set_h(self.b);
+                self.inc_pc();
+            }
+
+            0x063 => {
+                //LD H, E -> 4
+                self.set_h(self.e);
+                self.inc_pc();
+            }
+
+            0x064 => {
+                //LD H, E -> 4
+                self.set_h(self.h);
+                self.inc_pc();
+            }
+
+            0x065 => {
+                //LD H, L -> 4
+                self.set_h(self.l);
+                self.inc_pc();
+            }
+
+            0x068 => {
+                //LD L, B -> 4
+                self.set_l(self.b);
+                self.inc_pc();
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -3512,6 +3597,17 @@ impl Gameboy {
             0x039 => 8,
             0x0E8 => 16,
             0x0de => 8,
+            0x0BB => 4,
+            0x01B => 8,
+            0x02B => 8,
+            0x045 => 4,
+            0x04A => 4,
+            0x04B => 4,
+            0x060 => 4,
+            0x063 => 4,
+            0x064 => 4,
+            0x065 => 4,
+            0x068 => 4,
             other => {
                 info!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
@@ -4590,6 +4686,10 @@ pub fn opcode_name(opcode: u8) -> String {
         0x03B => "DEC SP",
         0x039 => "ADD HL, SP",
         0x0E8 => "ADD SP, n",
+        0x0de => "SCB A,n",
+        0x0BB => "CP E",
+        0x01B => "DEC DE",
+        0x02B =>"DEC HL",
         _other => "???",
     };
 
