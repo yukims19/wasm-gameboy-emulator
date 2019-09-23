@@ -3702,6 +3702,101 @@ impl Registers {
                 self.inc_pc();
             }
 
+            0x0ca => {
+                //JP Z,nn -> 12
+                let value = self.following_two_bytes(pointer, memory);
+                if self.f.z {
+                    self.set_pc(value);
+                } else {
+                    self.inc_pc();
+                }
+            }
+
+            0x0D2 => {
+                //JP NC,nn -> 12
+                let value = self.following_two_bytes(pointer, memory);
+                if !self.f.c {
+                    self.set_pc(value);
+                } else {
+                    self.inc_pc();
+                }
+            }
+
+            0x0Da => {
+                //JP C,nn -> 12
+                let value = self.following_two_bytes(pointer, memory);
+                if self.f.c {
+                    self.set_pc(value);
+                } else {
+                    self.inc_pc();
+                }
+            }
+
+            0x0D4 => {
+                //CALL NC, nn - 12
+                let next_two_bytes = self.following_two_bytes(pointer, memory);
+                if !self.f.c {
+                    let next_instruction_address = self.pc + 1;
+                    self.push_stack(memory, next_instruction_address);
+                    self.set_pc(next_two_bytes);
+                } else {
+                    self.inc_pc();
+                }
+            }
+
+            0x0DC => {
+                //CALL C, nn - 12
+                let next_two_bytes = self.following_two_bytes(pointer, memory);
+                if self.f.c {
+                    let next_instruction_address = self.pc + 1;
+                    self.push_stack(memory, next_instruction_address);
+                    self.set_pc(next_two_bytes);
+                } else {
+                    self.inc_pc();
+                }
+            }
+
+            0x0D9 => {
+                //RETI -> 8
+                let address = self.pop_stack(self.sp, memory);
+                self.set_pc(address);
+                //TODO:Endable interrupts
+                println!("IMPORTANT!! TODO: Enable interrupts");
+            }
+
+            0x0C7 => {
+                //RST 00H -> 32
+                self.inc_pc();
+                self.push_stack(memory, self.pc);
+                self.set_pc(0x00 as u16);
+            }
+
+            0x0CF => {
+                //RST 08H -> 32
+                self.inc_pc();
+                self.push_stack(memory, self.pc);
+                self.set_pc(0x08 as u16);
+            }
+
+            0x0f2 => {
+                //LD A, ($ff00+C) -> 8
+                let offset = 0xff00 + self.c as u16;
+                let value = memory[offset as usize];
+                self.set_a(value);
+                self.inc_pc();
+            }
+
+            0x02f => {
+                //CPL: Flip all bits of A -> 4
+                let value = !self.a;
+                flag_z = self.f.z;
+                flag_n = true;
+                flag_h = true;
+                flag_c = self.f.c;
+                self.set_a(value);
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -4301,29 +4396,37 @@ impl Gameboy {
             0x0E2 => 8,
             0x0E0 => 12,
             0x0CB => match self.memory[self.registers.pc as usize + 1] {
-                0x07c => 8,
-                0x011 => 8,
-                0x038 => 8,
-                0x019 => 8,
-                0x01F => 8,
-                0x018 => 8,
-                0x01A => 8,
-                0x01B => 8,
-                0x01C => 8,
-                0x01D => 8,
                 0x01E => 16,
-                0x03F => 8,
-                0x039 => 8,
-                0x03A => 8,
-                0x03B => 8,
-                0x03C => 8,
-                0x03D => 8,
+                0x02E => 16,
                 0x03E => 16,
-                0x037 => 8,
-                other => {
-                    info!("Unrecogized opcode (CB: {:x})", other);
-                    std::process::exit(1)
-                }
+                0x04E => 16,
+                0x05E => 16,
+                0x06E => 16,
+                0x07E => 16,
+                0x08E => 16,
+                0x09E => 16,
+                0x0aE => 16,
+                0x0bE => 16,
+                0x0cE => 16,
+                0x0dE => 16,
+                0x0eE => 16,
+                0x0fE => 16,
+                0x016 => 16,
+                0x026 => 16,
+                0x036 => 16,
+                0x046 => 16,
+                0x056 => 16,
+                0x066 => 16,
+                0x076 => 16,
+                0x086 => 16,
+                0x096 => 16,
+                0x0a6 => 16,
+                0x0b6 => 16,
+                0x0c6 => 16,
+                0x0d6 => 16,
+                0x0e6 => 16,
+                0x0f6 => 16,
+                _other => 8,
             },
             0x017 => 4,
             0x020 => 8,
@@ -4511,6 +4614,17 @@ impl Gameboy {
             0x064 => 4,
             0x065 => 4,
             0x068 => 4,
+            0x0ca => 12,
+            0x0D2 => 12,
+            0x0Da => 12,
+            0x0D4 => 12,
+            0x0DC => 12,
+            0x0D9 => 8,
+            0x0C7 => 32,
+            0x0CF => 32,
+            0x0f2 => 8,
+            0x02f => 4,
+
             other => {
                 info!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
