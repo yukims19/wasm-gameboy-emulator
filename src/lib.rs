@@ -1296,8 +1296,6 @@ impl Registers {
                 flag_n = true;
 
                 if self.check_half_carry_sub(self.a, following_byte) {
-                    //TODO:  Set if no borrow from bit 4.
-                    //- why set if no borrow instead of borrow?
                     flag_h = true
                 }
 
@@ -3513,6 +3511,7 @@ impl Gameboy {
             0x03B => 8,
             0x039 => 8,
             0x0E8 => 16,
+            0x0de => 8,
             other => {
                 info!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
