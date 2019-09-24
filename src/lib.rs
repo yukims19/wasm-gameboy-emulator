@@ -5149,20 +5149,20 @@ impl Gameboy {
             let instruction = self.memory[self.registers.pc as usize];
 
             // FIXME: Only do this on first time through when the bootrom unmaps itself
-            if self.registers.pc == 0xfe {
-                info!("PC: 0xfe, instruction: {:x}", instruction);
-                if instruction == 0x00e0 {
-                    info!("PC: 0xfe, instruction: e0, reg a: {:?}", self.registers.a);
-                    // && self.registers.a == 1
-                    {
-                        info!("Unmapping bootrom...");
-                        for idx in 0x00..0xff {
-                            // info!("\t{:?} -> {:?}", idx, self.cartridge[idx]);
-                            self.memory[idx] = self.cartridge[idx];
-                        }
-                    }
-                }
-            }
+            // if self.registers.pc == 0xfe {
+            //     info!("PC: 0xfe, instruction: {:x}", instruction);
+            //     if instruction == 0x00e0 {
+            //         info!("PC: 0xfe, instruction: e0, reg a: {:?}", self.registers.a);
+            //         // && self.registers.a == 1
+            //         {
+            //             info!("Unmapping bootrom...");
+            //             for idx in 0x00..0xff {
+            //                 // info!("\t{:?} -> {:?}", idx, self.cartridge[idx]);
+            //                 self.memory[idx] = self.cartridge[idx];
+            //             }
+            //         }
+            //     }
+            // }
 
             let ly = self.ly();
 
@@ -5259,6 +5259,7 @@ impl Gameboy {
             // TODO: Move this to a handle-serial-bus function
             if self.memory[0xff02] == 0x81 {
                 self.debug_serial_value();
+                info!("PC: {:x}", self.registers.pc);
                 self.memory[0xff02] = 0x0;
             }
         }
@@ -5300,36 +5301,38 @@ impl Gameboy {
             h: 0,
             l: 0,
             sp: 0xffff,
-            pc: 0,
+            pc: 0x100,
         };
 
-        let boot_rom_content = include_bytes!("boot-rom.gb");
+        // let boot_rom_content = include_bytes!("boot-rom.gb");
         // let boot_rom_content = include_bytes!("test_rom.gb");
         //        let cartridge_content = include_bytes!("mario.gb");
         // let cartridge_content = include_bytes!("cpu_instrs.gb");
         // let cartridge_content = include_bytes!("01-special.gb");
         // let cartridge_content = include_bytes!("02-interrupts.gb");
-        let cartridge_content = include_bytes!("03-op sp,hl.gb");
+        // let cartridge_content = include_bytes!("03-op sp,hl.gb");
         // let cartridge_content = include_bytes!("04-op r,imm.gb");
         // let cartridge_content = include_bytes!("05-op rp.gb");
-        // let cartridge_content = include_bytes!("06-ld r,r.gb");
+        let cartridge_content = include_bytes!("06-ld r,r.gb");
         // let cartridge_content = include_bytes!("07-jr,jp,call,ret,rst.gb");
         // let cartridge_content = include_bytes!("08-misc instrs.gb");
         // let cartridge_content = include_bytes!("09-op r,r.gb");
         // let cartridge_content = include_bytes!("10-bit ops.gb");
         // let cartridge_content = include_bytes!("11-op a,(hl).gb");
 
-        let _head = boot_rom_content;
+        // let _head = boot_rom_content;
         let _body = &cartridge_content[0x100..(cartridge_content.len())];
 
         let full_memory_capacity = 0x10000;
 
-        let head = boot_rom_content;
-        let body = &cartridge_content[0x100..(cartridge_content.len())];
+        // let head = boot_rom_content;
+        // let body = &cartridge_content[0x100..(cartridge_content.len())];
+
+        let body = cartridge_content;
 
         let mut full_memory: Vec<u8> = Vec::new();
 
-        full_memory.extend_from_slice(head);
+        // full_memory.extend_from_slice(head);
         full_memory.extend_from_slice(body);
 
         full_memory.resize_with(full_memory_capacity, || 0);

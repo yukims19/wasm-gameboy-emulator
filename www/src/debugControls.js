@@ -14,7 +14,7 @@ const cellColor = (memoryIdx, pc, sp, hoveredMemoryIdx) => {
 
 // memoryStart/End will be aligned to 16-bit boundaries
 const HexViewer = props => {
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
 
   const [hoveredMemoryIdx, setHoveredMemoryIdx] = useState(0);
   const [editingMemoryIndexes, setEditingMemoryIndexes] = useState([]);
