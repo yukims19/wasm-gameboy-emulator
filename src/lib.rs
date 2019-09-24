@@ -1,3 +1,4 @@
+use log::debug;
 use log::info;
 use log::Level;
 
@@ -4239,6 +4240,10 @@ impl Gameboy {
         info!("remove- break points{:?}", self.break_points);
     }
 
+    pub fn get_break_points(&self) -> Vec<u16> {
+        self.break_points.clone()
+    }
+
     //Intrupts
     // fn do_interupt(&self) -> bool {
     //     let has_request = self.memory[0xff0f] & 0b00010111 != 0;
@@ -5114,7 +5119,8 @@ impl Gameboy {
         el.set_inner_html(&new_html);
     }
 
-    pub fn execute_opcodes_no_stop(&mut self, count: usize) {
+    pub fn execute_opcodes_no_stop(&mut self, count: u32) {
+        info!("execute_opcodes_no_stop");
         if self.cpu_paused || !self.is_running {
             return;
         }
@@ -5143,6 +5149,10 @@ impl Gameboy {
 
         loop {
             if self.cpu_paused || !self.is_running {
+                debug!(
+                    "Exiting loop, paused={:?}, is_running={:?}",
+                    self.cpu_paused, self.is_running
+                );
                 break;
             }
 
@@ -5197,7 +5207,14 @@ impl Gameboy {
                 let elapsed = now - time_last_draw;
                 let time_to_sleep = 16.66 - elapsed;
                 // if time_to_sleep > 0.0 {
-                //     TimeoutFuture::new(time_to_sleep).and_then(|_| self.execute_opcodes_no_stop())
+                //     info!("Prepping timeout...!");
+                //     Timeout::new(time_to_sleep as u32, || {
+                //         info!("Timeout success!");
+                //         self.execute_opcodes_no_stop()
+                //     })
+                //     .forget();
+
+                //     // Timeout::new(time_to_sleep, || self.execute_opcodes_no_stop()).forget();
                 // }
                 break;
             }
@@ -5225,12 +5242,6 @@ impl Gameboy {
                 self.is_running = false;
             }
 
-            if count == 1 {
-                canvases.draw_screen_from_memory(self);
-                // canvases.update_char_map_canvas(self);
-                // canvases.render_background_map_as_image_data(self);
-            }
-
             // if instruction == 0x076 {
             //     //HALT: Pause CPU Until Interrupt
             //     self.pause_cpu()
@@ -5246,13 +5257,8 @@ impl Gameboy {
             //Check IME -> set when return from interuption
 
             // info!("count: {}", count);
-            if self.total_cycle() - start_cycle_count > count {
-                let elapsed = performance.now() - start_time;
-                // info!(
-                //     "Executed {:?} cycles in {:?}ms",
-                //     self.total_cycle(),
-                //     elapsed
-                // );
+            let executed_cycles = self.total_cycle() - start_cycle_count;
+            if executed_cycles as u32 > count {
                 break;
             }
 
@@ -5263,6 +5269,16 @@ impl Gameboy {
                 self.memory[0xff02] = 0x0;
             }
         }
+
+        let executed_cycles = self.total_cycle() - start_cycle_count;
+        let elapsed = performance.now() - start_time;
+        info!(
+            "Finished in no_stop @ {:?}: Executed {:?} cycles ({:?} requested) in {:?}ms",
+            self.total_cycle(),
+            executed_cycles,
+            count,
+            elapsed
+        )
     }
 
     pub fn reset_fm_osc(&mut self, square1: Channel) {
