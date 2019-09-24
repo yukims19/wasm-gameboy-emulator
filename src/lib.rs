@@ -741,6 +741,7 @@ impl Registers {
             0x0CB => {
                 match self.following_byte(pointer, memory) {
                     // 0x07c => {
+                    //     //BIT (7,H)
                     //     if self.h & 0x80 == 0x00 {
                     //         flag_z = true;
                     //     }
@@ -1056,6 +1057,7 @@ impl Registers {
                         self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
                     }
 
+                    //NEW CB!
                     0x047 => {
                         //BIT b(0),A -> 8
                         let bit = self.a & 0b00000001;
@@ -1365,506 +1367,781 @@ impl Registers {
 
                     0x080 => {
                         //RES b(0),B -> 8
-                        self.res_b_r(0, self.b, 'b');
+                        self.res_b_r(0, self.b, "b", memory);
                     }
 
                     0x081 => {
                         //RES b(0),C -> 8
-                        self.res_b_r(0, self.c, 'c');
+                        self.res_b_r(0, self.c, "c", memory);
                     }
 
                     0x082 => {
                         //RES b(0),D -> 8
-                        self.res_b_r(0, self.d, 'd');
+                        self.res_b_r(0, self.d, "d", memory);
                     }
 
                     0x083 => {
                         //RES b(0),E -> 8
-                        self.res_b_r(0, self.e, 'e');
+                        self.res_b_r(0, self.e, "e", memory);
                     }
 
                     0x084 => {
                         //RES b(0),H -> 8
-                        self.res_b_r(0, self.h, 'h');
+                        self.res_b_r(0, self.h, "h", memory);
                     }
 
                     0x085 => {
                         //RES b(0),L -> 8
-                        self.res_b_r(0, self.l, 'l');
+                        self.res_b_r(0, self.l, "l", memory);
                     }
                     0x087 => {
                         //RES b(0),A -> 8
-                        self.res_b_r(0, self.a, 'a');
+                        self.res_b_r(0, self.a, "a", memory);
                     }
 
                     0x088 => {
                         //RES b(1),B -> 8
-                        self.res_b_r(1, self.b, 'b');
+                        self.res_b_r(1, self.b, "b", memory);
                     }
                     0x089 => {
                         //RES b(1),C -> 8
-                        self.res_b_r(1, self.c, 'c');
+                        self.res_b_r(1, self.c, "c", memory);
                     }
                     0x08a => {
                         //RES b(1),D -> 8
-                        self.res_b_r(1, self.d, 'd');
+                        self.res_b_r(1, self.d, "d", memory);
                     }
                     0x08b => {
                         //RES b(1),E -> 8
-                        self.res_b_r(1, self.e, 'e');
+                        self.res_b_r(1, self.e, "e", memory);
                     }
                     0x08c => {
                         //RES b(1),H -> 8
-                        self.res_b_r(1, self.h, 'h');
+                        self.res_b_r(1, self.h, "h", memory);
                     }
                     0x08d => {
                         //RES b(1),L -> 8
-                        self.res_b_r(1, self.l, 'l');
+                        self.res_b_r(1, self.l, "l", memory);
                     }
                     0x08f => {
                         //RES b(1),A -> 8
-                        self.res_b_r(1, self.a, 'a');
+                        self.res_b_r(1, self.a, "a", memory);
                     }
 
                     0x090 => {
                         //RES b(2),B -> 8
-                        self.res_b_r(2, self.b, 'b');
+                        self.res_b_r(2, self.b, "b", memory);
                     }
 
                     0x091 => {
                         //RES b(2),C -> 8
-                        self.res_b_r(2, self.c, 'c');
+                        self.res_b_r(2, self.c, "c", memory);
                     }
 
                     0x092 => {
                         //RES b(2),D -> 8
-                        self.res_b_r(2, self.d, 'd');
+                        self.res_b_r(2, self.d, "d", memory);
                     }
 
                     0x093 => {
                         //RES b(2),E -> 8
-                        self.res_b_r(2, self.e, 'e');
+                        self.res_b_r(2, self.e, "e", memory);
                     }
 
                     0x094 => {
                         //RES b(2),H -> 8
-                        self.res_b_r(2, self.h, 'h');
+                        self.res_b_r(2, self.h, "h", memory);
                     }
 
                     0x095 => {
                         //RES b(2),L -> 8
-                        self.res_b_r(2, self.l, 'l');
+                        self.res_b_r(2, self.l, "l", memory);
                     }
                     0x097 => {
                         //RES b(2),A -> 8
-                        self.res_b_r(2, self.a, 'a');
+                        self.res_b_r(2, self.a, "a", memory);
                     }
 
                     0x098 => {
                         //RES b(3),B -> 8
-                        self.res_b_r(3, self.b, 'b');
+                        self.res_b_r(3, self.b, "b", memory);
                     }
                     0x099 => {
                         //RES b(3),C -> 8
-                        self.res_b_r(3, self.c, 'c');
+                        self.res_b_r(3, self.c, "c", memory);
                     }
                     0x09a => {
                         //RES b(3),D -> 8
-                        self.res_b_r(3, self.d, 'd');
+                        self.res_b_r(3, self.d, "d", memory);
                     }
                     0x09b => {
                         //RES b(3),E -> 8
-                        self.res_b_r(3, self.e, 'e');
+                        self.res_b_r(3, self.e, "e", memory);
                     }
                     0x09c => {
                         //RES b(3),H -> 8
-                        self.res_b_r(3, self.h, 'h');
+                        self.res_b_r(3, self.h, "h", memory);
                     }
                     0x09d => {
                         //RES b(3),L -> 8
-                        self.res_b_r(3, self.l, 'l');
+                        self.res_b_r(3, self.l, "l", memory);
                     }
                     0x09f => {
                         //RES b(3),A -> 8
-                        self.res_b_r(3, self.a, 'a');
+                        self.res_b_r(3, self.a, "a", memory);
                     }
 
                     0x0a0 => {
                         //RES b(4),B -> 8
-                        self.res_b_r(4, self.b, 'b');
+                        self.res_b_r(4, self.b, "b", memory);
                     }
 
                     0x0a1 => {
                         //RES b(4),C -> 8
-                        self.res_b_r(4, self.c, 'c');
+                        self.res_b_r(4, self.c, "c", memory);
                     }
 
                     0x0a2 => {
                         //RES b(4),D -> 8
-                        self.res_b_r(4, self.d, 'd');
+                        self.res_b_r(4, self.d, "d", memory);
                     }
 
                     0x0a3 => {
                         //RES b(4),E -> 8
-                        self.res_b_r(4, self.e, 'e');
+                        self.res_b_r(4, self.e, "e", memory);
                     }
 
                     0x0a4 => {
                         //RES b(4),H -> 8
-                        self.res_b_r(4, self.h, 'h');
+                        self.res_b_r(4, self.h, "h", memory);
                     }
 
                     0x0a5 => {
                         //RES b(4),L -> 8
-                        self.res_b_r(4, self.l, 'l');
+                        self.res_b_r(4, self.l, "l", memory);
                     }
                     0x0a7 => {
                         //RES b(4),A -> 8
-                        self.res_b_r(4, self.a, 'a');
+                        self.res_b_r(4, self.a, "a", memory);
                     }
 
                     0x0a8 => {
                         //RES b(5),B -> 8
-                        self.res_b_r(5, self.b, 'b');
+                        self.res_b_r(5, self.b, "b", memory);
                     }
                     0x0a9 => {
                         //RES b(5),C -> 8
-                        self.res_b_r(5, self.c, 'c');
+                        self.res_b_r(5, self.c, "c", memory);
                     }
                     0x0aa => {
                         //RES b(5),D -> 8
-                        self.res_b_r(5, self.d, 'd');
+                        self.res_b_r(5, self.d, "d", memory);
                     }
                     0x0ab => {
                         //RES b(5),E -> 8
-                        self.res_b_r(5, self.e, 'e');
+                        self.res_b_r(5, self.e, "e", memory);
                     }
                     0x0ac => {
                         //RES b(5),H -> 8
-                        self.res_b_r(5, self.h, 'h');
+                        self.res_b_r(5, self.h, "h", memory);
                     }
                     0x0ad => {
                         //RES b(5),L -> 8
-                        self.res_b_r(5, self.l, 'l');
+                        self.res_b_r(5, self.l, "l", memory);
                     }
                     0x0af => {
                         //RES b(5),A -> 8
-                        self.res_b_r(5, self.a, 'a');
+                        self.res_b_r(5, self.a, "a", memory);
                     }
 
                     0x0b0 => {
                         //RES b(6),B -> 8
-                        self.res_b_r(6, self.b, 'b');
+                        self.res_b_r(6, self.b, "b", memory);
                     }
 
                     0x0b1 => {
                         //RES b(6),C -> 8
-                        self.res_b_r(6, self.c, 'c');
+                        self.res_b_r(6, self.c, "c", memory);
                     }
 
                     0x0b2 => {
                         //RES b(6),D -> 8
-                        self.res_b_r(6, self.d, 'd');
+                        self.res_b_r(6, self.d, "d", memory);
                     }
 
                     0x0b3 => {
                         //RES b(6),E -> 8
-                        self.res_b_r(6, self.e, 'e');
+                        self.res_b_r(6, self.e, "e", memory);
                     }
 
                     0x0b4 => {
                         //RES b(6),H -> 8
-                        self.res_b_r(6, self.h, 'h');
+                        self.res_b_r(6, self.h, "h", memory);
                     }
 
                     0x0b5 => {
                         //RES b(6),L -> 8
-                        self.res_b_r(6, self.l, 'l');
+                        self.res_b_r(6, self.l, "l", memory);
                     }
                     0x0b7 => {
                         //RES b(6),A -> 8
-                        self.res_b_r(6, self.a, 'a');
+                        self.res_b_r(6, self.a, "a", memory);
                     }
 
                     0x0b8 => {
                         //RES b(7),B -> 8
-                        self.res_b_r(7, self.b, 'b');
+                        self.res_b_r(7, self.b, "b", memory);
                     }
                     0x0b9 => {
                         //RES b(7),C -> 8
-                        self.res_b_r(7, self.c, 'c');
+                        self.res_b_r(7, self.c, "c", memory);
                     }
                     0x0ba => {
                         //RES b(7),D -> 8
-                        self.res_b_r(7, self.d, 'd');
+                        self.res_b_r(7, self.d, "d", memory);
                     }
                     0x0bb => {
                         //RES b(7),E -> 8
-                        self.res_b_r(7, self.e, 'e');
+                        self.res_b_r(7, self.e, "e", memory);
                     }
                     0x0bc => {
                         //RES b(7),H -> 8
-                        self.res_b_r(7, self.h, 'h');
+                        self.res_b_r(7, self.h, "h", memory);
                     }
                     0x0bd => {
                         //RES b(7),L -> 8
-                        self.res_b_r(7, self.l, 'l');
+                        self.res_b_r(7, self.l, "l", memory);
                     }
                     0x0bf => {
                         //RES b(7),A -> 8
-                        self.res_b_r(7, self.a, 'a');
+                        self.res_b_r(7, self.a, "a", memory);
                     }
 
                     0x0c0 => {
                         //SET b(0),B -> 8
-                        self.set_b_r(0, self.b, 'b');
+                        self.set_b_r(0, self.b, "b", memory);
                     }
 
                     0x0c1 => {
                         //SET b(0),C -> 8
-                        self.set_b_r(0, self.c, 'c');
+                        self.set_b_r(0, self.c, "c", memory);
                     }
 
                     0x0c2 => {
                         //SET b(0),D -> 8
-                        self.set_b_r(0, self.d, 'd');
+                        self.set_b_r(0, self.d, "d", memory);
                     }
 
                     0x0c3 => {
                         //SET b(0),E -> 8
-                        self.set_b_r(0, self.e, 'e');
+                        self.set_b_r(0, self.e, "e", memory);
                     }
 
                     0x0c4 => {
                         //SET b(0),H -> 8
-                        self.set_b_r(0, self.h, 'h');
+                        self.set_b_r(0, self.h, "h", memory);
                     }
 
                     0x0c5 => {
                         //SET b(0),L -> 8
-                        self.set_b_r(0, self.l, 'l');
+                        self.set_b_r(0, self.l, "l", memory);
                     }
                     0x0c7 => {
                         //SET b(0),A -> 8
-                        self.set_b_r(0, self.a, 'a');
+                        self.set_b_r(0, self.a, "a", memory);
                     }
 
                     0x0c8 => {
                         //SET b(1),B -> 8
-                        self.set_b_r(1, self.b, 'b');
+                        self.set_b_r(1, self.b, "b", memory);
                     }
                     0x0c9 => {
                         //SET b(1),C -> 8
-                        self.set_b_r(1, self.c, 'c');
+                        self.set_b_r(1, self.c, "c", memory);
                     }
                     0x0ca => {
                         //SET b(1),D -> 8
-                        self.set_b_r(1, self.d, 'd');
+                        self.set_b_r(1, self.d, "d", memory);
                     }
                     0x0cb => {
                         //SET b(1),E -> 8
-                        self.set_b_r(1, self.e, 'e');
+                        self.set_b_r(1, self.e, "e", memory);
                     }
                     0x0cc => {
                         //SET b(1),H -> 8
-                        self.set_b_r(1, self.h, 'h');
+                        self.set_b_r(1, self.h, "h", memory);
                     }
                     0x0cd => {
                         //SET b(1),L -> 8
-                        self.set_b_r(1, self.l, 'l');
+                        self.set_b_r(1, self.l, "l", memory);
                     }
                     0x0cf => {
                         //SET b(1),A -> 8
-                        self.set_b_r(1, self.a, 'a');
+                        self.set_b_r(1, self.a, "a", memory);
                     }
 
                     0x0d0 => {
                         //SET b(2),B -> 8
-                        self.set_b_r(2, self.b, 'b');
+                        self.set_b_r(2, self.b, "b", memory);
                     }
 
                     0x0d1 => {
                         //SET b(2),C -> 8
-                        self.set_b_r(2, self.c, 'c');
+                        self.set_b_r(2, self.c, "c", memory);
                     }
 
                     0x0d2 => {
                         //SET b(2),D -> 8
-                        self.set_b_r(2, self.d, 'd');
+                        self.set_b_r(2, self.d, "d", memory);
                     }
 
                     0x0d3 => {
                         //SET b(2),E -> 8
-                        self.set_b_r(2, self.e, 'e');
+                        self.set_b_r(2, self.e, "e", memory);
                     }
 
                     0x0d4 => {
                         //SET b(2),H -> 8
-                        self.set_b_r(2, self.h, 'h');
+                        self.set_b_r(2, self.h, "h", memory);
                     }
 
                     0x0d5 => {
                         //SET b(2),L -> 8
-                        self.set_b_r(2, self.l, 'l');
+                        self.set_b_r(2, self.l, "l", memory);
                     }
                     0x0d7 => {
                         //SET b(2),A -> 8
-                        self.set_b_r(2, self.a, 'a');
+                        self.set_b_r(2, self.a, "a", memory);
                     }
 
                     0x0d8 => {
                         //SET b(3),B -> 8
-                        self.set_b_r(3, self.b, 'b');
+                        self.set_b_r(3, self.b, "b", memory);
                     }
                     0x0d9 => {
                         //SET b(3),C -> 8
-                        self.set_b_r(3, self.c, 'c');
+                        self.set_b_r(3, self.c, "c", memory);
                     }
                     0x0da => {
                         //SET b(3),D -> 8
-                        self.set_b_r(3, self.d, 'd');
+                        self.set_b_r(3, self.d, "d", memory);
                     }
                     0x0db => {
                         //SET b(3),E -> 8
-                        self.set_b_r(3, self.e, 'e');
+                        self.set_b_r(3, self.e, "e", memory);
                     }
                     0x0dc => {
                         //SET b(3),H -> 8
-                        self.set_b_r(3, self.h, 'h');
+                        self.set_b_r(3, self.h, "h", memory);
                     }
                     0x0dd => {
                         //SET b(3),L -> 8
-                        self.set_b_r(3, self.l, 'l');
+                        self.set_b_r(3, self.l, "l", memory);
                     }
                     0x0df => {
                         //SET b(3),A -> 8
-                        self.set_b_r(3, self.a, 'a');
+                        self.set_b_r(3, self.a, "a", memory);
                     }
 
                     0x0e0 => {
                         //SET b(4),B -> 8
-                        self.set_b_r(4, self.b, 'b');
+                        self.set_b_r(4, self.b, "b", memory);
                     }
 
                     0x0e1 => {
                         //SET b(4),C -> 8
-                        self.set_b_r(4, self.c, 'c');
+                        self.set_b_r(4, self.c, "c", memory);
                     }
 
                     0x0e2 => {
                         //SET b(4),D -> 8
-                        self.set_b_r(4, self.d, 'd');
+                        self.set_b_r(4, self.d, "d", memory);
                     }
 
                     0x0e3 => {
                         //SET b(4),E -> 8
-                        self.set_b_r(4, self.e, 'e');
+                        self.set_b_r(4, self.e, "e", memory);
                     }
 
                     0x0e4 => {
                         //SET b(4),H -> 8
-                        self.set_b_r(4, self.h, 'h');
+                        self.set_b_r(4, self.h, "h", memory);
                     }
 
                     0x0e5 => {
                         //SET b(4),L -> 8
-                        self.set_b_r(4, self.l, 'l');
+                        self.set_b_r(4, self.l, "l", memory);
                     }
                     0x0e7 => {
                         //SET b(4),A -> 8
-                        self.set_b_r(4, self.a, 'a');
+                        self.set_b_r(4, self.a, "a", memory);
                     }
 
                     0x0e8 => {
                         //SET b(5),B -> 8
-                        self.set_b_r(5, self.b, 'b');
+                        self.set_b_r(5, self.b, "b", memory);
                     }
                     0x0e9 => {
                         //SET b(5),C -> 8
-                        self.set_b_r(5, self.c, 'c');
+                        self.set_b_r(5, self.c, "c", memory);
                     }
                     0x0ea => {
                         //SET b(5),D -> 8
-                        self.set_b_r(5, self.d, 'd');
+                        self.set_b_r(5, self.d, "d", memory);
                     }
                     0x0eb => {
                         //SET b(5),E -> 8
-                        self.set_b_r(5, self.e, 'e');
+                        self.set_b_r(5, self.e, "e", memory);
                     }
                     0x0ec => {
                         //SET b(5),H -> 8
-                        self.set_b_r(5, self.h, 'h');
+                        self.set_b_r(5, self.h, "h", memory);
                     }
                     0x0ed => {
                         //SET b(5),L -> 8
-                        self.set_b_r(5, self.l, 'l');
+                        self.set_b_r(5, self.l, "l", memory);
                     }
                     0x0ef => {
                         //SET b(5),A -> 8
-                        self.set_b_r(5, self.a, 'a');
+                        self.set_b_r(5, self.a, "a", memory);
                     }
                     0x0f0 => {
                         //SET b(6),B -> 8
-                        self.set_b_r(6, self.b, 'b');
+                        self.set_b_r(6, self.b, "b", memory);
                     }
 
                     0x0f1 => {
                         //SET b(6),C -> 8
-                        self.set_b_r(6, self.c, 'c');
+                        self.set_b_r(6, self.c, "c", memory);
                     }
 
                     0x0f2 => {
                         //SET b(6),D -> 8
-                        self.set_b_r(6, self.d, 'd');
+                        self.set_b_r(6, self.d, "d", memory);
                     }
 
                     0x0f3 => {
                         //SET b(6),E -> 8
-                        self.set_b_r(6, self.e, 'e');
+                        self.set_b_r(6, self.e, "e", memory);
                     }
 
                     0x0f4 => {
                         //SET b(6),H -> 8
-                        self.set_b_r(6, self.h, 'h');
+                        self.set_b_r(6, self.h, "h", memory);
                     }
 
                     0x0f5 => {
                         //SET b(6),L -> 8
-                        self.set_b_r(6, self.l, 'l');
+                        self.set_b_r(6, self.l, "l", memory);
                     }
                     0x0f7 => {
                         //SET b(6),A -> 8
-                        self.set_b_r(6, self.a, 'a');
+                        self.set_b_r(6, self.a, "a", memory);
                     }
 
                     0x0f8 => {
                         //SET b(7),B -> 8
-                        self.set_b_r(7, self.b, 'b');
+                        self.set_b_r(7, self.b, "b", memory);
                     }
                     0x0f9 => {
                         //SET b(7),C -> 8
-                        self.set_b_r(7, self.c, 'c');
+                        self.set_b_r(7, self.c, "c", memory);
                     }
                     0x0fa => {
                         //SET b(7),D -> 8
-                        self.set_b_r(7, self.d, 'd');
+                        self.set_b_r(7, self.d, "d", memory);
                     }
                     0x0fb => {
                         //SET b(7),E -> 8
-                        self.set_b_r(7, self.e, 'e');
+                        self.set_b_r(7, self.e, "e", memory);
                     }
                     0x0fc => {
                         //SET b(7),H -> 8
-                        self.set_b_r(7, self.h, 'h');
+                        self.set_b_r(7, self.h, "h", memory);
                     }
                     0x0fd => {
                         //SET b(7),L -> 8
-                        self.set_b_r(7, self.l, 'l');
+                        self.set_b_r(7, self.l, "l", memory);
                     }
+
                     0x0ff => {
                         //SET b(7),A -> 8
-                        self.set_b_r(7, self.a, 'a');
+                        self.set_b_r(7, self.a, "a", memory);
                     }
+
+                    0x006 => {
+                        //RLC (HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        let result = address_value << 1;
+
+                        if result == 0 {
+                            flag_z = true
+                        }
+                        if address_value & 0b10000000 == 1 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+
+                        memory[h_l as usize] = result;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                    }
+
+                    0x00e => {
+                        //RRC (HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        let result = address_value >> 1;
+
+                        if result == 0 {
+                            flag_z = true
+                        }
+                        if address_value & 0b00000001 == 1 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+
+                        memory[h_l as usize] = result;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                    }
+
+                    0x016 => {
+                        //RL (HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+
+                        let shifted_value = address_value << 1;
+                        let result = shifted_value
+                            | match self.f.c {
+                                true => 0b00000001,
+                                false => 0b00000000,
+                            };
+                        if result == 0 {
+                            flag_z = true
+                        }
+
+                        if address_value & 0b10000000 == 0b10000000 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        memory[h_l as usize] = result;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x026 => {
+                        //SLA (HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        let result = address_value << 1;
+                        if result == 0 {
+                            flag_z = true
+                        }
+
+                        if address_value & 0b10000000 == 0b10000000 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        memory[h_l as usize] = result;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+
+                    0x02e => {
+                        //SRA (HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        let result = address_value >> 1;
+                        if result == 0 {
+                            flag_z = true
+                        }
+
+                        if address_value & 0b00000001 == 0b00000001 {
+                            flag_c = true
+                        } else {
+                            flag_c = false
+                        }
+                        memory[h_l as usize] = result;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+                    0x036 => {
+                        //SWAP (HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+
+                        let temp = address_value & 0b01111110;
+                        let lsb = (address_value & 0b10000000) >> 7;
+                        let msb = (address_value & 0b00000001) << 7;
+                        let result = temp | lsb | msb;
+                        if result == 0 {
+                            flag_z = true;
+                        }
+                        memory[h_l as usize] = result;
+                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
+                    }
+                    0x04e => {
+                        //BIT b(1),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.bit_b_r(1, address_value);
+                    }
+
+                    0x056 => {
+                        //BIT b(2),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.bit_b_r(2, address_value);
+                    }
+
+                    0x05e => {
+                        //BIT b(3),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.bit_b_r(3, address_value);
+                    }
+
+                    0x066 => {
+                        //BIT b(4),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.bit_b_r(4, address_value);
+                    }
+
+                    0x06e => {
+                        //BIT b(5),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.bit_b_r(5, address_value);
+                    }
+
+                    0x076 => {
+                        //BIT b(6),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.bit_b_r(6, address_value);
+                    }
+
+                    0x07e => {
+                        //BIT b(7),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.bit_b_r(7, address_value);
+                    }
+
+                    0x086 => {
+                        //RES b(0),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.res_b_r(0, address_value, "h_l", memory);
+                    }
+
+                    0x08e => {
+                        //RES b(1),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.res_b_r(1, address_value, "h_l", memory);
+                    }
+
+                    0x096 => {
+                        //RES b(2),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.res_b_r(2, address_value, "h_l", memory);
+                    }
+
+                    0x09e => {
+                        //RES b(3),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.res_b_r(3, address_value, "h_l", memory);
+                    }
+
+                    0x0a6 => {
+                        //RES b(4),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.res_b_r(4, address_value, "h_l", memory);
+                    }
+
+                    0x0ae => {
+                        //RES b(5),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.res_b_r(5, address_value, "h_l", memory);
+                    }
+
+                    0x0b6 => {
+                        //RES b(6),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.res_b_r(6, address_value, "h_l", memory);
+                    }
+
+                    0x0be => {
+                        //RES b(7),(HL) -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.res_b_r(7, address_value, "h_l", memory);
+                    }
+
+                    0x0c6 => {
+                        //SET b(0),(HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.set_b_r(0, address_value, "h_l", memory);
+                    }
+
+                    0x0ce => {
+                        //SET b(1),(HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.set_b_r(1, address_value, "h_l", memory);
+                    }
+
+                    0x0d6 => {
+                        //SET b(2),(HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.set_b_r(2, address_value, "h_l", memory);
+                    }
+
+                    0x0de => {
+                        //SET b(3),(HL) -> 16
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.set_b_r(3, address_value, "h_l", memory);
+                    }
+
+                    0x0e6 => {
+                        //SET b(4),L -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.set_b_r(4, address_value, "h_l", memory);
+                    }
+
+                    0x0ee => {
+                        //SET b(5),L -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.set_b_r(5, address_value, "h_l", memory);
+                    }
+
+                    0x0f6 => {
+                        //SET b(6),L -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.set_b_r(6, address_value, "h_l", memory);
+                    }
+
+                    0x0fe => {
+                        //SET b(7),L -> 8
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let address_value = memory[h_l as usize];
+                        self.set_b_r(7, address_value, "h_l", memory);
+                    }
+
                     other => {
                         info!("Unrecogized opcode (CB: {:x})", other);
                         std::process::exit(1)
@@ -3835,7 +4112,13 @@ impl Registers {
         self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
     }
 
-    fn res_b_r(&mut self, bit_idx: u8, register_value: u8, register_name: char) {
+    fn res_b_r(
+        &mut self,
+        bit_idx: u8,
+        register_value: u8,
+        register_name: &str,
+        memory: &mut Vec<u8>,
+    ) {
         let check_bits = match bit_idx {
             0 => 0b11111110,
             1 => 0b11111101,
@@ -3853,13 +4136,14 @@ impl Registers {
 
         let value = register_value & check_bits;
         match register_name {
-            'a' => self.set_a(value),
-            'b' => self.set_b(value),
-            'c' => self.set_c(value),
-            'd' => self.set_d(value),
-            'e' => self.set_e(value),
-            'h' => self.set_h(value),
-            'l' => self.set_l(value),
+            "a" => self.set_a(value),
+            "b" => self.set_b(value),
+            "c" => self.set_c(value),
+            "d" => self.set_d(value),
+            "e" => self.set_e(value),
+            "h" => self.set_h(value),
+            "l" => self.set_l(value),
+            "h_l" => memory[register_value as usize] = value,
             _ => {
                 println!("Invalid register name");
                 std::process::exit(1)
@@ -3867,7 +4151,13 @@ impl Registers {
         }
     }
 
-    fn set_b_r(&mut self, bit_idx: u8, register_value: u8, register_name: char) {
+    fn set_b_r(
+        &mut self,
+        bit_idx: u8,
+        register_value: u8,
+        register_name: &str,
+        memory: &mut Vec<u8>,
+    ) {
         let check_bits = match bit_idx {
             0 => 0b00000001,
             1 => 0b00000010,
@@ -3885,13 +4175,14 @@ impl Registers {
 
         let value = register_value | check_bits;
         match register_name {
-            'a' => self.set_a(value),
-            'b' => self.set_b(value),
-            'c' => self.set_c(value),
-            'd' => self.set_d(value),
-            'e' => self.set_e(value),
-            'h' => self.set_h(value),
-            'l' => self.set_l(value),
+            "a" => self.set_a(value),
+            "b" => self.set_b(value),
+            "c" => self.set_c(value),
+            "d" => self.set_d(value),
+            "e" => self.set_e(value),
+            "h" => self.set_h(value),
+            "l" => self.set_l(value),
+            "h_l" => memory[register_value as usize] = value,
             _ => {
                 println!("Invalid register name");
                 std::process::exit(1)
