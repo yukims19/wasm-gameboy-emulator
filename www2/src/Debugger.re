@@ -1,10 +1,11 @@
 module Registers = {
   [@react.component]
-  let make = (~gameboy: Libation.t) => {
+  let make = (~registers) => {
     open React;
     open Utils;
 
-    let makeRegister = (~key, bits, name, value) => {
+    let makeRegister = (~key, name, value) => {
+      let bits = 8;
       let padding = bits === 16 ? 5 : 2;
       let toHexPadding = bits === 16 ? 4 : 2;
       let dec = toHex(value, toHexPadding)->string;
@@ -13,28 +14,17 @@ module Registers = {
 
       <tr key>
         <td> name->string </td>
-        <td> dec </td>
         <td> hex </td>
+        <td> dec </td>
         <td> bin </td>
       </tr>;
     };
 
-    let registers =
-      [
-        ("a", 8, Libation.getA),
-        ("b", 8, Libation.getB),
-        ("c", 8, Libation.getC),
-        ("d", 8, Libation.getD),
-        ("e", 8, Libation.getE),
-        ("h", 8, Libation.getH),
-        ("l", 8, Libation.getL),
-        ("sp", 16, Libation.getSP),
-        ("pc", 16, Libation.getPC),
-      ]
-      ->Belt.List.mapWithIndex((idx, (name, bits, fn)) => {
-          let registerValue = fn(gameboy);
-          makeRegister(~key=string_of_int(idx), bits, name, registerValue);
-        })
+    let registersDisplay =
+      registers
+      ->Belt.List.mapWithIndex((idx, (name, value)) =>
+          makeRegister(~key=string_of_int(idx), name, value)
+        )
       ->Array.of_list;
 
     <ToolPanel name="Registers">
@@ -44,9 +34,10 @@ module Registers = {
             <th> {string("Reg")} </th>
             <th> {string("Hex")} </th>
             <th> {string("Dec")} </th>
+            <th> {string("Bin")} </th>
           </tr>
         </thead>
-        <tbody> registers->array </tbody>
+        <tbody> registersDisplay->array </tbody>
       </table>
     </ToolPanel>;
   };
@@ -54,27 +45,72 @@ module Registers = {
 
 module Breakpoints = {
   [@react.component]
-  let make = (~gameboy: Libation.t) => {
+  let make = () => {
     open React;
     open Utils;
 
-    let breakpoints = gameboy->Libation.getBreakPoints;
+    let initialBreakPoints = ["00f1", "008b"];
+    let (breakPoints, setBreakPoints) = useState(() => initialBreakPoints);
+    let (newPoint, setNewPoint) = useState(() => "");
 
-    Js.log2("Breakpoints: ", breakpoints);
+    /* let breakpoints = gameboy->Libation.getBreakPoints; */
 
-    let breakpoints =
-      breakpoints
-      ->Belt.Array.map(address => <li> {string(toHex(address, 6))} </li>);
+    /* let breakpoints = */
+    /*   breakpoints */
+    /*   ->Belt.Array.map(address => <li> {string(toHex(address, 6))} </li>); */
+
+    let handleKeyPress = key =>
+      if (key == "Enter" && newPoint != "") {
+        let newBreakPoints = breakPoints->List.append([newPoint]);
+        setBreakPoints(_ => newBreakPoints);
+        setNewPoint(_ => "");
+      };
+
+    let handleClick = target => {
+      if (target##checked) {
+        Libation.setBreakPoint(target##value);
+      } else {
+        Libation.removeBreakPoint(target##value);
+      };
+      ();
+    };
+
+    let breakPointsChecker =
+      breakPoints
+      ->Belt.List.mapWithIndex((idx, point) =>
+          <div>
+            <span key={string_of_int(idx)}>
+              <input
+                type_="checkbox"
+                value=point
+                name=point
+                onClick={
+                  event => handleClick(ReactEvent.Mouse.target(event))
+                }
+              />
+            </span>
+            <span> {string(point)} </span>
+          </div>
+        )
+      ->Array.of_list;
 
     <ToolPanel name="PC Breakpoints">
-      <ul>
-        <li>
-          <button onClick={_ => gameboy->Libation.setBreakPoint(0x2000)}>
-            {string("Toggle breakpoint")}
-          </button>
-        </li>
-        breakpoints->array
-      </ul>
+      <input
+        placeholder="New Break Point"
+        value=newPoint
+        onKeyPress={event => handleKeyPress(ReactEvent.Keyboard.key(event))}
+        onChange={event => setNewPoint(ReactEvent.Form.target(event)##value)}
+      />
+      <div> breakPointsChecker->array </div>
     </ToolPanel>;
   };
 };
+
+/* <ul> */
+/* <li> */
+/* <button onClick={_ => gameboy->Libation.setBreakPoint(0x2000)}> */
+/*   {string("Toggle breakpoint")} */
+/*           </button> */
+/*         </li> */
+/*         breakpoints->array */
+/*       </ul> */

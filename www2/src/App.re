@@ -16,11 +16,27 @@ let gameboy = Libation.create();
 
 [@bs.val] external performanceNow: unit => float = "performance.now";
 
-let rec startGameboyLoop = (gameboy, isRunning) => {
+let getRegisters = () => [
+  ("a", Libation.getA(gameboy)),
+  ("b", Libation.getB(gameboy)),
+  ("c", Libation.getC(gameboy)),
+  ("d", Libation.getD(gameboy)),
+  ("e", Libation.getE(gameboy)),
+  ("h", Libation.getH(gameboy)),
+  ("l", Libation.getL(gameboy)),
+  ("sp", Libation.getSP(gameboy)),
+  ("pc", Libation.getPC(gameboy)),
+];
+
+let rec startGameboyLoop = (gameboy, isRunning, registers) => {
   let start = performanceNow();
   /* This should be "proceedToNextVblank" */
   React.Ref.current(isRunning) ?
     Libation.executeOpcodesNoStop(gameboy, 100_000) : ();
+
+  let newRegisters = getRegisters();
+  registers->React.Ref.setCurrent(newRegisters);
+
   let elapsed = performanceNow() -. start;
   let sleepMs =
     React.Ref.current(isRunning) ?
@@ -28,7 +44,7 @@ let rec startGameboyLoop = (gameboy, isRunning) => {
 
   ignore(
     Js.Global.setTimeout(
-      () => startGameboyLoop(gameboy, isRunning),
+      () => startGameboyLoop(gameboy, isRunning, registers),
       sleepMs,
     ),
   );
@@ -37,19 +53,22 @@ let rec startGameboyLoop = (gameboy, isRunning) => {
 [@react.component]
 let make = () => {
   let isRunning = React.useRef(false);
+  let registers = React.useRef(getRegisters());
+
+  let reducer = (state, action) =>
+    switch (action) {
+    | Click => {...state, count: state.count + 1}
+    | Toggle =>
+      open React.Ref;
+      let newIsRunning = !state.isRunning;
+      isRunning->setCurrent(newIsRunning);
+
+      {...state, isRunning: newIsRunning};
+    };
 
   let (_state, dispatch) =
     React.useReducer(
-      (state, action) =>
-        switch (action) {
-        | Click => {...state, count: state.count + 1}
-        | Toggle =>
-          open React.Ref;
-          let newIsRunning = !state.isRunning;
-          isRunning->setCurrent(newIsRunning);
-
-          {...state, isRunning: newIsRunning};
-        },
+      reducer,
       {
         Libation.start(gameboy);
         Libation.saveGb("gb", gameboy);
@@ -58,7 +77,7 @@ let make = () => {
     );
 
   React.useEffect0(() => {
-    startGameboyLoop(gameboy, isRunning);
+    startGameboyLoop(gameboy, isRunning, registers);
     None;
   });
 
@@ -66,7 +85,7 @@ let make = () => {
     <button onClick={_event => dispatch(Toggle)}>
       {ReasonReact.string(isRunning->React.Ref.current ? "Pause" : "Resume")}
     </button>
-    <Debugger.Registers gameboy />
+    <Debugger.Registers registers=registers->React.Ref.current />
     <Debugger.Breakpoints gameboy />
   </div>;
 };
