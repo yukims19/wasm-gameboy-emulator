@@ -4075,6 +4075,83 @@ impl Registers {
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
             }
 
+            0x00A => {
+                //LD A, (BC)
+                let b_c = self.combine_two_bytes(self.b, self.c);
+                let value = memory[b_c as usize];
+                self.set_a(value as u8);
+                self.inc_pc();
+            }
+
+            0x08E => {
+                // ADC A,(HL) - 8
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let address_value = memory[h_l as usize];
+                let value_to_add = (self.f.c as u8).wrapping_add(address_value);
+                let value = self.a.wrapping_add(value_to_add);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = false;
+                if self.check_half_carry(self.a, value_to_add) {
+                    flag_h = true;
+                }
+                if self.check_carry(self.a, value_to_add) {
+                    flag_c = true;
+                }
+                self.set_a(value);
+
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x09e => {
+                //SBC A,(HL)
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let address_value = memory[h_l as usize];
+                let value_to_sub = (self.f.c as u8).wrapping_add(address_value);
+                let value = self.a.wrapping_sub(value_to_sub);
+
+                if value == 0 {
+                    flag_z = true;
+                }
+                flag_n = false;
+                if self.check_half_carry_sub(self.a, value_to_sub) {
+                    flag_h = true;
+                }
+                if self.a < value_to_sub {
+                    flag_c = true;
+                }
+                self.set_a(value);
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x034 => {
+                //INC (HL)
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let address_value = memory[h_l as usize];
+
+                let value = address_value.wrapping_add(1);
+                if value == 0 {
+                    flag_z = true;
+                };
+                if self.check_half_carry(address_value, 1) {
+                    flag_h = true;
+                }
+                flag_c = self.f.c;
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                memory[h_l as usize] = value;
+                self.inc_pc();
+            }
+
+            0x027 => {
+                //DAA -> 4
+                //TODO: implement DAA
+                self.inc_pc();
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -4920,7 +4997,11 @@ impl Gameboy {
             0x0CF => 32,
             0x0f2 => 8,
             0x02f => 4,
-
+            0x00A => 8,
+            0x08E => 8,
+            0x09e => 8,
+            0x034 => 12,
+            0x027 => 4,
             other => {
                 info!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
