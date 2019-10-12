@@ -595,15 +595,7 @@ impl Registers {
                 self.set_sp(value);
                 self.inc_pc();
             }
-            0x0AF => {
-                // XOR A
-                // Logical exclusive OR n with register A, result in A?
-                // This is to set A to 0, regardless of what's currently in it
-                self.set_a(0 as u8);
-                flag_z = true;
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
+
             0x021 => {
                 //LD HL, *2bytes
                 let value = self.following_two_bytes(self.pc as usize, &memory);
@@ -726,324 +718,6 @@ impl Registers {
             }
             0x0CB => {
                 match self.following_byte(pointer, memory) {
-                    // 0x07c => {
-                    //     //BIT (7,H)
-                    //     if self.h & 0x80 == 0x00 {
-                    //         flag_z = true;
-                    //     }
-                    //     self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    // }
-                    0x011 => {
-                        //RL C -> 8
-                        let shifted_value = self.c << 1;
-                        let result = shifted_value
-                            | match self.f.c {
-                                true => 0b00000001,
-                                false => 0b00000000,
-                            };
-                        if result == 0 {
-                            flag_z = true
-                        }
-
-                        if self.c & 0b10000000 == 0b10000000 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        self.set_c(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x038 => {
-                        //SRL B -> 8
-                        let result = self.b >> 1;
-                        if result == 0 {
-                            flag_z = true;
-                        }
-                        if self.b & 0b00000001 == 1 {
-                            flag_c = true;
-                        }
-                        self.set_b(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x019 => {
-                        //RR C -> 8
-                        let shifted_value = self.c >> 1;
-                        let result = shifted_value
-                            | match self.f.c {
-                                true => 0b10000000,
-                                false => 0b00000000,
-                            };
-
-                        if result == 0 {
-                            flag_z = true
-                        }
-                        if self.c & 0b00000001 == 1 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        self.set_c(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                    }
-
-                    0x01F => {
-                        //RR A -> 8
-                        let shifted_value = self.a >> 1;
-                        let result = shifted_value
-                            | match self.f.c {
-                                true => 0b10000000,
-                                false => 0b00000000,
-                            };
-
-                        if result == 0 {
-                            flag_z = true
-                        }
-                        if self.a & 0b00000001 == 1 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        self.set_a(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                    }
-
-                    0x018 => {
-                        //RR B -> 8
-                        let shifted_value = self.b >> 1;
-                        let result = shifted_value
-                            | match self.f.c {
-                                true => 0b10000000,
-                                false => 0b00000000,
-                            };
-
-                        if result == 0 {
-                            flag_z = true
-                        }
-                        if self.b & 0b00000001 == 1 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        self.set_b(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                    }
-
-                    0x01A => {
-                        //RR D -> 8
-                        let shifted_value = self.d >> 1;
-                        let result = shifted_value
-                            | match self.f.c {
-                                true => 0b10000000,
-                                false => 0b00000000,
-                            };
-
-                        if result == 0 {
-                            flag_z = true
-                        }
-                        if self.d & 0b00000001 == 1 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        self.set_d(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                    }
-
-                    0x01B => {
-                        //RR E -> 8
-                        let shifted_value = self.e >> 1;
-                        let result = shifted_value
-                            | match self.f.c {
-                                true => 0b10000000,
-                                false => 0b00000000,
-                            };
-
-                        if result == 0 {
-                            flag_z = true
-                        }
-                        if self.e & 0b00000001 == 1 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        self.set_e(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                    }
-
-                    0x01C => {
-                        //RR H -> 8
-                        let shifted_value = self.h >> 1;
-                        let result = shifted_value
-                            | match self.f.c {
-                                true => 0b10000000,
-                                false => 0b00000000,
-                            };
-
-                        if result == 0 {
-                            flag_z = true
-                        }
-                        if self.h & 0b00000001 == 1 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        self.set_h(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                    }
-
-                    0x01D => {
-                        //RR L -> 8
-                        let shifted_value = self.l >> 1;
-                        let result = shifted_value
-                            | match self.f.c {
-                                true => 0b10000000,
-                                false => 0b00000000,
-                            };
-
-                        if result == 0 {
-                            flag_z = true
-                        }
-                        if self.l & 0b00000001 == 1 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        self.set_l(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                    }
-
-                    0x01E => {
-                        //RR (HL) -> 16
-                        let h_l = self.combine_two_bytes(self.h, self.l);
-                        let memory_value = memory[h_l as usize];
-                        let shifted_value = memory_value >> 1;
-                        let result = shifted_value
-                            | match self.f.c {
-                                true => 0b10000000,
-                                false => 0b00000000,
-                            };
-
-                        if result == 0 {
-                            flag_z = true
-                        }
-                        if memory_value & 0b00000001 == 1 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        memory[h_l as usize] = result;
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                    }
-
-                    0x03F => {
-                        //SRL A -> 8
-                        let result = self.a >> 1;
-                        if result == 0 {
-                            flag_z = true;
-                        }
-                        if self.a & 0b00000001 == 1 {
-                            flag_c = true;
-                        }
-                        self.set_a(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x039 => {
-                        //SRL C -> 8
-                        let result = self.c >> 1;
-                        if result == 0 {
-                            flag_z = true;
-                        }
-                        if self.c & 0b00000001 == 1 {
-                            flag_c = true;
-                        }
-                        self.set_c(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x03A => {
-                        //SRL D -> 8
-                        let result = self.d >> 1;
-                        if result == 0 {
-                            flag_z = true;
-                        }
-                        if self.d & 0b00000001 == 1 {
-                            flag_c = true;
-                        }
-                        self.set_d(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x03B => {
-                        //SRL E -> 8
-                        let result = self.e >> 1;
-                        if result == 0 {
-                            flag_z = true;
-                        }
-                        if self.e & 0b00000001 == 1 {
-                            flag_c = true;
-                        }
-                        self.set_e(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x03C => {
-                        //SRL H -> 8
-                        let result = self.h >> 1;
-                        if result == 0 {
-                            flag_z = true;
-                        }
-                        if self.h & 0b00000001 == 1 {
-                            flag_c = true;
-                        }
-                        self.set_h(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x03D => {
-                        //SRL L -> 8
-                        let result = self.l >> 1;
-                        if result == 0 {
-                            flag_z = true;
-                        }
-                        if self.l & 0b00000001 == 1 {
-                            flag_c = true;
-                        }
-                        self.set_l(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x03E => {
-                        //SRL (HL) -> 16
-                        let h_l = self.combine_two_bytes(self.h, self.l);
-                        let memory_value = memory[h_l as usize];
-                        let result = memory_value >> 1;
-                        if result == 0 {
-                            flag_z = true;
-                        }
-                        if memory_value & 0b00000001 == 1 {
-                            flag_c = true;
-                        }
-                        memory[h_l as usize] = result;
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x037 => {
-                        //SWAP A -> 8
-                        let temp = self.a & 0b01111110;
-                        let lsb = (self.a & 0b10000000) >> 7;
-                        let msb = (self.a & 0b00000001) << 7;
-                        let result = temp | lsb | msb;
-                        if result == 0 {
-                            flag_z = true;
-                        }
-                        self.set_a(result);
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    //NEW CB!
                     0x047 => {
                         //BIT b(0),A -> 8
                         let bit = self.a & 0b00000001;
@@ -1855,118 +1529,6 @@ impl Registers {
                         self.set_b_r(7, self.a, "a", memory);
                     }
 
-                    0x006 => {
-                        //RLC (HL) -> 8
-                        let h_l = self.combine_two_bytes(self.h, self.l);
-                        let address_value = memory[h_l as usize];
-                        let result = address_value << 1;
-
-                        if result == 0 {
-                            flag_z = true
-                        }
-                        if address_value & 0b10000000 == 1 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-
-                        memory[h_l as usize] = result;
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                    }
-
-                    0x00e => {
-                        //RRC (HL) -> 8
-                        let h_l = self.combine_two_bytes(self.h, self.l);
-                        let address_value = memory[h_l as usize];
-                        let result = address_value >> 1;
-
-                        if result == 0 {
-                            flag_z = true
-                        }
-                        if address_value & 0b00000001 == 1 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-
-                        memory[h_l as usize] = result;
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                    }
-
-                    0x016 => {
-                        //RL (HL) -> 16
-                        let h_l = self.combine_two_bytes(self.h, self.l);
-                        let address_value = memory[h_l as usize];
-
-                        let shifted_value = address_value << 1;
-                        let result = shifted_value
-                            | match self.f.c {
-                                true => 0b00000001,
-                                false => 0b00000000,
-                            };
-                        if result == 0 {
-                            flag_z = true
-                        }
-
-                        if address_value & 0b10000000 == 0b10000000 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        memory[h_l as usize] = result;
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x026 => {
-                        //SLA (HL) -> 16
-                        let h_l = self.combine_two_bytes(self.h, self.l);
-                        let address_value = memory[h_l as usize];
-                        let result = address_value << 1;
-                        if result == 0 {
-                            flag_z = true
-                        }
-
-                        if address_value & 0b10000000 == 0b10000000 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        memory[h_l as usize] = result;
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-
-                    0x02e => {
-                        //SRA (HL) -> 16
-                        let h_l = self.combine_two_bytes(self.h, self.l);
-                        let address_value = memory[h_l as usize];
-                        let result = address_value >> 1;
-                        if result == 0 {
-                            flag_z = true
-                        }
-
-                        if address_value & 0b00000001 == 0b00000001 {
-                            flag_c = true
-                        } else {
-                            flag_c = false
-                        }
-                        memory[h_l as usize] = result;
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
-                    0x036 => {
-                        //SWAP (HL) -> 16
-                        let h_l = self.combine_two_bytes(self.h, self.l);
-                        let address_value = memory[h_l as usize];
-
-                        let temp = address_value & 0b01111110;
-                        let lsb = (address_value & 0b10000000) >> 7;
-                        let msb = (address_value & 0b00000001) << 7;
-                        let result = temp | lsb | msb;
-                        if result == 0 {
-                            flag_z = true;
-                        }
-                        memory[h_l as usize] = result;
-                        self.f.set_flag(flag_z, flag_n, flag_h, flag_c)
-                    }
                     0x04e => {
                         //BIT b(1),(HL) -> 8
                         let h_l = self.combine_two_bytes(self.h, self.l);
@@ -2128,6 +1690,284 @@ impl Registers {
                         self.set_b_r(7, address_value, "h_l", memory);
                     }
 
+                    0x007 => {
+                        //RLC A
+                        self.rlc(self.a, "a", memory);
+                    }
+                    0x000 => {
+                        //RLC B
+                        self.rlc(self.b, "b", memory);
+                    }
+                    0x001 => {
+                        //RLC C
+                        self.rlc(self.c, "c", memory);
+                    }
+                    0x002 => {
+                        //RLC D
+                        self.rlc(self.d, "d", memory);
+                    }
+                    0x003 => {
+                        //RLC E
+                        self.rlc(self.e, "e", memory);
+                    }
+                    0x004 => {
+                        //RLC H
+                        self.rlc(self.h, "h", memory);
+                    }
+                    0x005 => {
+                        //RLC L
+                        self.rlc(self.l, "l", memory);
+                    }
+                    0x006 => {
+                        //RLC (HL)
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let value = memory[h_l as usize];
+                        self.rlc(value, "h_l", memory);
+                    }
+
+                    0x00f => {
+                        //RRC A
+                        self.rrc(self.a, "a", memory);
+                    }
+                    0x008 => {
+                        //RRC B
+                        self.rrc(self.b, "b", memory);
+                    }
+                    0x009 => {
+                        //RRC C
+                        self.rrc(self.c, "c", memory);
+                    }
+                    0x00a => {
+                        //RRC D
+                        self.rrc(self.d, "d", memory);
+                    }
+                    0x00b => {
+                        //RRC E
+                        self.rrc(self.e, "e", memory);
+                    }
+                    0x00c => {
+                        //RRC H
+                        self.rrc(self.h, "h", memory);
+                    }
+                    0x00d => {
+                        //RRC L
+                        self.rrc(self.l, "l", memory);
+                    }
+                    0x00e => {
+                        //RRC (HL)
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let value = memory[h_l as usize];
+                        self.rrc(value, "h_l", memory);
+                    }
+
+                    0x017 => {
+                        //RL A
+                        self.rl(self.a, "a", memory);
+                    }
+                    0x010 => {
+                        //RL B
+                        self.rl(self.b, "b", memory);
+                    }
+                    0x011 => {
+                        //RL C
+                        self.rl(self.c, "c", memory);
+                    }
+                    0x012 => {
+                        //RL D
+                        self.rl(self.d, "d", memory);
+                    }
+                    0x013 => {
+                        //RL E
+                        self.rl(self.e, "e", memory);
+                    }
+                    0x014 => {
+                        //RL H
+                        self.rl(self.h, "h", memory);
+                    }
+                    0x015 => {
+                        //RL L
+                        self.rl(self.l, "l", memory);
+                    }
+                    0x016 => {
+                        //RL (HL)
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let value = memory[h_l as usize];
+                        self.rl(value, "h_l", memory);
+                    }
+
+                    0x01f => {
+                        //RR A
+                        self.rr(self.a, "a", memory);
+                    }
+                    0x018 => {
+                        //RR B
+                        self.rr(self.b, "b", memory);
+                    }
+                    0x019 => {
+                        //RR C
+                        self.rr(self.c, "c", memory);
+                    }
+                    0x01a => {
+                        //RR D
+                        self.rr(self.d, "d", memory);
+                    }
+                    0x01b => {
+                        //RR E
+                        self.rr(self.e, "e", memory);
+                    }
+                    0x01c => {
+                        //RR H
+                        self.rr(self.h, "h", memory);
+                    }
+                    0x01d => {
+                        //RR L
+                        self.rr(self.l, "l", memory);
+                    }
+                    0x01e => {
+                        //RR (HL)
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let value = memory[h_l as usize];
+                        self.rr(value, "h_l", memory);
+                    }
+
+                    0x027 => {
+                        //SLA A
+                        self.sla(self.a, "a", memory);
+                    }
+                    0x020 => {
+                        //SLA B
+                        self.sla(self.b, "b", memory);
+                    }
+                    0x021 => {
+                        //SLA C
+                        self.sla(self.c, "c", memory);
+                    }
+                    0x022 => {
+                        //SLA D
+                        self.sla(self.d, "d", memory);
+                    }
+                    0x023 => {
+                        //SLA E
+                        self.sla(self.e, "e", memory);
+                    }
+                    0x024 => {
+                        //SLA H
+                        self.sla(self.h, "h", memory);
+                    }
+                    0x025 => {
+                        //SLA L
+                        self.sla(self.l, "l", memory);
+                    }
+                    0x026 => {
+                        //SLA (HL)
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let value = memory[h_l as usize];
+                        self.sla(value, "h_l", memory);
+                    }
+
+                    0x02f => {
+                        //SRA A
+                        self.sra(self.a, "a", memory);
+                    }
+                    0x028 => {
+                        //SRA B
+                        self.sra(self.b, "b", memory);
+                    }
+                    0x029 => {
+                        //SRA C
+                        self.sra(self.c, "c", memory);
+                    }
+                    0x02a => {
+                        //SRA D
+                        self.sra(self.d, "d", memory);
+                    }
+                    0x02b => {
+                        //SRA E
+                        self.sra(self.e, "e", memory);
+                    }
+                    0x02c => {
+                        //SRA H
+                        self.sra(self.h, "h", memory);
+                    }
+                    0x02d => {
+                        //SRA L
+                        self.sra(self.l, "l", memory);
+                    }
+                    0x02e => {
+                        //SRA (HL)
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let value = memory[h_l as usize];
+                        self.sra(value, "h_l", memory);
+                    }
+
+                    0x037 => {
+                        //SWAP A
+                        self.swap(self.a, "a", memory);
+                    }
+                    0x030 => {
+                        //SWAP B
+                        self.swap(self.b, "b", memory);
+                    }
+                    0x031 => {
+                        //SWAP C
+                        self.swap(self.c, "c", memory);
+                    }
+                    0x032 => {
+                        //SWAP D
+                        self.swap(self.d, "d", memory);
+                    }
+                    0x033 => {
+                        //SWAP E
+                        self.swap(self.e, "e", memory);
+                    }
+                    0x034 => {
+                        //SWAP H
+                        self.swap(self.h, "h", memory);
+                    }
+                    0x035 => {
+                        //SWAP L
+                        self.swap(self.l, "l", memory);
+                    }
+                    0x036 => {
+                        //SWAP (HL)
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let value = memory[h_l as usize];
+                        self.swap(value, "h_l", memory);
+                    }
+                    0x03f => {
+                        //SRL A
+                        self.srl(self.a, "a", memory);
+                    }
+                    0x038 => {
+                        //SRL B
+                        self.srl(self.b, "b", memory);
+                    }
+                    0x039 => {
+                        //SRL C
+                        self.srl(self.c, "c", memory);
+                    }
+                    0x03a => {
+                        //SRL D
+                        self.srl(self.d, "d", memory);
+                    }
+                    0x03b => {
+                        //SRL E
+                        self.srl(self.e, "e", memory);
+                    }
+                    0x03c => {
+                        //SRL H
+                        self.srl(self.h, "h", memory);
+                    }
+                    0x03d => {
+                        //SRL L
+                        self.srl(self.l, "l", memory);
+                    }
+                    0x03e => {
+                        //SRL (HL)
+                        let h_l = self.combine_two_bytes(self.h, self.l);
+                        let value = memory[h_l as usize];
+                        self.srl(value, "h_l", memory);
+                    }
                     other => {
                         info!("Unrecogized opcode (CB: {:x})", other);
                         std::process::exit(1)
@@ -2146,10 +1986,6 @@ impl Registers {
                         false => 0b00000000,
                     };
 
-                if result == 0 {
-                    flag_z = true
-                }
-
                 if self.a & 0b10000000 == 0b10000000 {
                     flag_c = true
                 } else {
@@ -2160,23 +1996,6 @@ impl Registers {
                 self.inc_pc();
             }
 
-            0x007 => {
-                // RLCA:
-                let result = self.a << 1;
-
-                if result == 0 {
-                    flag_z = true
-                }
-
-                if self.a & 0b10000000 == 0b10000000 {
-                    flag_c = true
-                } else {
-                    flag_c = false
-                }
-                self.set_a(result);
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
             0x020 => {
                 //JR NZ,*one byte
                 if !self.f.z {
@@ -2410,29 +2229,6 @@ impl Registers {
                 self.inc_pc();
             }
 
-            0x0CE => {
-                //ADC A,#
-                let following_byte = self.following_byte(pointer, memory);
-                let value_to_add = following_byte.wrapping_add(self.f.c as u8);
-                let value = self.a.wrapping_add(value_to_add);
-
-                flag_n = false;
-                if self.check_half_carry(self.a, value_to_add) {
-                    flag_h = true;
-                }
-
-                if self.check_carry(self.a, value_to_add) {
-                    flag_c = true;
-                }
-
-                if value == 0 {
-                    flag_z = true;
-                }
-                self.set_a(value);
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
             0x0CC => {
                 //CALL Z, nn - 12
                 let next_two_bytes = self.following_two_bytes(pointer, memory);
@@ -2487,10 +2283,6 @@ impl Registers {
                         false => 0b00000000,
                     };
 
-                if result == 0 {
-                    flag_z = true
-                }
-
                 if self.a & 0b00000001 == 0b00000001 {
                     flag_c = true
                 } else {
@@ -2500,65 +2292,12 @@ impl Registers {
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
-            0x088 => {
-                // ADC A,B - 4
-                let value_to_add = self.f.c as u8 + self.b;
-                let value = self.a + value_to_add;
-
-                if value == 0 {
-                    flag_z = true;
-                }
-                flag_n = false;
-                if self.check_half_carry(self.a, value_to_add) {
-                    flag_h = true;
-                }
-                if self.check_carry(self.a, value_to_add) {
-                    flag_c = true;
-                }
-                self.set_a(value);
-
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-            0x089 => {
-                // ADC A,C - 4
-                let value_to_add = self.f.c as u8 + self.c;
-                let value = self.a + value_to_add;
-
-                if value == 0 {
-                    flag_z = true;
-                }
-                flag_n = false;
-                if self.check_half_carry(self.a, value_to_add) {
-                    flag_h = true;
-                }
-                if self.check_carry(self.a, value_to_add) {
-                    flag_c = true;
-                }
-                self.set_a(value);
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
 
             0x06E => {
                 //LD L,(hl) - 8
                 let h_l = self.combine_two_bytes(self.h, self.l);
                 let value = memory[h_l as usize];
                 self.set_l(value);
-                self.inc_pc();
-            }
-
-            0x0E6 => {
-                //AND #
-                let next_byte = self.following_byte(pointer, memory);
-                let value = next_byte & self.a;
-                self.set_a(value);
-
-                if value == 0 {
-                    flag_z = true;
-                };
-                flag_h = true;
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
 
@@ -2668,21 +2407,6 @@ impl Registers {
                 //No operation?
                 info!("no operation with opcode 0xd3");
                 // std::process::exit(1);
-                self.inc_pc();
-            }
-
-            0x0a6 => {
-                //AND (HL)
-                let h_l = self.combine_two_bytes(self.h, self.l);
-                let address_value = memory[h_l as usize];
-                let value = address_value & self.a;
-                self.set_a(value);
-
-                if value == 0 {
-                    flag_z = true;
-                };
-                flag_h = true;
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
 
@@ -3270,72 +2994,6 @@ impl Registers {
                 self.inc_pc();
             }
 
-            0x0A8 => {
-                // XOR B -> 4
-                let value = self.a ^ self.b;
-                self.set_a(value);
-                if value == 0 {
-                    flag_z = true;
-                }
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
-            0x0A9 => {
-                // XOR C -> 4
-                let value = self.a ^ self.c;
-                self.set_a(value);
-                if value == 0 {
-                    flag_z = true;
-                }
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
-            0x0AA => {
-                // XOR D -> 4
-                let value = self.a ^ self.d;
-                self.set_a(value);
-                if value == 0 {
-                    flag_z = true;
-                }
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
-            0x0AB => {
-                // XOR E -> 4
-                let value = self.a ^ self.e;
-                self.set_a(value);
-                if value == 0 {
-                    flag_z = true;
-                }
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
-            0x0AC => {
-                // XOR H -> 4
-                let value = self.a ^ self.h;
-                self.set_a(value);
-                if value == 0 {
-                    flag_z = true;
-                }
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
-            0x0AD => {
-                // XOR L -> 4
-                let value = self.a ^ self.l;
-                self.set_a(value);
-                if value == 0 {
-                    flag_z = true;
-                }
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
             0x0D6 => {
                 // SUB n -> 8
                 let following_byte = self.following_byte(pointer, memory);
@@ -3449,31 +3107,6 @@ impl Registers {
                 }
                 flag_c = self.f.c;
                 self.set_h(value);
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
-            0x0AE => {
-                // XOR (HL) -> 8
-                let h_l = self.combine_two_bytes(self.h, self.l);
-                let address_value = memory[h_l as usize];
-                let value = self.a ^ address_value;
-                self.set_a(value);
-                if value == 0 {
-                    flag_z = true;
-                }
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
-            0x0EE => {
-                // XOR n -> 8
-                let following_byte = self.following_byte(pointer, memory);
-                let value = self.a ^ following_byte;
-                self.set_a(value);
-                if value == 0 {
-                    flag_z = true;
-                }
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
@@ -3776,27 +3409,6 @@ impl Registers {
                 self.inc_pc();
             }
 
-            0x0de => {
-                //SCB A,n
-                let following_byte = self.following_byte(pointer, memory);
-                let value_to_sub = (self.f.c as u8).wrapping_add(following_byte);
-                let value = self.a.wrapping_sub(value_to_sub);
-
-                if value == 0 {
-                    flag_z = true;
-                }
-                flag_n = true;
-                if self.check_half_carry_sub(self.a, value_to_sub) {
-                    flag_h = true;
-                }
-                if self.a < value_to_sub {
-                    flag_c = true;
-                }
-                self.set_a(value);
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
             0x01B => {
                 //DEC DE -> 8
                 let d_e = self.combine_two_bytes(self.d, self.e);
@@ -3914,51 +3526,6 @@ impl Registers {
                 let b_c = self.combine_two_bytes(self.b, self.c);
                 let value = memory[b_c as usize];
                 self.set_a(value as u8);
-                self.inc_pc();
-            }
-
-            0x08E => {
-                // ADC A,(HL) - 8
-                let h_l = self.combine_two_bytes(self.h, self.l);
-                let address_value = memory[h_l as usize];
-                let value_to_add = (self.f.c as u8).wrapping_add(address_value);
-                let value = self.a.wrapping_add(value_to_add);
-
-                if value == 0 {
-                    flag_z = true;
-                }
-                flag_n = false;
-                if self.check_half_carry(self.a, value_to_add) {
-                    flag_h = true;
-                }
-                if self.check_carry(self.a, value_to_add) {
-                    flag_c = true;
-                }
-                self.set_a(value);
-
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.inc_pc();
-            }
-
-            0x09e => {
-                //SBC A,(HL)
-                let h_l = self.combine_two_bytes(self.h, self.l);
-                let address_value = memory[h_l as usize];
-                let value_to_sub = (self.f.c as u8).wrapping_add(address_value);
-                let value = self.a.wrapping_sub(value_to_sub);
-
-                if value == 0 {
-                    flag_z = true;
-                }
-                flag_n = false;
-                if self.check_half_carry_sub(self.a, value_to_sub) {
-                    flag_h = true;
-                }
-                if self.a < value_to_sub {
-                    flag_c = true;
-                }
-                self.set_a(value);
-                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
 
@@ -4111,7 +3678,6 @@ impl Registers {
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
-
             0x0BE => {
                 //CP (HL)
                 let h_l = self.combine_two_bytes(self.h, self.l);
@@ -4149,7 +3715,6 @@ impl Registers {
                 self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
                 self.inc_pc();
             }
-
             0x0FE => {
                 //CP #
                 let following_byte = self.following_byte(pointer, memory);
@@ -4219,11 +3784,589 @@ impl Registers {
                 self.inc_pc();
             }
 
+            0x08f => {
+                //ADC A, A
+                self.adc_a_n(self.a);
+                self.inc_pc();
+            }
+            0x088 => {
+                //ADC A, B
+                self.adc_a_n(self.b);
+                self.inc_pc();
+            }
+            0x089 => {
+                //ADC A, C
+                self.adc_a_n(self.c);
+                self.inc_pc();
+            }
+            0x08A => {
+                //ADC A, D
+                self.adc_a_n(self.d);
+                self.inc_pc();
+            }
+            0x08B => {
+                //ADC A, E
+                self.adc_a_n(self.e);
+                self.inc_pc();
+            }
+            0x08C => {
+                //ADC A, H
+                self.adc_a_n(self.h);
+                self.inc_pc();
+            }
+            0x08D => {
+                //ADC A, L
+                self.adc_a_n(self.l);
+                self.inc_pc();
+            }
+            0x08E => {
+                //ADC A, (HL)
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.adc_a_n(value);
+                self.inc_pc();
+            }
+            0x0CE => {
+                //ADC A, #
+                let following_byte = self.following_byte(pointer, memory);
+                self.adc_a_n(following_byte);
+                self.inc_pc();
+            }
+
+            0x09f => {
+                //SBC A, A
+                self.sbc_a_n(self.a);
+                self.inc_pc();
+            }
+            0x098 => {
+                //SBC A, B
+                self.sbc_a_n(self.b);
+                self.inc_pc();
+            }
+            0x099 => {
+                //SBC A, C
+                self.sbc_a_n(self.c);
+                self.inc_pc();
+            }
+            0x09A => {
+                //SBC A, D
+                self.sbc_a_n(self.d);
+                self.inc_pc();
+            }
+            0x09B => {
+                //SBC A, E
+                self.sbc_a_n(self.e);
+                self.inc_pc();
+            }
+            0x09C => {
+                //SBC A, H
+                self.sbc_a_n(self.h);
+                self.inc_pc();
+            }
+            0x09D => {
+                //SBC A, L
+                self.sbc_a_n(self.l);
+                self.inc_pc();
+            }
+            0x09E => {
+                //SBC A, (HL)
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.sbc_a_n(value);
+                self.inc_pc();
+            }
+            0x0de => {
+                //SBC A, #
+                let following_byte = self.following_byte(pointer, memory);
+                self.sbc_a_n(following_byte);
+                self.inc_pc();
+            }
+
+            0x0A7 => {
+                //AND A
+                self.and_a_n(self.a);
+                self.inc_pc();
+            }
+
+            0x0A0 => {
+                //AND B
+                self.and_a_n(self.b);
+                self.inc_pc();
+            }
+            0x0A1 => {
+                //AND C
+                self.and_a_n(self.c);
+                self.inc_pc();
+            }
+            0x0A2 => {
+                //AND D
+                self.and_a_n(self.d);
+                self.inc_pc();
+            }
+            0x0A3 => {
+                //AND E
+                self.and_a_n(self.e);
+                self.inc_pc();
+            }
+            0x0A4 => {
+                //AND H
+                self.and_a_n(self.h);
+                self.inc_pc();
+            }
+            0x0A5 => {
+                //AND L
+                self.and_a_n(self.l);
+                self.inc_pc();
+            }
+            0x0A6 => {
+                //AND (HL)
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.and_a_n(value);
+                self.inc_pc();
+            }
+            0x0E6 => {
+                //AND #
+                let following_byte = self.following_byte(pointer, memory);
+                self.and_a_n(following_byte);
+                self.inc_pc();
+            }
+
+            0x0AF => {
+                // XOR A
+                self.xor_a_n(self.a);
+                self.inc_pc();
+            }
+
+            0x0A8 => {
+                // XOR B
+                self.xor_a_n(self.b);
+                self.inc_pc();
+            }
+
+            0x0A9 => {
+                // XOR C
+                self.xor_a_n(self.c);
+                self.inc_pc();
+            }
+
+            0x0AA => {
+                // XOR D
+                self.xor_a_n(self.d);
+                self.inc_pc();
+            }
+
+            0x0AB => {
+                // XOR E
+                self.xor_a_n(self.e);
+                self.inc_pc();
+            }
+
+            0x0AC => {
+                // XOR H
+                self.xor_a_n(self.h);
+                self.inc_pc();
+            }
+
+            0x0AD => {
+                // XOR L
+                self.xor_a_n(self.l);
+                self.inc_pc();
+            }
+
+            0x0AE => {
+                // XOR (HL)
+                let h_l = self.combine_two_bytes(self.h, self.l);
+                let value = memory[h_l as usize];
+                self.xor_a_n(value);
+                self.inc_pc();
+            }
+
+            0x0EE => {
+                // XOR n
+                let following_byte = self.following_byte(pointer, memory);
+                self.xor_a_n(following_byte);
+                self.inc_pc();
+            }
+
+            0x00F => {
+                //RRCA
+                let cf = self.a << 7;
+                let result = self.a >> 1 | cf;
+
+                if cf & 0b10000000 == 0b10000000 {
+                    flag_c = true
+                } else {
+                    flag_c = false
+                }
+                self.set_a(result);
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
+            0x007 => {
+                // RLCA:
+                let cf = self.a >> 7;
+                let result = (self.a << 1) | cf;
+                flag_c = cf == 1;
+                self.set_a(result);
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.inc_pc();
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
             }
         }
+    }
+
+    fn srl(&mut self, register_value: u8, register_name: &str, memory: &mut Vec<u8>) {
+        let mut flag_z = false;
+        let mut flag_n = false;
+        let mut flag_h = false;
+        let mut flag_c = false;
+
+        let result = register_value >> 1;
+        if result == 0 {
+            flag_z = true
+        }
+
+        if register_value & 0b00000001 == 0b00000001 {
+            flag_c = true
+        } else {
+            flag_c = false
+        }
+
+        match register_name {
+            "a" => self.set_a(result),
+            "b" => self.set_b(result),
+            "c" => self.set_c(result),
+            "d" => self.set_d(result),
+            "e" => self.set_e(result),
+            "h" => self.set_h(result),
+            "l" => self.set_l(result),
+            "h_l" => memory[register_value as usize] = result,
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn sra(&mut self, register_value: u8, register_name: &str, memory: &mut Vec<u8>) {
+        let mut flag_z = false;
+        let mut flag_n = false;
+        let mut flag_h = false;
+        let mut flag_c = false;
+
+        let result = register_value >> 1 | (register_value & 0x80);
+        if result == 0 {
+            flag_z = true
+        }
+
+        if register_value & 0b00000001 == 0b00000001 {
+            flag_c = true
+        } else {
+            flag_c = false
+        }
+
+        match register_name {
+            "a" => self.set_a(result),
+            "b" => self.set_b(result),
+            "c" => self.set_c(result),
+            "d" => self.set_d(result),
+            "e" => self.set_e(result),
+            "h" => self.set_h(result),
+            "l" => self.set_l(result),
+            "h_l" => memory[register_value as usize] = result,
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn swap(&mut self, register_value: u8, register_name: &str, memory: &mut Vec<u8>) {
+        let mut flag_z = false;
+        let mut flag_n = false;
+        let mut flag_h = false;
+        let mut flag_c = false;
+
+        let result = register_value << 4 | register_value >> 4;
+
+        if result == 0 {
+            flag_z = true;
+        }
+
+        match register_name {
+            "a" => self.set_a(result),
+            "b" => self.set_b(result),
+            "c" => self.set_c(result),
+            "d" => self.set_d(result),
+            "e" => self.set_e(result),
+            "h" => self.set_h(result),
+            "l" => self.set_l(result),
+            "h_l" => memory[register_value as usize] = result,
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn sla(&mut self, register_value: u8, register_name: &str, memory: &mut Vec<u8>) {
+        let mut flag_z = false;
+        let mut flag_n = false;
+        let mut flag_h = false;
+        let mut flag_c = false;
+
+        let result = register_value << 1;
+
+        if result == 0 {
+            flag_z = true
+        }
+
+        if register_value & 0b10000000 == 0b10000000 {
+            flag_c = true
+        } else {
+            flag_c = false
+        }
+
+        match register_name {
+            "a" => self.set_a(result),
+            "b" => self.set_b(result),
+            "c" => self.set_c(result),
+            "d" => self.set_d(result),
+            "e" => self.set_e(result),
+            "h" => self.set_h(result),
+            "l" => self.set_l(result),
+            "h_l" => memory[register_value as usize] = result,
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn rr(&mut self, register_value: u8, register_name: &str, memory: &mut Vec<u8>) {
+        let mut flag_z = false;
+        let mut flag_n = false;
+        let mut flag_h = false;
+        let mut flag_c = false;
+
+        let shifted_value = register_value >> 1;
+        let result = shifted_value
+            | match self.f.c {
+                true => 0b10000000,
+                false => 0b00000000,
+            };
+
+        if result == 0 {
+            flag_z = true
+        }
+
+        if register_value & 0b00000001 == 1 {
+            flag_c = true
+        } else {
+            flag_c = false
+        }
+
+        match register_name {
+            "a" => self.set_a(result),
+            "b" => self.set_b(result),
+            "c" => self.set_c(result),
+            "d" => self.set_d(result),
+            "e" => self.set_e(result),
+            "h" => self.set_h(result),
+            "l" => self.set_l(result),
+            "h_l" => memory[register_value as usize] = result,
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn rl(&mut self, register_value: u8, register_name: &str, memory: &mut Vec<u8>) {
+        let mut flag_z = false;
+        let mut flag_n = false;
+        let mut flag_h = false;
+        let mut flag_c = false;
+
+        let shifted_value = register_value << 1;
+        let result = shifted_value
+            | match self.f.c {
+                true => 0b00000001,
+                false => 0b00000000,
+            };
+
+        if result == 0 {
+            flag_z = true
+        }
+
+        if register_value & 0b10000000 == 0b10000000 {
+            flag_c = true
+        } else {
+            flag_c = false
+        }
+
+        match register_name {
+            "a" => self.set_a(result),
+            "b" => self.set_b(result),
+            "c" => self.set_c(result),
+            "d" => self.set_d(result),
+            "e" => self.set_e(result),
+            "h" => self.set_h(result),
+            "l" => self.set_l(result),
+            "h_l" => memory[register_value as usize] = result,
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn rrc(&mut self, register_value: u8, register_name: &str, memory: &mut Vec<u8>) {
+        let mut flag_z = false;
+        let mut flag_n = false;
+        let mut flag_h = false;
+        let mut flag_c = false;
+
+        let cf = register_value << 7;
+        let result = register_value >> 1 | cf;
+
+        if result == 0 {
+            flag_z = true
+        }
+
+        if cf & 0b10000000 == 0b10000000 {
+            flag_c = true
+        } else {
+            flag_c = false
+        }
+
+        match register_name {
+            "a" => self.set_a(result),
+            "b" => self.set_b(result),
+            "c" => self.set_c(result),
+            "d" => self.set_d(result),
+            "e" => self.set_e(result),
+            "h" => self.set_h(result),
+            "l" => self.set_l(result),
+            "h_l" => memory[register_value as usize] = result,
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn rlc(&mut self, register_value: u8, register_name: &str, memory: &mut Vec<u8>) {
+        let mut flag_z = false;
+        let mut flag_n = false;
+        let mut flag_h = false;
+        let mut flag_c = false;
+
+        let cf = register_value >> 7;
+        let result = (register_value << 1) | cf;
+
+        if result == 0 {
+            flag_z = true
+        }
+
+        flag_c = cf == 1;
+
+        match register_name {
+            "a" => self.set_a(result),
+            "b" => self.set_b(result),
+            "c" => self.set_c(result),
+            "d" => self.set_d(result),
+            "e" => self.set_e(result),
+            "h" => self.set_h(result),
+            "l" => self.set_l(result),
+            "h_l" => memory[register_value as usize] = result,
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn xor_a_n(&mut self, n: u8) {
+        let mut flag_z = false;
+        let flag_n = false;
+        let flag_h = false;
+        let flag_c = false;
+
+        let result = self.a ^ n;
+        if result == 0 {
+            flag_z = true;
+        }
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+        self.set_a(result);
+    }
+
+    fn and_a_n(&mut self, n: u8) {
+        let mut flag_z = false;
+        let mut flag_n = false;
+        let mut flag_h = false;
+        let mut flag_c = false;
+        let result = self.a & n;
+        if result == 0 {
+            flag_z = true;
+        };
+        flag_h = true;
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+        self.set_a(result);
+    }
+
+    fn sbc_a_n(&mut self, n: u8) {
+        let a = self.a as u16;
+        let n = n as u16;
+        let cf = self.f.c as u16;
+        let r = a.wrapping_sub(n).wrapping_sub(cf);
+        let result = r as u8;
+
+        let flag_z = result == 0;
+        let flag_h = (a ^ n ^ r) & 0x10 != 0;
+        let flag_c = r & 0x100 != 0;
+        let flag_n = true;
+
+        self.set_a(result);
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn adc_a_n(&mut self, n: u8) {
+        let a = self.a as u16;
+        let n = n as u16;
+        let cf = self.f.c as u16;
+        let r = a.wrapping_add(n).wrapping_add(cf);
+        let result = r as u8;
+
+        let flag_z = result == 0;
+        let flag_h = (a ^ n ^ r) & 0x10 != 0;
+        let flag_c = r & 0x100 != 0;
+        let flag_n = false;
+
+        self.set_a(result);
+        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
     }
 
     fn add_a_n(&mut self, n: u8) {
@@ -4245,7 +4388,6 @@ impl Registers {
         }
         self.set_a(value);
         self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-        self.inc_pc();
     }
 
     fn bit_b_r(&mut self, bit_idx: u8, register: u8) {
@@ -4860,6 +5002,7 @@ impl Gameboy {
             0x0E2 => 8,
             0x0E0 => 12,
             0x0CB => match self.memory[self.registers.pc as usize + 1] {
+                0x006 => 16,
                 0x01E => 16,
                 0x02E => 16,
                 0x03E => 16,
@@ -5105,6 +5248,26 @@ impl Gameboy {
             0x080 => 4,
             0x082 => 4,
             0x084 => 4,
+            0x08f => 4,
+            0x08A => 4,
+            0x08B => 4,
+            0x08C => 4,
+            0x08D => 4,
+            0x09f => 4,
+            0x098 => 4,
+            0x099 => 4,
+            0x09A => 4,
+            0x09B => 4,
+            0x09C => 4,
+            0x09D => 4,
+            0x0A7 => 4,
+            0x0A0 => 4,
+            0x0A1 => 4,
+            0x0A2 => 4,
+            0x0A3 => 4,
+            0x0A4 => 4,
+            0x0A5 => 4,
+            0x00F => 4,
             // 0x0d7 => 0, //??
             other => {
                 info!("Cycle calc - No opcode found for {:x}", other);
@@ -6216,6 +6379,30 @@ pub fn opcode_name(opcode: u8) -> String {
         0x085 => "ADD A, L",
         0x086 => "ADD A, (HL)",
         0x0C6 => "ADD A, #",
+        0x08f => "ADC A, A",
+        0x08A => "ADC A, D",
+        0x08B => "ADC A, E",
+        0x08C => "ADC A, H",
+        0x08D => "ADC A, L",
+        0x08E => "ADC A, (HL)",
+        0x09f => "SBC A, A",
+        0x098 => "SBC A, B",
+        0x099 => "SBC A, C",
+        0x09A => "SBC A, D",
+        0x09B => "SBC A, E",
+        0x09C => "SBC A, H",
+        0x09D => "SBC A, L",
+        0x09E => "SBC A, (HL)",
+        0x0A7 => "AND A",
+        0x0A0 => "AND B",
+        0x0A1 => "AND C",
+        0x0A2 => "AND D",
+        0x0A3 => "AND E",
+        0x0A4 => "AND H",
+        0x0A5 => "AND L",
+        0x0A6 => "AND (HL)",
+        0x0E6 => "AND #",
+        0x00F => "RRCA",
         _other => "???",
     };
 
