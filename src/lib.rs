@@ -696,8 +696,8 @@ impl Registers {
             0x0f0 => {
                 //LD A, ($ff00+n)
                 let following_byte = self.following_byte(pointer, memory);
-                let offset = 0xff00 + following_byte as usize;
-                let value = memory[offset];
+                let offset = 0xff00 + following_byte as u16;
+                let value = memory[offset as usize];
                 // info!(
                 //     "LD A, ($ff00+{:x}): ${:x}={:x} ",
                 //     following_byte, offset, value
@@ -2038,6 +2038,12 @@ impl Registers {
                 let address = self.add_signed_number(self.pc, value as i8);
                 // let address = self.pc as i16 + value as i16;
                 self.set_pc(address);
+
+                // let value = self.following_byte(pointer, memory) as i8;
+                // self.inc_pc();
+                // let address = (self.pc as i16).wrapping_add(value as i16);
+                // // let address = self.pc as i16 + value as i16;
+                // self.set_pc(address as u16);
             }
             0x00C => {
                 //INC C
@@ -2269,10 +2275,6 @@ impl Registers {
                 let address = self.following_two_bytes(pointer, &memory);
                 self.set_two_bytes(memory, address, self.sp);
                 self.inc_pc();
-                // info!(
-                //     "LD (nn), SP - Put Stack Pointer at address n.sp: {:x}, address:{:x}, address value:{:x} & {:x}",
-                //     self.sp,address,memory[address as usize], memory[address as usize + 1]
-                // )
             }
             0x01F => {
                 //RRA
@@ -2329,13 +2331,6 @@ impl Registers {
                 // JP nn - 12
                 let value = self.following_two_bytes(pointer, memory);
                 self.set_pc(value)
-            }
-
-            0x0f3 => {
-                // DI
-                //Interrupts are disabled after instruction after DI is executed.
-                self.f.set_ime(false);
-                self.inc_pc();
             }
 
             0x036 => {
@@ -2714,14 +2709,6 @@ impl Registers {
                 let h_l = self.combine_two_bytes(self.h, self.l);
                 memory[h_l as usize] = self.d;
                 self.inc_pc();
-            }
-
-            0x076 => {
-                //HALT Power down CPU until interrupt occurs -> 4
-                //Implementation escalated to Gameboy. Checking at fn execute_opcodes()
-                info!("NEED TO IMPLEMENT HALT FUNCTION FOR 0x076");
-                self.inc_pc();
-                std::process::exit(1);
             }
 
             0x079 => {
@@ -4042,6 +4029,27 @@ impl Registers {
                 self.set_pc(0x38);
             }
 
+            0x0f3 => {
+                // DI
+                //Interrupts are disabled after instruction after DI is executed.
+                self.f.set_ime(false);
+                self.inc_pc();
+            }
+
+            0x0fb => {
+                // EI
+                self.inc_pc();
+                self.f.set_ime(true);
+            }
+
+            0x076 => {
+                //HALT Power down CPU until interrupt occurs -> 4
+                //Implementation escalated to Gameboy. Checking at fn execute_opcodes()
+                info!("NEED TO IMPLEMENT HALT FUNCTION FOR 0x076");
+                self.inc_pc();
+                std::process::exit(1);
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -5351,6 +5359,7 @@ impl Gameboy {
             0x0ef => 32,
             0x0f7 => 32,
             0x0ff => 32,
+            0x0fb => 4,
             other => {
                 info!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
@@ -6491,6 +6500,7 @@ pub fn opcode_name(opcode: u8) -> String {
         0x0ef => "RST $28",
         0x0f7 => "RST $30",
         0x0ff => "RST $38",
+        0x0fb => "EI",
         _other => "???",
     };
 
