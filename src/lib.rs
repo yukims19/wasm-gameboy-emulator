@@ -4644,20 +4644,21 @@ impl Registers {
     }
 
     fn push_stack(&mut self, memory: &mut Vec<u8>, value: u16) {
-        self.sp = self.sp - 2;
         let value_byte_vec = value.to_be_bytes();
         memory[self.sp as usize] = value_byte_vec[0];
         memory[self.sp as usize - 1] = value_byte_vec[1];
+        self.sp = self.sp - 2;
     }
 
     fn pop_stack(&mut self, sp: u16, memory: &mut Vec<u8>) -> u16 {
         // println!("Memory last 10: {:x?}", &memory[0xfff0..0xffff]);
         // println!("SP: {:x}", sp);
-        let firt_byte = memory[sp as usize];
-        let second_byte = memory[sp as usize - 1];
-        memory[sp as usize] = 0;
-        memory[sp as usize - 1] = 0;
         self.set_sp(self.sp + 2);
+        let firt_byte = memory[self.sp as usize];
+        let second_byte = memory[self.sp as usize - 1];
+        // memory[sp as usize] = 0;
+        // memory[sp as usize - 1] = 0;
+
         let result = self.combine_two_bytes(firt_byte, second_byte);
         result
     }
@@ -6048,8 +6049,8 @@ impl Gameboy {
             f: flag, //Control last operation result
             h: 0,
             l: 0,
-            sp: 0xffff,
             pc: 0x100,
+            sp: 0xfffe,
         };
 
         // let boot_rom_content = include_bytes!("boot-rom.gb");
