@@ -714,10 +714,6 @@ impl Registers {
                 //LD ($ff00+n), A
                 let memory_add = 0xFF00 + self.following_byte(pointer, memory) as u16;
                 memory[memory_add as usize] = self.a;
-                // info!(
-                //     "add: {:x}, val: {:x} ,a: {:x}",
-                //     memory_add, memory[memory_add as usize], self.a
-                // );
                 self.inc_pc();
             }
             0x0CB => {
@@ -2658,7 +2654,7 @@ impl Registers {
 
             0x038 => {
                 //JR C,*one byte -> 8
-                if !self.f.c {
+                if self.f.c {
                     let n_param = self.following_byte(pointer, memory); // as i8;
                     self.inc_pc();
                     let destination = self.add_signed_number(self.pc, n_param as i8);
@@ -4049,7 +4045,6 @@ impl Registers {
                 //Implementation escalated to Gameboy. Checking at fn execute_opcodes()
                 info!("NEED TO IMPLEMENT HALT FUNCTION FOR 0x076");
                 self.inc_pc();
-                std::process::exit(1);
             }
 
             other => {
@@ -4957,16 +4952,70 @@ impl Gameboy {
     // }
 
     fn execute_interuption(&mut self) {
+        // info!(">>Interuption: ime-{:?}", self.registers.f.ime);
+        let do_v_blank = (self.memory[0xff0f] & 0b00000001 == 0b00000001)
+            && (self.memory[0xffff] & 0b00000001 == 0b00000001);
+        let do_lcd = (self.memory[0xff0f] & 0b00000010 == 0b00000010)
+            && (self.memory[0xffff] & 0b00000010 == 0b00000010);
+        let do_timer = (self.memory[0xff0f] & 0b00000100 == 0b00000100)
+            && (self.memory[0xffff] & 0b00000100 == 0b00000100);
+        let do_serial = (self.memory[0xff0f] & 0b00001000 == 0b00001000)
+            && (self.memory[0xffff] & 0b00001000 == 0b00001000);
+        let do_joypad = (self.memory[0xff0f] & 0b00010000 == 0b00010000)
+            && (self.memory[0xffff] & 0b00010000 == 0b00010000);
+
         if self.registers.f.ime {
-            if self.memory[0xff0f] & 0b1000000 == 0b1000000 {
+            if do_v_blank {
                 info!("Vblank Interuption Triggered");
                 self.registers.f.set_ime(false);
 
-                //#In Case of Vblank
-                self.memory[0xff0f] = self.memory[0xff0f] ^ 0b1000000;
+                self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00000001;
                 self.registers
                     .push_stack(&mut self.memory, self.registers.pc);
                 self.registers.set_pc(0x40);
+            }
+
+            if do_lcd {
+                info!("LCD Interuption Triggered");
+                self.registers.f.set_ime(false);
+
+                self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00000010;
+                self.registers
+                    .push_stack(&mut self.memory, self.registers.pc);
+                self.registers.set_pc(0x48);
+            }
+
+            if do_timer {
+                info!("Timer Interuption Triggered");
+                self.registers.f.set_ime(false);
+
+                //#In Case of Vblank
+                self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00000100;
+                self.registers
+                    .push_stack(&mut self.memory, self.registers.pc);
+                self.registers.set_pc(0x50);
+            }
+
+            if do_serial {
+                info!("Serial Interuption Triggered");
+                self.registers.f.set_ime(false);
+
+                //#In Case of Vblank
+                self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00001000;
+                self.registers
+                    .push_stack(&mut self.memory, self.registers.pc);
+                self.registers.set_pc(0x58);
+            }
+
+            if do_joypad {
+                info!("Joypad Interuption Triggered");
+                self.registers.f.set_ime(false);
+
+                //#In Case of Vblank
+                self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00010000;
+                self.registers
+                    .push_stack(&mut self.memory, self.registers.pc);
+                self.registers.set_pc(0x60);
             }
         }
 
@@ -5976,6 +6025,12 @@ impl Gameboy {
                 .execute_instruction(instruction, &mut self.memory);
 
             if self.break_points.contains(&self.registers.pc) {
+            //Execute halt
+            if instruction == 0x076 {
+                //HALT: Pause CPU Until Interrupt
+                self.pause_cpu()
+            }
+            self.execute_interuption();
                 self.is_running = false;
             }
 
@@ -5990,7 +6045,6 @@ impl Gameboy {
             //     }
             // }
 
-            // self.execute_interuption();
             //Check IME -> set when return from interuption
 
             // info!("count: {}", count);
