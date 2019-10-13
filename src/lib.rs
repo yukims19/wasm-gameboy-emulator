@@ -590,7 +590,7 @@ impl Registers {
 
         match opcode {
             0x031 => {
-                //LD SP, $0xFFFE
+                //LD SP, nn
                 let value = self.following_two_bytes(pointer, &memory);
                 self.set_sp(value);
                 self.inc_pc();
@@ -714,6 +714,10 @@ impl Registers {
                 //LD ($ff00+n), A
                 let memory_add = 0xFF00 + self.following_byte(pointer, memory) as u16;
                 memory[memory_add as usize] = self.a;
+                // info!(
+                //     "add: {:x}, val: {:x} ,a: {:x}",
+                //     memory_add, memory[memory_add as usize], self.a
+                // );
                 self.inc_pc();
             }
             0x0CB => {
@@ -2094,9 +2098,8 @@ impl Registers {
                 self.inc_pc();
             }
             0x0C1 => {
-                //POP nn
+                //POP BC
                 let value = self.pop_stack(self.sp, memory);
-                //
                 self.set_bc(value);
                 self.inc_pc();
             }
@@ -2787,7 +2790,6 @@ impl Registers {
             0x0D1 => {
                 //POP DE -> 12
                 let value = self.pop_stack(self.sp, memory);
-                //
                 self.set_de(value);
                 self.inc_pc();
             }
