@@ -32,6 +32,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 enum CycleRegister {
     CpuCycle,
     VramCycle,
+    TimerCycle,
 }
 
 enum LcdMode {
@@ -4838,6 +4839,7 @@ pub struct SerializedGameboy {
     registers: Registers,
     total_cycle_num: usize,
     vram_cycle_num: u16,
+    timer_cycle_num: usize,
     timer: usize,
     cpu_clock: usize,
     break_points: Vec<u16>,
@@ -4855,9 +4857,11 @@ pub struct Gameboy {
     fm_osc: FmOsc,
     total_cycle_num: usize,
     vram_cycle_num: u16,
+    timer_cycle_num: usize,
     timer: usize,
     cpu_clock: usize,
     is_running: bool,
+    is_halt: bool,
     should_draw: bool,
     break_points: Vec<u16>,
     memory: Vec<u8>,
@@ -4872,6 +4876,7 @@ impl Gameboy {
             registers: self.registers.clone(),
             total_cycle_num: self.total_cycle_num,
             vram_cycle_num: self.vram_cycle_num,
+            timer_cycle_num: self.timer_cycle_num,
             timer: self.timer,
             cpu_clock: self.cpu_clock,
             break_points: self.break_points.clone(),
@@ -4955,41 +4960,56 @@ impl Gameboy {
         self.break_points.clone()
     }
 
-    //Intrupts
-    // fn do_interupt(&self) -> bool {
-    //     let has_request = self.memory[0xff0f] & 0b00010111 != 0;
-    //     let interupt_enabled = self.memory[0xffff] > 0;
 
-    //     interupt_enabled && has_request
-    // }
 
-    // fn set_timer_interupt_register(&mut self) {
-    //     self.memory[0xff0f] = self.memory[0xff0f] | 0b00000100u8;
-    //     /*
-    //        Bit 0: V-Blank  Interrupt Request (INT 40h)  (1=Request)
-    //        Bit 1: LCD STAT Interrupt Request (INT 48h)  (1=Request)
-    //        Bit 2: Timer    Interrupt Request (INT 50h)  (1=Request)
-    //        Bit 3: Serial   Interrupt Request (INT 58h)  (1=Request)
-    //        Bit 4: Joypad   Interrupt Request (INT 60h)  (1=Request)
-    //     */
-    // }
+        // else return memory
+        return self.memory[address as usize];
+    }
+
+    //Timer
+    fn update_timer(&mut self, instruction: u8) {
+        if self.is_timer_enabled() {
+            self.add_cycles(instruction, CycleRegister::TimerCycle);
+            let tima = self.memory[0xff05];
+            let tma = self.memory[0xff06];
+            let clock_count = self.timer_cycle_to_cpu_clock();
+
+            if self.timer_cycle_num >= clock_count {
+                self.add_time_counter();
+                self.set_timer_cycle(self.timer_cycle_num - clock_count);
+            };
+        } else {
+            self.set_timer_cycle(0);
+        }
+    }
 
     fn execute_interuption(&mut self) {
         // info!(">>Interuption: ime-{:?}", self.registers.f.ime);
         let do_v_blank = (self.memory[0xff0f] & 0b00000001 == 0b00000001)
             && (self.memory[0xffff] & 0b00000001 == 0b00000001);
+
         let do_lcd = (self.memory[0xff0f] & 0b00000010 == 0b00000010)
             && (self.memory[0xffff] & 0b00000010 == 0b00000010);
+
         let do_timer = (self.memory[0xff0f] & 0b00000100 == 0b00000100)
             && (self.memory[0xffff] & 0b00000100 == 0b00000100);
+
         let do_serial = (self.memory[0xff0f] & 0b00001000 == 0b00001000)
             && (self.memory[0xffff] & 0b00001000 == 0b00001000);
+
         let do_joypad = (self.memory[0xff0f] & 0b00010000 == 0b00010000)
             && (self.memory[0xffff] & 0b00010000 == 0b00010000);
+
+        let any_interrupt = do_v_blank || do_lcd || do_timer || do_serial || do_joypad;
+
+        if any_interrupt {
+            self.is_halt = false
+        }
 
         if self.registers.f.ime {
             if do_v_blank {
                 info!("Vblank Interuption Triggered");
+                self.is_halt = false;
                 self.registers.f.set_ime(false);
 
                 self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00000001;
@@ -5000,6 +5020,7 @@ impl Gameboy {
 
             if do_lcd {
                 info!("LCD Interuption Triggered");
+                self.is_halt = false;
                 self.registers.f.set_ime(false);
 
                 self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00000010;
@@ -5010,6 +5031,7 @@ impl Gameboy {
 
             if do_timer {
                 info!("Timer Interuption Triggered");
+                self.is_halt = false;
                 self.registers.f.set_ime(false);
 
                 //#In Case of Vblank
@@ -5021,6 +5043,7 @@ impl Gameboy {
 
             if do_serial {
                 info!("Serial Interuption Triggered");
+                self.is_halt = false;
                 self.registers.f.set_ime(false);
 
                 //#In Case of Vblank
@@ -5032,6 +5055,7 @@ impl Gameboy {
 
             if do_joypad {
                 info!("Joypad Interuption Triggered");
+                self.is_halt = false;
                 self.registers.f.set_ime(false);
 
                 //#In Case of Vblank
@@ -5053,16 +5077,17 @@ impl Gameboy {
         self.vram_cycle_num = value
     }
 
-    pub fn request_vblank(&mut self) {
-        // info!(
-        //     "request vblank, ime: {}, v interupt enabled: {}",
-        //     self.registers.f.ime,
-        //     self.vblank_interrupt_enabled()
-        // );
-        self.should_draw = true;
-        self.memory[0xff0f] = self.memory[0xff0f] | 0b1000000;
+    pub fn set_timer_cycle(&mut self, value: usize) {
+        self.timer_cycle_num = value
+    }
 
-        // self.execute_interuption();
+    pub fn request_vblank(&mut self) {
+        self.should_draw = true;
+        self.memory[0xff0f] = self.memory[0xff0f] | 0b000000001;
+    }
+
+    pub fn request_timer_interrupt(&mut self) {
+        self.memory[0xff0f] = self.memory[0xff0f] | 0b000000100;
     }
 
     //LCDC Y-Coordinate : LY
@@ -5081,13 +5106,16 @@ impl Gameboy {
         }
     }
 
-    //Timer
     pub fn total_cycle(&self) -> usize {
         self.total_cycle_num
     }
 
     pub fn vram_cycle(&self) -> u16 {
         self.vram_cycle_num
+    }
+
+    pub fn timer_cycle(&self) -> usize {
+        self.timer_cycle_num
     }
 
     pub fn timer_counter_memory(&self) -> u8 {
@@ -5127,8 +5155,9 @@ impl Gameboy {
         timer_frequency
     }
 
-    fn _add_time_counter(&mut self) {
+    fn add_time_counter(&mut self) {
         if self.memory[0xff05] == 255 {
+            self.request_timer_interrupt();
             self.memory[0xff05] = self.memory[0xff06]
         } else {
             self.memory[0xff05] += 1
@@ -5447,6 +5476,7 @@ impl Gameboy {
 
         match cycle_register {
             CycleRegister::VramCycle => self.vram_cycle_num += cycle as u16,
+            CycleRegister::TimerCycle => self.timer_cycle_num += cycle as usize,
             CycleRegister::CpuCycle => self.total_cycle_num += cycle as usize,
         }
     }
@@ -6042,17 +6072,29 @@ impl Gameboy {
                 // );
             }
 
-            self.add_cycles(instruction, CycleRegister::CpuCycle);
-            self.cycle_based_gpu_operation(instruction);
-            self.registers
-                .execute_instruction(instruction, &mut self.memory);
+            if !self.is_halt {
+                self.cycle_based_gpu_operation(instruction);
+                self.registers
+                    .execute_instruction(instruction, &mut self.memory);
+            } else {
+                info!(
+                    "Add cycles, tima: {:x}, IF: {:x}",
+                    self.memory[0xff05], self.memory[0xff0f]
+                );
+                self.add_cycles(0x00, CycleRegister::TimerCycle);
+            }
 
-            if self.break_points.contains(&self.registers.pc) {
-            //Execute halt
+            self.add_cycles(instruction, CycleRegister::CpuCycle);
+
             if instruction == 0x076 {
                 //HALT: Pause CPU Until Interrupt
-                self.pause_cpu()
+                self.is_halt = true;
+                info!("Update halt to true");
             }
+
+            //Execute halt
+
+            self.update_timer(instruction);
             self.execute_interuption();
                 self.is_running = false;
             }
@@ -6192,8 +6234,10 @@ impl Gameboy {
             memory: full_memory,
             total_cycle_num: 0,
             vram_cycle_num: 0,
+            timer_cycle_num: 0,
             timer: 0,
             is_running: false,
+            is_halt: false,
             break_points: vec![],
             cpu_clock: 0,
             cpu_paused: false,
@@ -6280,6 +6324,7 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
         registers: serializeable.registers.clone(),
         total_cycle_num: serializeable.total_cycle_num,
         vram_cycle_num: serializeable.vram_cycle_num,
+        timer_cycle_num: serializeable.timer_cycle_num,
         timer: serializeable.timer,
         cpu_clock: serializeable.cpu_clock,
         break_points: serializeable.break_points.clone(),
@@ -6293,6 +6338,7 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
         image_data,
         should_draw: false,
         is_running: false,
+        is_halt: false,
         cpu_paused: false,
         cartridge: cartridge.to_vec(),
     };
