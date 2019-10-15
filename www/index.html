@@ -64,50 +64,15 @@
         display: flex;
         flex-flow: column;
       }
+      .flex-wrapper {
+        display: flex;
+      }
     </style>
   </head>
   <body>
-    <div id="sound-container"></div>
-    <div id="break-point-container"></div>
-    <input id="play" type="button" value="⏯" />
-    (headphone users, please make sure your volume is not too loud!)
-
-    <div>
-      Primary frequency:
-      <input
-        type="range"
-        min="30"
-        max="80"
-        value="50"
-        style="width: 400px"
-        id="primary_input"
-      />
-    </div>
-
-    <div>
-      Modulation frequency:
-      <input
-        type="range"
-        min="0"
-        max="3"
-        value="0"
-        step="0.05"
-        style="width: 400px"
-        id="fm_freq"
-      />
-    </div>
-
-    <div>
-      Modulation amount:
-      <input
-        type="range"
-        min="0"
-        max="3"
-        value="0"
-        step="0.05"
-        style="width: 400px"
-        id="fm_amount"
-      />
+    <div class="flex-wrapper">
+      <div id="break-point-container"></div>
+      <div id="mbc-container"></div>
     </div>
     <canvas hidden id="char-map-actual-canvas-rust"></canvas>
     <canvas id="char-map-debug-canvas-rust"></canvas>

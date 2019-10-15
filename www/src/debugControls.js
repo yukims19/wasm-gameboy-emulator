@@ -467,7 +467,11 @@ const Controls = props => {
     cycleTotal,
     vramCycleTotal,
     ly,
-    timer,
+    isTimerEnabled,
+    timerCounter,
+    timerCycle,
+    timerCycleToIncreaseCount,
+    timerFrequency,
     cpuClock,
     onDrawScreen,
     onDrawCharMap,
@@ -525,8 +529,24 @@ const Controls = props => {
           <th>{String(isVblank)}</th>
         </tr>
         <tr>
-          <th>Timer:</th>
-          <th>{timer}</th>
+          <th>Timer?:</th>
+          <th>{String(isTimerEnabled)}</th>
+        </tr>
+        <tr>
+          <th>Timer Count:</th>
+          <th>{timerCounter}</th>
+        </tr>
+        <tr>
+          <th>Timer Cycle:</th>
+          <th>{timerCycle}</th>
+        </tr>
+        <tr>
+          <th>Timer CycToIncCount:</th>
+          <th>{timerCycleToIncreaseCount}</th>
+        </tr>
+        <tr>
+          <th>Timer Frequency:</th>
+          <th>{timerFrequency}</th>
         </tr>
         <tr>
           <th>CPU Clock:</th>
@@ -615,7 +635,11 @@ const Debugger = props => {
           vramCycleTotal={props.vramCycleTotal}
           ly={props.ly}
           isVblank={props.isVblank}
-          timer={props.timer}
+          isTimerEnabled={props.isTimerEnabled}
+          timerCounter={props.timerCounter}
+          timerCycle={props.timerCycle}
+          timerCycleToIncreaseCount={props.timerCycleToIncreaseCount}
+          timerFrequency={props.timerFrequency}
           cpuClock={props.cpuClock}
         />
 

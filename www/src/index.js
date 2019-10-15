@@ -20,6 +20,7 @@ import {
 import {Debugger} from './debugControls.js';
 import {SoundDebugger} from './soundDebugger.js';
 import {BreakPointDebugger} from './breakPointDebugger.js';
+import {MbcDebugger} from './MbcDebugger.js';
 import {SaveStateManager} from './saveStateManager.js';
 import {square1, playSquare, playSquare1, playSquare2} from './channels.jsx';
 
@@ -39,8 +40,9 @@ const playSound = gameboy => {
 };
 
 var domContainer = document.querySelector('#memory-viewer');
-var soundContainer = document.getElementById('sound-container');
+// var soundContainer = document.getElementById('sound-container');
 var breakPointContainer = document.getElementById('break-point-container');
+var mbcContainer = document.getElementById('mbc-container');
 
 let tick = -1;
 const opLogMaxLength = 16;
@@ -88,7 +90,7 @@ var render = function render(gameboy) {
   const onStep = () => {
     console.log('onStep');
     gameboy.start_running();
-    next(100);
+    next(100000);
     gameboy.stop_running();
   };
 
@@ -149,25 +151,36 @@ var render = function render(gameboy) {
   let frequency = square1.frequency();
   let is_restart = square1.is_restart();
   let is_use_length = square1.is_use_length();
+  let isTimerEnabled = gameboy.is_timer_enabled();
+  let timerCounter = gameboy.timer_counter_memory();
+  let timerCycle = gameboy.timer_cycle();
+  let timerCycleToIncreaseCount = gameboy.timer_cycle_to_cpu_clock();
+  let timerFrequency = gameboy.timer_frequency();
 
-  ReactDOM.render(
-    React.createElement(SoundDebugger, {
-      fullMemory: memoryBytes,
-      sweep_time,
-      is_sweep_increase,
-      sweep_shift_num,
-      wave_duty_pct,
-      sound_length_sec,
-      volume,
-      is_envelop_increase,
-      envelop_shift_num,
-      fr,
-      frequency,
-      is_restart,
-      is_use_length,
-    }),
-    soundContainer,
-  );
+  let mbc = gameboy.get_mbc();
+  let romBank = gameboy.get_rom_bank();
+  let ramBank = gameboy.get_ram_bank();
+  let isRamEnabled = gameboy.get_is_ram_enabled();
+  let isRomEnabled = gameboy.get_is_rom_banking_enabled();
+
+  // ReactDOM.render(
+  //   React.createElement(SoundDebugger, {
+  //     fullMemory: memoryBytes,
+  //     sweep_time,
+  //     is_sweep_increase,
+  //     sweep_shift_num,
+  //     wave_duty_pct,
+  //     sound_length_sec,
+  //     volume,
+  //     is_envelop_increase,
+  //     envelop_shift_num,
+  //     fr,
+  //     frequency,
+  //     is_restart,
+  //     is_use_length,
+  //   }),
+  //   soundContainer,
+  // );
 
   ReactDOM.render(
     React.createElement(BreakPointDebugger, {
@@ -175,6 +188,17 @@ var render = function render(gameboy) {
       removeBreakPoint: point => gameboy.remove_break_point(point),
     }),
     breakPointContainer,
+  );
+
+  ReactDOM.render(
+    React.createElement(MbcDebugger, {
+      mbc,
+      romBank,
+      ramBank,
+      isRamEnabled,
+      isRomEnabled,
+    }),
+    mbcContainer,
   );
 
   const onTogglePlay = () => {
@@ -208,7 +232,11 @@ var render = function render(gameboy) {
       vramCycleTotal: vramCycleTotal,
       isVblank: isVblank,
       ly: ly,
-      timer: timer,
+      isTimerEnabled: isTimerEnabled,
+      timerCounter,
+      timerCycle,
+      timerCycleToIncreaseCount,
+      timerFrequency,
       cpuClock,
       onDrawScreen: () => {
         console.log('on draw screen');

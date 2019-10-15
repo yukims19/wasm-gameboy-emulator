@@ -5443,7 +5443,31 @@ impl Gameboy {
     }
 
     //MBC
-    //TODO:
+
+    pub fn get_mbc(&self) -> u8 {
+        self.mbc
+    }
+
+    pub fn get_rom_bank(&self) -> u8 {
+        self.rom_bank
+    }
+
+    pub fn get_ram_bank(&self) -> u8 {
+        self.ram_bank
+    }
+
+    // pub fn get_ram_bank_memory(&self) -> Vec<u8> {
+    //     self.ram_bank_memory
+    // }
+
+    pub fn get_is_ram_enabled(&self) -> bool {
+        self.is_ram_enabled
+    }
+
+    pub fn get_is_rom_banking_enabled(&self) -> bool {
+        self.is_rom_banking_enabled
+    }
+
     fn get_mbc_from_memory(memory: &Vec<u8>) -> u8 {
         let mbc = match memory[0x0147] {
             0 => 0,
