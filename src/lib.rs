@@ -5444,17 +5444,15 @@ impl Gameboy {
 
     //MBC
     //TODO:
-    // [x] Check for MBC inital value
-    // 2. replace all read and write
     fn get_mbc_from_memory(memory: &Vec<u8>) -> u8 {
         let mbc = match memory[0x0147] {
-            0 => 1,
+            0 => 0,
             1 => 1,
             2 => 1,
             3 => 1,
             5 => 2,
             6 => 2,
-            0x13 => 3,
+            0x13 => 1,
             _ => {
                 info!("Invalid mbc value: {:x} at $0x147", memory[0x0147]);
                 panic!("");
@@ -5521,21 +5519,21 @@ impl Gameboy {
 
     fn write_memory(&mut self, address: u16, value: u8) {
         let is_mbc_one_or_two = self.mbc == 1 || self.mbc == 2;
-        // do RAM enabling
+        // enable ram
         if address < 0x2000 {
             if is_mbc_one_or_two {
                 // DoRamBankEnable(address,data) ;
                 self.enable_ram_bank(address, value);
             }
         }
-        // do ROM bank change
+        // change ROM bank
         else if (address >= 0x200) && (address < 0x4000) {
             if is_mbc_one_or_two {
                 // DoChangeLoROMBank(data) ;
                 self.change_lo_rom_bank(value);
             }
         }
-        // do ROM or RAM bank change
+        // change ROM or RAM bank
         else if (address >= 0x4000) && (address < 0x6000) {
             // there is no rambank in mbc2 so always use rambank 0
             if self.mbc == 1 {
@@ -5563,20 +5561,18 @@ impl Gameboy {
             }
         } else if (address >= 0xFEA0) && (address < 0xFEFF) {
             //Nothing happens
-        }
-        // no control needed over this area so write to memory
-        else {
+        } else {
             self.memory[address as usize] = value;
         }
     }
 
     fn read_memory(&self, address: u16) -> u8 {
-        // are we reading from the rom memory bank?
+        // Read from the rom memory bank
         if (address >= 0x4000) && (address <= 0x7FFF) {
             let new_address = address - 0x4000;
             return self.cartridge[(new_address + (self.rom_bank as u16 * 0x4000)) as usize];
         }
-        // are we reading from ram memory bank?
+        // Reading from ram memory bank
         else if (address >= 0xA000) && (address <= 0xBFFF) {
             let new_address = address - 0xA000;
             return self.ram_bank_memory[(new_address + (self.ram_bank as u16 * 0x2000)) as usize];
