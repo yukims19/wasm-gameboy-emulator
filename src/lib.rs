@@ -3521,10 +3521,33 @@ impl Registers {
 
             0x027 => {
                 //DAA -> 4
-                //TODO: implement DAA
+                let was_subtract = self.f.n;
+
+                let mut bcd_adjust = 0;
+
+                if self.f.h || (!self.f.n && (self.a & 0xf) > 9) {
+                    bcd_adjust |= 0x6;
+                }
+
+                if self.f.c || (!self.f.n && self.a > 0x99) {
+                    bcd_adjust |= 0x60;
+                    flag_c = true
+                }
+
+                let result = if was_subtract {
+                    self.a.wrapping_sub(bcd_adjust)
+                } else {
+                    self.a.wrapping_add(bcd_adjust)
+                };
+
+                if result == 0 {
+                    flag_z = true;
+                };
+
+                flag_n = self.f.n;
+                self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+                self.set_a(result);
                 self.inc_pc();
-                info!("DAA!!");
-                std::process::exit(1)
             }
 
             0x037 => {
