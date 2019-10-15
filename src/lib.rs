@@ -35,15 +35,15 @@ enum CycleRegister {
     TimerCycle,
 }
 
-enum LcdMode {
-    Vblank,
-    Hblank,
-    SearchOAM,
-    DataTransfer,
-}
+// enum LcdMode {
+//     Vblank,
+//     Hblank,
+//     SearchOAM,
+//     DataTransfer,
+// }
 
 #[wasm_bindgen]
-struct Canvases {
+pub struct Canvases {
     background_canvas: web_sys::CanvasRenderingContext2d,
     screen_canvas: web_sys::CanvasRenderingContext2d,
     char_map_canvas: web_sys::CanvasRenderingContext2d,
@@ -590,8 +590,8 @@ impl Registers {
         hl_value: Option<u16>,
     ) {
         let mut flag_z = false;
-        let mut flag_n = false;
-        let mut flag_h = false;
+        let flag_n = false;
+        let flag_h = false;
         let mut flag_c = false;
 
         let result = register_value >> 1;
@@ -601,8 +601,6 @@ impl Registers {
 
         if register_value & 0b00000001 == 0b00000001 {
             flag_c = true
-        } else {
-            flag_c = false
         }
 
         match register_name {
@@ -631,8 +629,8 @@ impl Registers {
         hl_value: Option<u16>,
     ) {
         let mut flag_z = false;
-        let mut flag_n = false;
-        let mut flag_h = false;
+        let flag_n = false;
+        let flag_h = false;
         let mut flag_c = false;
 
         let result = register_value >> 1 | (register_value & 0x80);
@@ -642,10 +640,7 @@ impl Registers {
 
         if register_value & 0b00000001 == 0b00000001 {
             flag_c = true
-        } else {
-            flag_c = false
         }
-
         match register_name {
             "a" => self.set_a(result),
             "b" => self.set_b(result),
@@ -672,9 +667,9 @@ impl Registers {
         hl_value: Option<u16>,
     ) {
         let mut flag_z = false;
-        let mut flag_n = false;
-        let mut flag_h = false;
-        let mut flag_c = false;
+        let flag_n = false;
+        let flag_h = false;
+        let flag_c = false;
 
         let result = register_value << 4 | register_value >> 4;
 
@@ -708,8 +703,8 @@ impl Registers {
         hl_value: Option<u16>,
     ) {
         let mut flag_z = false;
-        let mut flag_n = false;
-        let mut flag_h = false;
+        let flag_n = false;
+        let flag_h = false;
         let mut flag_c = false;
 
         let result = register_value << 1;
@@ -720,8 +715,6 @@ impl Registers {
 
         if register_value & 0b10000000 == 0b10000000 {
             flag_c = true
-        } else {
-            flag_c = false
         }
 
         match register_name {
@@ -750,8 +743,8 @@ impl Registers {
         hl_value: Option<u16>,
     ) {
         let mut flag_z = false;
-        let mut flag_n = false;
-        let mut flag_h = false;
+        let flag_n = false;
+        let flag_h = false;
         let mut flag_c = false;
 
         let shifted_value = register_value >> 1;
@@ -767,8 +760,6 @@ impl Registers {
 
         if register_value & 0b00000001 == 1 {
             flag_c = true
-        } else {
-            flag_c = false
         }
 
         match register_name {
@@ -797,8 +788,8 @@ impl Registers {
         hl_value: Option<u16>,
     ) {
         let mut flag_z = false;
-        let mut flag_n = false;
-        let mut flag_h = false;
+        let flag_n = false;
+        let flag_h = false;
         let mut flag_c = false;
 
         let shifted_value = register_value << 1;
@@ -814,8 +805,6 @@ impl Registers {
 
         if register_value & 0b10000000 == 0b10000000 {
             flag_c = true
-        } else {
-            flag_c = false
         }
 
         match register_name {
@@ -844,8 +833,8 @@ impl Registers {
         hl_value: Option<u16>,
     ) {
         let mut flag_z = false;
-        let mut flag_n = false;
-        let mut flag_h = false;
+        let flag_n = false;
+        let flag_h = false;
         let mut flag_c = false;
 
         let cf = register_value << 7;
@@ -857,8 +846,6 @@ impl Registers {
 
         if cf & 0b10000000 == 0b10000000 {
             flag_c = true
-        } else {
-            flag_c = false
         }
 
         match register_name {
@@ -887,9 +874,8 @@ impl Registers {
         hl_value: Option<u16>,
     ) {
         let mut flag_z = false;
-        let mut flag_n = false;
-        let mut flag_h = false;
-        let mut flag_c = false;
+        let flag_n = false;
+        let flag_h = false;
 
         let cf = register_value >> 7;
         let result = (register_value << 1) | cf;
@@ -898,7 +884,7 @@ impl Registers {
             flag_z = true
         }
 
-        flag_c = cf == 1;
+        let flag_c = cf == 1;
 
         match register_name {
             "a" => self.set_a(result),
@@ -934,14 +920,14 @@ impl Registers {
 
     fn and_a_n(&mut self, n: u8) {
         let mut flag_z = false;
-        let mut flag_n = false;
-        let mut flag_h = false;
-        let mut flag_c = false;
+        let flag_n = false;
+
+        let flag_c = false;
         let result = self.a & n;
         if result == 0 {
             flag_z = true;
         };
-        flag_h = true;
+        let flag_h = true;
         self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
         self.set_a(result);
     }
@@ -980,7 +966,7 @@ impl Registers {
 
     fn add_a_n(&mut self, n: u8) {
         let mut flag_z = false;
-        let mut flag_n = false;
+        let flag_n = false;
         let mut flag_h = false;
         let mut flag_c = false;
 
@@ -988,7 +974,7 @@ impl Registers {
         if value == 0 {
             flag_z = true;
         }
-        flag_n = false;
+
         if self.check_half_carry(self.a, n) {
             flag_h = true
         }
@@ -1001,9 +987,7 @@ impl Registers {
 
     fn bit_b_r(&mut self, bit_idx: u8, register: u8) {
         let mut flag_z = false;
-        let mut flag_n = false;
-        let mut flag_h = false;
-        let mut flag_c = false;
+        let flag_n = false;
 
         let check_bits = match bit_idx {
             0 => 0b00000001,
@@ -1024,8 +1008,8 @@ impl Registers {
         if bit == 0 {
             flag_z = true;
         }
-        flag_h = true;
-        flag_c = self.f.c;
+        let flag_h = true;
+        let flag_c = self.f.c;
         self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
     }
 
@@ -1174,7 +1158,7 @@ impl Registers {
         memory[self.sp as usize] = value_byte_vec[1];
     }
 
-    fn pop_stack(&mut self, sp: u16, memory: &Vec<u8>) -> u16 {
+    fn pop_stack(&mut self, memory: &Vec<u8>) -> u16 {
         // println!("Memory last 10: {:x?}", &memory[0xfff0..0xffff]);
         // println!("SP: {:x}", sp);
         // self.set_sp(self.sp + 2);
@@ -1273,7 +1257,7 @@ impl Registers {
         self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
     }
 
-    fn set_two_bytes(&mut self, memory: &mut Vec<u8>, start_address: u16, value: u16) {
+    fn set_two_bytes(&mut self, memory: &mut Vec<u8>, start_address: u16) {
         memory[start_address as usize] = self.sp as u8;
         memory[start_address.wrapping_add(1) as usize] = (self.sp >> 8) as u8;
     }
@@ -2975,10 +2959,6 @@ impl Gameboy {
                         self.registers
                             .srl(value, "h_l", &mut self.memory, Some(h_l));
                     }
-                    other => {
-                        info!("Unrecogized opcode (CB: {:x})", other);
-                        std::process::exit(1)
-                    }
                 }
 
                 self.registers.inc_pc();
@@ -3237,7 +3217,7 @@ impl Gameboy {
             }
             0x0C9 => {
                 //RET
-                let address = self.registers.pop_stack(self.registers.sp, &self.memory);
+                let address = self.registers.pop_stack(&self.memory);
                 self.registers.set_pc(address);
             }
 
@@ -3251,7 +3231,7 @@ impl Gameboy {
             }
             0x0C1 => {
                 //POP BC
-                let value = self.registers.pop_stack(self.registers.sp, &self.memory);
+                let value = self.registers.pop_stack(&self.memory);
                 self.registers.set_bc(value);
                 self.registers.inc_pc();
             }
@@ -3443,8 +3423,7 @@ impl Gameboy {
             0x008 => {
                 //LD (nn), SP - 20
                 let address = self.registers.following_two_bytes(pointer, &&self.memory);
-                self.registers
-                    .set_two_bytes(&mut self.memory, address, self.registers.sp);
+                self.registers.set_two_bytes(&mut self.memory, address);
                 self.registers.inc_pc();
             }
             0x01F => {
@@ -3486,7 +3465,7 @@ impl Gameboy {
                     //RETI
                     // info!("0x0DD -> 0x0D9, sp:{:x}", self.registers.sp);
                     //TODO: stack set & pop
-                    let address = self.registers.pop_stack(self.registers.sp, &self.memory);
+                    let address = self.registers.pop_stack(&self.memory);
                     self.registers.set_pc(address);
                     //Endable interrupts
                     self.registers.f.set_ime(true);
@@ -3578,7 +3557,7 @@ impl Gameboy {
 
             0x0e1 => {
                 //POP HL -> 12
-                let value = self.registers.pop_stack(self.registers.sp, &self.memory);
+                let value = self.registers.pop_stack(&self.memory);
                 self.registers.set_hl(value);
                 self.registers.inc_pc();
             }
@@ -3726,7 +3705,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.set_d(value);
                 self.registers.inc_pc();
             }
@@ -3770,7 +3749,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.set_e(value);
                 self.registers.inc_pc();
             }
@@ -3814,7 +3793,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.set_h(value);
                 self.registers.inc_pc();
             }
@@ -3893,7 +3872,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.memory[h_l as usize] = self.registers.h;
+                self.write_memory(h_l, self.registers.h);
                 self.registers.inc_pc();
             }
 
@@ -3902,7 +3881,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.memory[h_l as usize] = self.registers.l;
+                self.write_memory(h_l, self.registers.l);
                 self.registers.inc_pc();
             }
 
@@ -3911,7 +3890,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.memory[h_l as usize] = self.registers.d;
+                self.write_memory(h_l, self.registers.d);
                 self.registers.inc_pc();
             }
 
@@ -3923,7 +3902,7 @@ impl Gameboy {
 
             0x0f1 => {
                 //POP AF -> 12
-                let value = self.registers.pop_stack(self.registers.sp, &self.memory);
+                let value = self.registers.pop_stack(&self.memory);
                 self.registers.set_af(value);
                 self.registers.inc_pc();
             }
@@ -3967,7 +3946,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.memory[h_l as usize] = self.registers.b;
+                self.write_memory(h_l, self.registers.b);
                 self.registers.inc_pc();
             }
 
@@ -3993,7 +3972,7 @@ impl Gameboy {
 
             0x0D1 => {
                 //POP DE -> 12
-                let value = self.registers.pop_stack(self.registers.sp, &self.memory);
+                let value = self.registers.pop_stack(&self.memory);
                 self.registers.set_de(value);
                 self.registers.inc_pc();
             }
@@ -4139,7 +4118,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let address_value = self.memory[h_l as usize];
+                let address_value = self.read_memory(h_l);
                 let value = self.registers.a.wrapping_sub(address_value);
 
                 if value == 0 {
@@ -4201,7 +4180,7 @@ impl Gameboy {
                 let address = self
                     .registers
                     .following_two_bytes(self.registers.pc as usize, &self.memory);
-                let value = self.memory[address as usize];
+                let value = self.read_memory(address);
                 self.registers.set_a(value as u8);
                 self.registers.inc_pc();
             }
@@ -4373,7 +4352,7 @@ impl Gameboy {
             0x0D0 => {
                 //RET NC -> 8
                 if !self.registers.f.c {
-                    let address = self.registers.pop_stack(self.registers.sp, &self.memory);
+                    let address = self.registers.pop_stack(&self.memory);
                     self.registers.set_pc(address);
                 } else {
                     self.registers.inc_pc();
@@ -4383,7 +4362,7 @@ impl Gameboy {
             0x0C0 => {
                 //RET NZ -> 8
                 if !self.registers.f.z {
-                    let address = self.registers.pop_stack(self.registers.sp, &self.memory);
+                    let address = self.registers.pop_stack(&self.memory);
                     self.registers.set_pc(address);
                 } else {
                     self.registers.inc_pc();
@@ -4393,7 +4372,7 @@ impl Gameboy {
             0x0C8 => {
                 //RET Z -> 8
                 if self.registers.f.z {
-                    let address = self.registers.pop_stack(self.registers.sp, &self.memory);
+                    let address = self.registers.pop_stack(&self.memory);
                     self.registers.set_pc(address);
                 } else {
                     self.registers.inc_pc();
@@ -4403,7 +4382,7 @@ impl Gameboy {
             0x0D8 => {
                 //RET C -> 8
                 if self.registers.f.c {
-                    let address = self.registers.pop_stack(self.registers.sp, &self.memory);
+                    let address = self.registers.pop_stack(&self.memory);
                     self.registers.set_pc(address);
                 } else {
                     self.registers.inc_pc();
@@ -4415,7 +4394,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let address_value = self.memory[h_l as usize];
+                let address_value = self.read_memory(h_l);
                 let value = self.registers.a | address_value;
 
                 if value == 0 {
@@ -4446,9 +4425,9 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let address_value = self.memory[h_l as usize];
+                let address_value = self.read_memory(h_l);
                 let value = address_value.wrapping_sub(1);
-                self.memory[h_l as usize] = value;
+                self.write_memory(h_l, value);
 
                 if value == 0 {
                     flag_z = true;
@@ -4766,7 +4745,7 @@ impl Gameboy {
 
             0x0D9 => {
                 //RETI -> 8
-                let address = self.registers.pop_stack(self.registers.sp, &self.memory);
+                let address = self.registers.pop_stack(&self.memory);
                 self.registers.set_pc(address);
                 //TODO:Endable interrupts
                 println!("IMPORTANT!! TODO: Enable interrupts");
@@ -5641,7 +5620,7 @@ impl Gameboy {
                 self.ram_bank_memory[(new_address + (self.ram_bank as u16 * 0x2000)) as usize] =
                     value;
             }
-        } else if ((address >= 0xFEA0) && (address < 0xFEFF)) {
+        } else if (address >= 0xFEA0) && (address < 0xFEFF) {
             //Nothing happens
         }
         // no control needed over this area so write to memory
@@ -5670,8 +5649,6 @@ impl Gameboy {
     fn update_timer(&mut self, instruction: u8) {
         if self.is_timer_enabled() {
             self.add_cycles(instruction, CycleRegister::TimerCycle);
-            let tima = self.memory[0xff05];
-            let tma = self.memory[0xff06];
             let clock_count = self.timer_cycle_to_cpu_clock();
 
             if self.timer_cycle_num >= clock_count {
@@ -6309,19 +6286,19 @@ impl Gameboy {
         self.memory[0xff41] & 0b00000100 == 0b00000100
     }
 
-    fn lcd_mode(&self) -> LcdMode {
-        let mode_flag = self.memory[0xff41] & 0b00000011;
-        match mode_flag {
-            0 => LcdMode::Hblank,
-            1 => LcdMode::Vblank,
-            2 => LcdMode::SearchOAM,
-            3 => LcdMode::DataTransfer,
-            _ => {
-                info!("Invalide lcd mode value");
-                std::process::exit(1)
-            }
-        }
-    }
+    // fn lcd_mode(&self) -> LcdMode {
+    //     let mode_flag = self.memory[0xff41] & 0b00000011;
+    //     match mode_flag {
+    //         0 => LcdMode::Hblank,
+    //         1 => LcdMode::Vblank,
+    //         2 => LcdMode::SearchOAM,
+    //         3 => LcdMode::DataTransfer,
+    //         _ => {
+    //             info!("Invalide lcd mode value");
+    //             std::process::exit(1)
+    //         }
+    //     }
+    // }
 
     fn set_lcd_mode_with_gpu_cycle(&mut self, gpu_cycle: u16) {
         // //##This function is GPU emulation. Mode Flag is read only for gameboy
@@ -6666,11 +6643,11 @@ impl Gameboy {
         let canvases = Canvases::new();
 
         //#ff10-ff14 is responsible for sound channel 1
-        let pre_ff10 = self.memory[0xff10];
-        let pre_ff11 = self.memory[0xff11];
-        let pre_ff12 = self.memory[0xff12];
-        let pre_ff13 = self.memory[0xff13];
-        let pre_ff14 = self.memory[0xff14];
+        // let pre_ff10 = self.memory[0xff10];
+        // let pre_ff11 = self.memory[0xff11];
+        // let pre_ff12 = self.memory[0xff12];
+        // let pre_ff13 = self.memory[0xff13];
+        // let pre_ff14 = self.memory[0xff14];
 
         let window = web_sys::window().expect("should have a window in this context");
         let performance = window
@@ -6678,11 +6655,8 @@ impl Gameboy {
             .expect("performance should be available");
 
         let start_cycle_count = self.total_cycle();
-        let start_time = performance.now();
-        let mut last_time = start_time;
         let mut last_cycle_count = 0;
         let cycle_log_target = 50_000;
-        let mut last_cycle_ly = 0;
         let time_last_draw = performance.now();
 
         loop {
@@ -6695,55 +6669,30 @@ impl Gameboy {
             }
 
             let instruction = self.memory[self.registers.pc as usize];
+            let _instruction2 = self.memory[self.registers.pc as usize + 1];
 
             // FIXME: Only do this on first time through when the bootrom unmaps itself
-            // if self.registers.pc == 0xfe {
-            //     info!("PC: 0xfe, instruction: {:x}", instruction);
-            //     if instruction == 0x00e0 {
-            //         info!("PC: 0xfe, instruction: e0, reg a: {:?}", self.registers.a);
-            //         // && self.registers.a == 1
-            //         {
-            //             info!("Unmapping bootrom...");
-            //             for idx in 0x00..0xff {
-            //                 // info!("\t{:?} -> {:?}", idx, self.cartridge[idx]);
-            //                 self.memory[idx] = self.cartridge[idx];
-            //             }
-            //         }
-            //     }
-            // }
-
-            let ly = self.ly();
+            if self.registers.pc == 0xfe {
+                info!("PC: 0xfe, instruction: {:x}", instruction);
+                if instruction == 0x00e0 {
+                    info!("PC: 0xfe, instruction: e0, reg a: {:?}", self.registers.a);
+                    // && self.registers.a == 1
+                    {
+                        info!("Unmapping bootrom...");
+                        for idx in 0x00..0xff {
+                            // info!("\t{:?} -> {:?}", idx, self.cartridge[idx]);
+                            self.memory[idx] = self.cartridge[idx];
+                        }
+                    }
+                }
+            }
 
             if self.is_lcd_display_enable() && self.should_draw {
-                // info!(
-                //     "LY = {:?}, drawing: elapsed cycle count: {:?}, total: {:?}",
-                //     ly,
-                //     self.total_cycle() - last_cycle_ly,
-                //     self.total_cycle()
-                // );
-                last_cycle_ly = self.total_cycle();
-                let start_draw_time = performance.now();
-                let start_draw_char_time = performance.now();
-                // canvases.update_char_map_canvas(self);
-                let end_draw_char_time = performance.now();
-                let start_draw_bg_time = performance.now();
-                // canvases.render_background_map_1_as_image_data(self);
-                let end_draw_bg_time = performance.now();
-                let start_draw_screen_time = performance.now();
                 canvases.draw_screen_from_memory(self);
-                let end_draw_screen_time = performance.now();
-                let end_draw_time = performance.now();
-                // info!(
-                //     "Drawing time: char={:?}ms, bg={:?}ms, screen={:?}ms, total={:?}ms",
-                //     end_draw_char_time - start_draw_char_time,
-                //     end_draw_bg_time - start_draw_bg_time,
-                //     end_draw_screen_time - start_draw_screen_time,
-                //     end_draw_time - start_draw_time
-                // );
                 self.should_draw = false;
                 let now = performance.now();
                 let elapsed = now - time_last_draw;
-                let time_to_sleep = 16.66 - elapsed;
+                let _time_to_sleep = 16.66 - elapsed;
                 // if time_to_sleep > 0.0 {
                 //     info!("Prepping timeout...!");
                 //     Timeout::new(time_to_sleep as u32, || {
@@ -6759,26 +6708,12 @@ impl Gameboy {
 
             if self.total_cycle() - last_cycle_count > cycle_log_target {
                 last_cycle_count = self.total_cycle();
-                let now = performance.now();
-                let elapsed = now - last_time;
-                last_time = now;
-                // info!(
-                //     "Executed {:?} cycles in {:?}ms, total: {:?}, ly: {:?}",
-                //     cycle_log_target,
-                //     elapsed,
-                //     self.total_cycle(),
-                //     self.ly()
-                // );
             }
 
             if !self.is_halt {
                 self.cycle_based_gpu_operation(instruction);
                 self.execute_instruction(instruction);
             } else {
-                info!(
-                    "Add cycles, tima: {:x}, IF: {:x}",
-                    self.memory[0xff05], self.memory[0xff0f]
-                );
                 self.add_cycles(0x00, CycleRegister::TimerCycle);
             }
 
@@ -6790,27 +6725,18 @@ impl Gameboy {
                 info!("Update halt to true");
             }
 
-            //Execute halt
-
             self.update_timer(instruction);
             self.execute_interuption();
+
+            //quick find me
+            if self.break_points.contains(&self.registers.pc)
+            // || (instruction == 0x038 && instruction2 == 0x01)
+            // || instruction == 0x077
+            // && self.total_cycle() > 1_000_000
+            {
                 self.is_running = false;
             }
 
-            // if instruction == 0x076 {
-            //     //HALT: Pause CPU Until Interrupt
-            //     self.pause_cpu()
-            // }
-
-            // if self.is_channel1_changed(pre_ff10, pre_ff11, pre_ff12, pre_ff13, pre_ff14) {
-            //     if self.sound_dirty_flag_check_s1() {
-            //         self.reset_fm_osc(self.square1());
-            //     }
-            // }
-
-            //Check IME -> set when return from interuption
-
-            // info!("count: {}", count);
             let executed_cycles = self.total_cycle() - start_cycle_count;
             if executed_cycles as u32 > count {
                 break;
@@ -6823,16 +6749,6 @@ impl Gameboy {
                 self.memory[0xff02] = 0x0;
             }
         }
-
-        let executed_cycles = self.total_cycle() - start_cycle_count;
-        let elapsed = performance.now() - start_time;
-        info!(
-            "Finished in no_stop @ {:?}: Executed {:?} cycles ({:?} requested) in {:?}ms",
-            self.total_cycle(),
-            executed_cycles,
-            count,
-            elapsed
-        )
     }
 
     pub fn reset_fm_osc(&mut self, square1: Channel) {
@@ -6871,39 +6787,48 @@ impl Gameboy {
             h: 0,
             l: 0,
             sp: 0xffff,
-            pc: 0x100,
+            pc: 0x000,
         };
 
-        // let boot_rom_content = include_bytes!("boot-rom.gb");
-        // let boot_rom_content = include_bytes!("test_rom.gb");
-        //        let cartridge_content = include_bytes!("mario.gb");
+        let boot_rom_content = include_bytes!("boot-rom.gb");
+        // let cartridge_content = include_bytes!("mario.gb");
         // let cartridge_content = include_bytes!("cpu_instrs.gb");
-        // let cartridge_content = include_bytes!("01-special.gb");
-        // let cartridge_content = include_bytes!("02-interrupts.gb");
-        // let cartridge_content = include_bytes!("03-op sp,hl.gb");
-        // let cartridge_content = include_bytes!("04-op r,imm.gb");
-        // let cartridge_content = include_bytes!("05-op rp.gb");
-        let cartridge_content = include_bytes!("06-ld r,r.gb");
-        // let cartridge_content = include_bytes!("07-jr,jp,call,ret,rst.gb");
-        // let cartridge_content = include_bytes!("08-misc instrs.gb");
-        // let cartridge_content = include_bytes!("09-op r,r.gb");
-        // let cartridge_content = include_bytes!("10-bit ops.gb");
-        // let cartridge_content = include_bytes!("11-op a,(hl).gb");
+        // let boot_rom_content = include_bytes!("test_rom.gb");
+        // let cartridge_content = include_bytes!("mario.gb");
+        let cartridge_content = include_bytes!("pokered.gbc");
+        // let cartridge_content = include_bytes!("tetris.gb");
+        // let cartridge_content = include_bytes!("cpu_instrs.gb");
+        // let cartridge_content = include_bytes!("02-interrupts.gb"); //Passed
+        // let cartridge_content = include_bytes!("01-special.gb"); //Passed
+        // let cartridge_content = include_bytes!("11-op a,(hl).gb"); //Passed
+        // let cartridge_content = include_bytes!("07-jr,jp,call,ret,rst.gb"); //Passed!
+        // let cartridge_content = include_bytes!("08-misc instrs.gb");//Passed!
+        // let cartridge_content = include_bytes!("03-op sp,hl.gb"); //Passed!
+        // let cartridge_content = include_bytes!("04-op r,imm.gb"); //Passed!
+        // let cartridge_content = include_bytes!("05-op rp.gb"); //Passed!
+        // let cartridge_content = include_bytes!("06-ld r,r.gb");//Passed!
+        // let cartridge_content = include_bytes!("09-op r,r.gb"); //Passed!
+        // let cartridge_content = include_bytes!("10-bit ops.gb"); //Passed!
 
         // let _head = boot_rom_content;
-        let _body = &cartridge_content[0x100..(cartridge_content.len())];
+        // let _body = &cartridge_content[0x100..(cartridge_content.len())];
 
         let full_memory_capacity = 0x10000;
 
-        // let head = boot_rom_content;
-        // let body = &cartridge_content[0x100..(cartridge_content.len())];
+        let head = boot_rom_content;
+        let body = &cartridge_content[0x100..0x8000// (cartridge_content.len())
+        ];
+        // let test = test_content;
+        // let test2 = &test_content[0x100..(test_content.len())];
 
-        let body = cartridge_content;
+        // let body = cartridge_content;
 
         let mut full_memory: Vec<u8> = Vec::new();
 
-        // full_memory.extend_from_slice(head);
+        full_memory.extend_from_slice(head);
         full_memory.extend_from_slice(body);
+        // full_memory.extend_from_slice(test);
+        // full_memory.extend_from_slice(test2);
 
         full_memory.resize_with(full_memory_capacity, || 0);
         info!("memory size: {:x}", full_memory.len());
@@ -7338,8 +7263,6 @@ pub fn opcode_name(opcode: u8) -> String {
         0x0A3 => "AND E",
         0x0A4 => "AND H",
         0x0A5 => "AND L",
-        0x0A6 => "AND (HL)",
-        0x0E6 => "AND #",
         0x00F => "RRCA",
         0x0d7 => "RST $10",
         0x0df => "RST $18",
