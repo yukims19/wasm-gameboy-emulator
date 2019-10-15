@@ -3004,7 +3004,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.memory[h_l as usize] = self.registers.a;
+                self.write_memory(h_l, self.registers.a);
                 self.registers.inc_pc();
             }
             0x011 => {
@@ -3075,7 +3075,8 @@ impl Gameboy {
                 let d_e = self
                     .registers
                     .combine_two_bytes(self.registers.d, self.registers.e);
-                let value = self.memory[d_e as usize];
+                let value = self.read_memory(d_e);
+
                 self.registers.set_a(value as u8);
                 self.registers.inc_pc();
             }
@@ -3085,7 +3086,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.memory[h_l as usize] = self.registers.a;
+                self.write_memory(h_l, self.registers.a);
                 self.registers.set_hl(h_l.wrapping_sub(1) as u16);
                 self.registers.inc_pc();
             }
@@ -3094,7 +3095,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.memory[h_l as usize] = self.registers.a;
+                self.write_memory(h_l, self.registers.a);
                 self.registers.set_hl(h_l + 1);
                 self.registers.inc_pc();
             }
@@ -3102,7 +3103,7 @@ impl Gameboy {
                 //LD A, ($ff00+n)
                 let following_byte = self.registers.following_byte(pointer, &self.memory);
                 let offset = 0xff00 + following_byte as u16;
-                let value = self.memory[offset as usize];
+                let value = self.read_memory(offset);
                 // info!(
                 //     "LD A, ($ff00+{:x}): ${:x}={:x} ",
                 //     following_byte, offset, value
@@ -3112,14 +3113,14 @@ impl Gameboy {
             }
             0x0E2 => {
                 //LD ($ff00+C), A
-                self.memory[0xFF00 + self.registers.c as usize] = self.registers.a;
+                self.write_memory(0xFF00 + self.registers.c as u16, self.registers.a);
                 self.registers.inc_pc();
             }
             0x0E0 => {
                 //LD ($ff00+n), A
                 let memory_add =
                     0xFF00 + self.registers.following_byte(pointer, &self.memory) as u16;
-                self.memory[memory_add as usize] = self.registers.a;
+                self.write_memory(memory_add, self.registers.a);
                 self.registers.inc_pc();
             }
 
@@ -3366,7 +3367,7 @@ impl Gameboy {
             0x0EA => {
                 // LD (nn),A
                 let following_two_bytes = self.registers.following_two_bytes(pointer, &self.memory);
-                self.memory[following_two_bytes as usize] = self.registers.a;
+                self.write_memory(following_two_bytes, self.registers.a);
                 self.registers.inc_pc();
             }
             0x090 => {
@@ -3435,7 +3436,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.memory[h_l as usize] = self.registers.e;
+                self.write_memory(h_l, self.registers.e);
                 self.registers.inc_pc();
             }
 
@@ -3470,7 +3471,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.set_l(value);
                 self.registers.inc_pc();
             }
@@ -3513,7 +3514,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.memory[h_l as usize] = value;
+                self.write_memory(h_l, value);
                 self.registers.inc_pc();
             }
 
@@ -3522,7 +3523,8 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.registers.set_a(self.memory[h_l as usize]);
+                let value = self.read_memory(h_l);
+                self.registers.set_a(value);
                 self.registers.set_hl(h_l + 1);
                 self.registers.inc_pc();
             }
@@ -3532,7 +3534,7 @@ impl Gameboy {
                 let b_c = self
                     .registers
                     .combine_two_bytes(self.registers.b, self.registers.c);
-                self.memory[b_c as usize] = self.registers.a;
+                self.write_memory(b_c, self.registers.a);
                 self.registers.inc_pc();
             }
 
@@ -3555,7 +3557,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.memory[h_l as usize] = self.registers.c;
+                self.write_memory(h_l, self.registers.c);
                 self.registers.inc_pc();
             }
 
@@ -3593,7 +3595,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.set_a(value);
                 self.registers.set_hl(h_l.wrapping_sub(1));
                 self.registers.inc_pc();
@@ -3635,7 +3637,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.set_b(value);
                 self.registers.inc_pc();
             }
@@ -3680,7 +3682,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.set_c(value);
                 self.registers.inc_pc();
             }
@@ -4569,7 +4571,7 @@ impl Gameboy {
                 let d_e = self
                     .registers
                     .combine_two_bytes(self.registers.d, self.registers.e);
-                self.memory[d_e as usize] = self.registers.a;
+                self.write_memory(d_e, self.registers.a);
                 self.registers.inc_pc();
             }
 
@@ -4608,7 +4610,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.set_a(value);
                 self.registers.inc_pc();
             }
@@ -4773,7 +4775,7 @@ impl Gameboy {
             0x0f2 => {
                 //LD A, ($ff00+C) -> 8
                 let offset = 0xff00 + self.registers.c as u16;
-                let value = self.memory[offset as usize];
+                let value = self.read_memory(offset);
                 self.registers.set_a(value);
                 self.registers.inc_pc();
             }
@@ -4795,7 +4797,7 @@ impl Gameboy {
                 let b_c = self
                     .registers
                     .combine_two_bytes(self.registers.b, self.registers.c);
-                let value = self.memory[b_c as usize];
+                let value = self.read_memory(b_c);
                 self.registers.set_a(value as u8);
                 self.registers.inc_pc();
             }
@@ -4805,7 +4807,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let address_value = self.memory[h_l as usize];
+                let address_value = self.read_memory(h_l);
 
                 let value = address_value.wrapping_add(1);
                 if value == 0 {
@@ -4816,7 +4818,7 @@ impl Gameboy {
                 }
                 flag_c = self.registers.f.c;
                 self.registers.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-                self.memory[h_l as usize] = value;
+                self.write_memory(h_l, value);
                 self.registers.inc_pc();
             }
 
@@ -4997,7 +4999,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
 
                 if self.registers.a == value {
                     flag_z = true
@@ -5097,7 +5099,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.add_a_n(value);
                 self.registers.inc_pc();
             }
@@ -5148,7 +5150,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.adc_a_n(value);
                 self.registers.inc_pc();
             }
@@ -5199,7 +5201,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.sbc_a_n(value);
                 self.registers.inc_pc();
             }
@@ -5251,7 +5253,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.and_a_n(value);
                 self.registers.inc_pc();
             }
@@ -5309,7 +5311,7 @@ impl Gameboy {
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                let value = self.memory[h_l as usize];
+                let value = self.read_memory(h_l);
                 self.registers.xor_a_n(value);
                 self.registers.inc_pc();
             }
@@ -5417,7 +5419,7 @@ impl Gameboy {
 
             0x010 => {
                 info!("Need to implement STOP");
-                std::process::exit(1);
+                // std::process::exit(1);
                 // match self.registers.following_byte(pointer, &self.memory) {
                 //     0x00 => self.registers.inc_pc(),
                 //     _other => self.registers.inc_pc(),
@@ -5526,13 +5528,17 @@ impl Gameboy {
     // 2. replace all read and write
     fn get_mbc_from_memory(memory: &Vec<u8>) -> u8 {
         let mbc = match memory[0x0147] {
+            0 => 1,
             1 => 1,
             2 => 1,
             3 => 1,
             5 => 2,
             6 => 2,
-            13 => 3,
-            _ => panic!("Invalid mbc value: {:x} at $0x147", memory[0x0147]),
+            0x13 => 3,
+            _ => {
+                info!("Invalid mbc value: {:x} at $0x147", memory[0x0147]);
+                panic!("");
+            }
         };
         mbc
     }
@@ -5615,7 +5621,7 @@ impl Gameboy {
             if self.mbc == 1 {
                 if self.is_rom_banking_enabled {
                     // DoChangeHiRomBank(data) ;
-                    self.change_lo_rom_bank(value);
+                    self.change_hi_rom_bank(value);
                 } else {
                     // DoRAMBankChange(data) ;
                     self.change_ram_bank(value)
@@ -5635,6 +5641,12 @@ impl Gameboy {
                 self.ram_bank_memory[(new_address + (self.ram_bank as u16 * 0x2000)) as usize] =
                     value;
             }
+        } else if ((address >= 0xFEA0) && (address < 0xFEFF)) {
+            //Nothing happens
+        }
+        // no control needed over this area so write to memory
+        else {
+            self.memory[address as usize] = value;
         }
     }
 
