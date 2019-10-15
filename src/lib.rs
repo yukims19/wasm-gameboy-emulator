@@ -4071,6 +4071,14 @@ impl Registers {
                 self.inc_pc();
             }
 
+            0x010 => {
+                info!("Need to implement STOP");
+                std::process::exit(1);
+                // match self.following_byte(pointer, memory) {
+                //     0x00 => self.inc_pc(),
+                //     _other => self.inc_pc(),
+                // }
+            }
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -5602,6 +5610,7 @@ impl Gameboy {
             0x0f7 => 32,
             0x0ff => 32,
             0x0fb => 4,
+            0x010 => 0,
             other => {
                 info!("Cycle calc - No opcode found for {:x}", other);
                 std::process::exit(1)
