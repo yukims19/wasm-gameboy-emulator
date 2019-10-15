@@ -82,9 +82,9 @@ impl Canvases {
     }
 
     pub fn render_background_map_as_image_data(&mut self, gameboy: &mut Gameboy) {
-        // if !gameboy.is_vblank() {
-        //     return;
-        // }
+        if !gameboy.is_vblank() {
+            return;
+        }
 
         let background_map = gameboy.bg_map();
         let char_map_vec = gameboy.bg_window_char_map_bytes();
@@ -146,8 +146,6 @@ impl Canvases {
                 y = y + 8;
             }
         }
-
-        info!("Rust draw background");
     }
 
     pub fn update_char_map_canvas(&mut self, gameboy: &mut Gameboy) {
@@ -249,16 +247,11 @@ impl Canvases {
                 + x * IMAGE_DATA_LENGTH_PER_PIXEL;
             let end = start + SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
 
-            // info!(
-            //     "1->y:{}, scroll_y:{}, scroll_x:{}, start: {:?}, end:{:?} ",
-            //     y, scroll_y, scroll_x, start, end
-            // );
-
             let screen_row_bytes = &background_pixels_rgba_vec[start..end];
             screen_pixels_rgba_vec.extend_from_slice(&screen_row_bytes);
         }
 
-        //####Drawing screen
+        //Drawing screen
         self.screen_canvas.clear_rect(
             0.0,
             0.0,
@@ -279,12 +272,6 @@ impl Canvases {
                 .put_image_data(&pixel_row_image_data, 0.0, screen_y as f64)
                 .unwrap();
         }
-
-        // info!(
-        //     "Rust draw screen. x: {}, y:{}",
-        //     gameboy.get_scroll_x(),
-        //     gameboy.get_scroll_y()
-        // );
     }
 
     pub fn make_canvas(
@@ -309,8 +296,6 @@ impl Canvases {
 
         el.set_width(width);
         el.set_height(height);
-        // el.style().width = el.width * zoom + 'px';
-        // el.style.height = el.height * zoom + 'px';
 
         ctx.set_image_smoothing_enabled(false);
 
@@ -575,7 +560,7 @@ struct Registers {
     e: u8,
     h: u8,
     l: u8,
-    f: Flag, // Control last operation result
+    f: Flag,
     sp: u16,
     pc: u16,
 }
@@ -1094,7 +1079,7 @@ impl Registers {
     }
 
     fn add_signed_number(&self, unsigned: u16, signed: i8) -> u16 {
-        let is_minus = signed.signum() == -1; //false-> +, true-> -
+        let is_minus = signed.signum() == -1;
         let value = signed.abs() as u16;
         if is_minus {
             let result = unsigned - (value as u16);
@@ -1159,16 +1144,10 @@ impl Registers {
     }
 
     fn pop_stack(&mut self, memory: &Vec<u8>) -> u16 {
-        // println!("Memory last 10: {:x?}", &memory[0xfff0..0xffff]);
-        // println!("SP: {:x}", sp);
-        // self.set_sp(self.sp + 2);
         let second_byte = memory[self.sp as usize];
         self.set_sp(self.sp + 1);
         let firt_byte = memory[self.sp as usize];
         self.set_sp(self.sp + 1);
-
-        // memory[sp as usize] = 0;
-        // memory[sp as usize - 1] = 0;
 
         let result = self.combine_two_bytes(firt_byte, second_byte);
         result
@@ -3028,7 +3007,6 @@ impl Gameboy {
                 let value = self.registers.following_byte(pointer, &self.memory);
                 self.registers.set_d(value);
                 self.registers.inc_pc();
-                println!("d is 0x020 => d:{:x}", self.registers.d);
             }
             0x07B => {
                 //LD A, E
@@ -3084,10 +3062,6 @@ impl Gameboy {
                 let following_byte = self.registers.following_byte(pointer, &self.memory);
                 let offset = 0xff00 + following_byte as u16;
                 let value = self.read_memory(offset);
-                // info!(
-                //     "LD A, ($ff00+{:x}): ${:x}={:x} ",
-                //     following_byte, offset, value
-                // );
                 self.registers.set_a(value);
                 self.registers.inc_pc();
             }
@@ -3126,21 +3100,11 @@ impl Gameboy {
             0x020 => {
                 //JR NZ,*one byte
                 if !self.registers.f.z {
-                    let n_param = self.registers.following_byte(pointer, &self.memory); // as i8;
+                    let n_param = self.registers.following_byte(pointer, &self.memory);
                     self.registers.inc_pc();
                     let destination = self
                         .registers
                         .add_signed_number(self.registers.pc, n_param as i8);
-                    // info!(
-                    //     "PC: {:b}, n: {:b}, result: {:b}",
-                    //     self.registers.pc, n_param, destination
-                    // );
-
-                    //let destination = self.registers.pc as i16 + n_param as i16;
-                    // info!(
-                    //     "PC: {:x}, n: {:x}, destination: {:x}",
-                    //     self.registers.pc, n_param, destination
-                    // );
                     self.registers.set_pc(destination);
                 } else {
                     self.registers.inc_pc();
@@ -3150,12 +3114,11 @@ impl Gameboy {
             0x028 => {
                 //JR Z,*
                 if self.registers.f.z {
-                    let value = self.registers.following_byte(pointer, &self.memory); // as i8;
+                    let value = self.registers.following_byte(pointer, &self.memory);
                     self.registers.inc_pc();
                     let address = self
                         .registers
                         .add_signed_number(self.registers.pc, value as i8);
-                    // let address = self.registers.pc as i16 + value as i16;
                     self.registers.set_pc(address);
                 } else {
                     self.registers.inc_pc();
@@ -3164,19 +3127,12 @@ impl Gameboy {
             }
             0x018 => {
                 //JR n
-                let value = self.registers.following_byte(pointer, &self.memory); // as i8;
+                let value = self.registers.following_byte(pointer, &self.memory);
                 self.registers.inc_pc();
                 let address = self
                     .registers
                     .add_signed_number(self.registers.pc, value as i8);
-                // let address = self.registers.pc as i16 + value as i16;
                 self.registers.set_pc(address);
-
-                // let value = self.registers.following_byte(pointer, &self.memory) as i8;
-                // self.registers.inc_pc();
-                // let address = (self.registers.pc as i16).wrapping_add(value as i16);
-                // // let address = self.registers.pc as i16 + value as i16;
-                // self.registers.set_pc(address as u16);
             }
             0x00C => {
                 //INC C
@@ -3461,16 +3417,11 @@ impl Gameboy {
                 }
 
                 0x0D9 => {
-                    info!(">>>>>>>>..RETI");
                     //RETI
-                    // info!("0x0DD -> 0x0D9, sp:{:x}", self.registers.sp);
-                    //TODO: stack set & pop
+
                     let address = self.registers.pop_stack(&self.memory);
                     self.registers.set_pc(address);
-                    //Endable interrupts
                     self.registers.f.set_ime(true);
-                    info!("enable interrupts");
-                    std::process::exit(1)
                 }
 
                 other => {
@@ -3517,14 +3468,6 @@ impl Gameboy {
                 self.registers.inc_pc();
             }
 
-            //New Round
-            0x0fd => {
-                //No operation?
-                info!("no operation with opcode 0xfd");
-                // std::process::exit(1);
-                self.registers.inc_pc();
-            }
-
             0x06d => {
                 //LD L,L -> 4
                 self.registers.set_l(self.registers.l);
@@ -3559,13 +3502,6 @@ impl Gameboy {
                 //POP HL -> 12
                 let value = self.registers.pop_stack(&self.memory);
                 self.registers.set_hl(value);
-                self.registers.inc_pc();
-            }
-
-            0x0d3 => {
-                //No operation?
-                info!("no operation with opcode 0xd3");
-                // std::process::exit(1);
                 self.registers.inc_pc();
             }
 
@@ -3831,12 +3767,11 @@ impl Gameboy {
             0x038 => {
                 //JR C,*one byte -> 8
                 if self.registers.f.c {
-                    let n_param = self.registers.following_byte(pointer, &self.memory); // as i8;
+                    let n_param = self.registers.following_byte(pointer, &self.memory);
                     self.registers.inc_pc();
                     let destination = self
                         .registers
                         .add_signed_number(self.registers.pc, n_param as i8);
-                    // let destination = self.registers.pc as i16 + n_param as i16;
                     self.registers.set_pc(destination);
                 } else {
                     self.registers.inc_pc();
@@ -3852,13 +3787,6 @@ impl Gameboy {
                 } else {
                     self.registers.inc_pc();
                 }
-            }
-
-            0x0f4 => {
-                //No operation?
-                info!("no operation with opcode 0xf4");
-                // std::process::exit(1);
-                self.registers.inc_pc();
             }
 
             0x07f => {
@@ -4335,7 +4263,6 @@ impl Gameboy {
                     let destination = self
                         .registers
                         .add_signed_number(self.registers.pc, n_param as i8);
-                    // let destination = self.registers.pc as i16 + n_param as i16;
                     self.registers.set_pc(destination);
                 } else {
                     self.registers.inc_pc();
@@ -5405,6 +5332,22 @@ impl Gameboy {
                 // }
             }
 
+            0x0d3 => {
+                //No operation
+                info!("no operation with opcode 0xd3");
+                self.registers.inc_pc();
+            }
+            0x0fd => {
+                //No operation
+                info!("no operation with opcode 0xfd");
+                self.registers.inc_pc();
+            }
+            0x0f4 => {
+                //No operation
+                info!("no operation with opcode 0xf4");
+                self.registers.inc_pc();
+            }
+
             other => {
                 info!("No opcode found for {:x} at {:x}", other, pointer);
                 std::process::exit(1)
@@ -5489,12 +5432,10 @@ impl Gameboy {
         if !self.break_points.contains(&point) {
             self.break_points.push(point);
         }
-        info!("add- break points{:?}", self.break_points);
     }
 
     pub fn remove_break_point(&mut self, point: u16) {
         self.break_points.retain(|&x| x != point);
-        info!("remove- break points{:?}", self.break_points);
     }
 
     pub fn get_break_points(&self) -> Vec<u16> {
@@ -5661,7 +5602,6 @@ impl Gameboy {
     }
 
     fn execute_interuption(&mut self) {
-        // info!(">>Interuption: ime-{:?}", self.registers.f.ime);
         let do_v_blank = (self.memory[0xff0f] & 0b00000001 == 0b00000001)
             && (self.memory[0xffff] & 0b00000001 == 0b00000001);
 
@@ -5685,7 +5625,6 @@ impl Gameboy {
 
         if self.registers.f.ime {
             if do_v_blank {
-                info!("Vblank Interuption Triggered");
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
 
@@ -5696,7 +5635,6 @@ impl Gameboy {
             }
 
             if do_lcd {
-                info!("LCD Interuption Triggered");
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
 
@@ -5707,7 +5645,6 @@ impl Gameboy {
             }
 
             if do_timer {
-                info!("Timer Interuption Triggered");
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
 
@@ -5719,7 +5656,6 @@ impl Gameboy {
             }
 
             if do_serial {
-                info!("Serial Interuption Triggered");
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
 
@@ -5731,7 +5667,6 @@ impl Gameboy {
             }
 
             if do_joypad {
-                info!("Joypad Interuption Triggered");
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
 
@@ -5742,12 +5677,6 @@ impl Gameboy {
                 self.registers.set_pc(0x60);
             }
         }
-
-        // v_blank => self.pc[0x040]
-        // lcd => self.memory[0x048],
-        // timer => self.memory[0x50],
-        // serial => self.memory[0x58],
-        // joypad => self.memory[0x60],
     }
 
     pub fn set_vram_cycle(&mut self, value: u16) {
@@ -5767,14 +5696,12 @@ impl Gameboy {
         self.memory[0xff0f] = self.memory[0xff0f] | 0b000000100;
     }
 
-    //LCDC Y-Coordinate : LY
     pub fn inc_ly(&mut self) {
         let ly_max = 153;
         let vblank_start = 144;
 
         if self.memory[0xff44] == ly_max {
             self.memory[0xff44] = 0;
-        // self.disable_vblank();
         } else {
             self.memory[0xff44] = self.memory[0xff44] + 1;
             if self.memory[0xff44] == vblank_start {
@@ -5959,7 +5886,6 @@ impl Gameboy {
             0x02a => 8,
             0x047 => 4,
             0x002 => 8,
-            //New Round
             0x0fd => 0,
             0x06d => 4,
             0x06c => 4,
@@ -5988,7 +5914,6 @@ impl Gameboy {
             0x0a6 => 8,
             0x05d => 4,
             0x03a => 8,
-            //New Round 2
             0x040 => 4,
             0x043 => 4,
             0x038 => 8,
@@ -6429,7 +6354,6 @@ impl Gameboy {
         self.memory[0xffff] & 0b0000100 == 0b0000100
     }
 
-    // Setters
     pub fn set_a(&mut self, value: u8) -> u8 {
         self.registers.a = value;
         self.registers.a
@@ -6505,10 +6429,6 @@ impl Gameboy {
     }
 
     pub fn execute_opcode(&mut self) {
-        // if self.cpu_paused {
-        //     return;
-        // }
-
         //ff10-ff14 is responsible for sound channel 1
         let pre_ff10 = self.memory[0xff10];
         let pre_ff11 = self.memory[0xff11];
@@ -6524,10 +6444,6 @@ impl Gameboy {
         if self.break_points.contains(&self.registers.pc) {
             self.is_running = false;
         }
-
-        // if instruction == 0x076 {
-        //     self.pause_cpu()
-        // }
 
         if self.is_channel1_changed(pre_ff10, pre_ff11, pre_ff12, pre_ff13, pre_ff14) {
             if self.sound_dirty_flag_check_s1() {
@@ -6574,10 +6490,6 @@ impl Gameboy {
     }
 
     pub fn execute_opcodes(&mut self, count: u8) {
-        // if self.cpu_paused {
-        //     return;
-        // }
-
         let mut canvases = Canvases::new();
 
         //ff10-ff14 is responsible for sound channel 1
@@ -6588,10 +6500,6 @@ impl Gameboy {
         let pre_ff14 = self.memory[0xff14];
 
         for _ in 0..count {
-            // if self.cpu_paused {
-            //     break;
-            // }
-
             let instruction = self.memory[self.registers.pc as usize];
             self.add_cycles(instruction, CycleRegister::CpuCycle);
             self.cycle_based_gpu_operation(instruction);
@@ -6606,11 +6514,6 @@ impl Gameboy {
             if self.break_points.contains(&self.registers.pc) {
                 self.is_running = false;
             }
-
-            // if instruction == 0x076 {
-            //     //HALT: Pause CPU Until Interrupt
-            //     self.pause_cpu()
-            // }
 
             if self.is_channel1_changed(pre_ff10, pre_ff11, pre_ff12, pre_ff13, pre_ff14) {
                 if self.sound_dirty_flag_check_s1() {
@@ -6791,13 +6694,11 @@ impl Gameboy {
         };
 
         let boot_rom_content = include_bytes!("boot-rom.gb");
-        // let cartridge_content = include_bytes!("mario.gb");
-        // let cartridge_content = include_bytes!("cpu_instrs.gb");
         // let boot_rom_content = include_bytes!("test_rom.gb");
+        // let cartridge_content = include_bytes!("cpu_instrs.gb");
         // let cartridge_content = include_bytes!("mario.gb");
         let cartridge_content = include_bytes!("pokered.gbc");
         // let cartridge_content = include_bytes!("tetris.gb");
-        // let cartridge_content = include_bytes!("cpu_instrs.gb");
         // let cartridge_content = include_bytes!("02-interrupts.gb"); //Passed
         // let cartridge_content = include_bytes!("01-special.gb"); //Passed
         // let cartridge_content = include_bytes!("11-op a,(hl).gb"); //Passed
@@ -6810,16 +6711,11 @@ impl Gameboy {
         // let cartridge_content = include_bytes!("09-op r,r.gb"); //Passed!
         // let cartridge_content = include_bytes!("10-bit ops.gb"); //Passed!
 
-        // let _head = boot_rom_content;
-        // let _body = &cartridge_content[0x100..(cartridge_content.len())];
-
         let full_memory_capacity = 0x10000;
 
         let head = boot_rom_content;
         let body = &cartridge_content[0x100..0x8000// (cartridge_content.len())
         ];
-        // let test = test_content;
-        // let test2 = &test_content[0x100..(test_content.len())];
 
         // let body = cartridge_content;
 
@@ -6827,8 +6723,6 @@ impl Gameboy {
 
         full_memory.extend_from_slice(head);
         full_memory.extend_from_slice(body);
-        // full_memory.extend_from_slice(test);
-        // full_memory.extend_from_slice(test2);
 
         full_memory.resize_with(full_memory_capacity, || 0);
         info!("memory size: {:x}", full_memory.len());
@@ -6868,7 +6762,6 @@ impl Gameboy {
             cpu_paused: false,
             should_draw: false,
             cartridge: cartridge_content.to_vec(),
-            // cartridge: test_content.to_vec(),
             mbc: Gameboy::get_mbc_from_memory(&full_memory),
             rom_bank: 1,
             ram_bank: 0,
@@ -7045,30 +6938,8 @@ pub fn opcode_name(opcode: u8) -> String {
         0x0f0 => "LD A, ($ff00+n)",
         0x0E2 => "LD ($ff00+C), A",
         0x0E0 => "LD ($ff00+n), A",
-        0x0CB =>//  match gameboy.memory[gameboy.registers.pc as usize + 1] {
-        //     0x07c => "BIT (7, H)",
-        //     0x011 => "RL C",
-        //     0x038 => "SRL B",
-        //     0x019 => "RR C",
-        //     0x01F => "RR A",
-        //     0x018 => "RR B",
-        //     0x01A => "RR D",
-        //     0x01B => "RR E",
-        //     0x01C => "RR H",
-        //     0x01D => "RR L",
-        //     0x01E => "RR (HL)",
-        //     0x03F => "SRL A",
-        //     0x039 => "SRL C",
-        //     0x03A => "SRL D",
-        //     0x03B => "SRL E",
-        //     0x03C => "SRL H",
-        //     0x03D => "SRL L",
-        //     0x03E => "SRL (HL)",
-        //     _other => "CB unknown??",
-        // }
-            "CB function"
-        ,
-        0x017 => "RLA", // Rotate A left through Carry flag
+        0x0CB => "CB function",
+        0x017 => "RLA",
         0x020 => "JR NZ,*one byte",
         0x028 => "JR Z,*",
         0x018 => "JR n",
@@ -7222,7 +7093,7 @@ pub fn opcode_name(opcode: u8) -> String {
         0x0de => "SCB A,n",
         0x0BB => "CP E",
         0x01B => "DEC DE",
-        0x02B =>"DEC HL",
+        0x02B => "DEC HL",
         0x045 => "LD B, L",
         0x04a => "LD C, D",
         0x04b => "LD C, E",
