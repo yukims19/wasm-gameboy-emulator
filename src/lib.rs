@@ -4867,6 +4867,12 @@ pub struct Gameboy {
     memory: Vec<u8>,
     cpu_paused: bool,
     cartridge: Vec<u8>,
+    mbc: u8,
+    rom_bank: u8,
+    ram_bank: u8,
+    ram_bank_memory: Vec<u8>,
+    is_ram_enabled: bool,
+    is_rom_banking_enabled: bool,
 }
 
 #[wasm_bindgen]
@@ -4960,7 +4966,135 @@ impl Gameboy {
         self.break_points.clone()
     }
 
+    //MBC
+    //TODO:
+    // [x] Check for MBC inital value
+    // 2. replace all read and write
+    fn get_mbc_from_memory(memory: &Vec<u8>) -> u8 {
+        let mbc = match memory[0x0147] {
+            1 => 1,
+            2 => 1,
+            3 => 1,
+            5 => 2,
+            6 => 2,
+            13 => 3,
+            _ => panic!("Invalid mbc value: {:x} at $0x147", memory[0x0147]),
+        };
+        mbc
+    }
 
+    fn enable_ram_bank(&mut self, address: u16, data: u8) {
+        if self.mbc == 2 {
+            if address & 0b00010000 == 0b00010000 {
+                return;
+            }
+        }
+
+        let lower_nibble = data & 0xF;
+        if lower_nibble == 0xA {
+            self.is_ram_enabled = true;
+        } else if lower_nibble == 0x0 {
+            self.is_ram_enabled = false;
+        }
+    }
+
+    fn change_lo_rom_bank(&mut self, data: u8) {
+        if self.mbc == 2 {
+            self.rom_bank = data & 0xF;
+            if self.rom_bank == 0 {
+                self.rom_bank += 1;
+            }
+            return;
+        }
+
+        let lower_5_bits = data & 31;
+        self.rom_bank &= 224; // turn off the lower 5
+        self.rom_bank |= lower_5_bits;
+        if self.rom_bank == 0 {
+            self.rom_bank += 1;
+        }
+    }
+
+    fn change_hi_rom_bank(&mut self, data: u8) {
+        // turn off the upper 3 bits of the current rom
+        self.rom_bank &= 31;
+
+        // turn off the lower 5 bits of the data
+        let new_data = data & 224;
+        self.rom_bank = self.rom_bank | new_data;
+        if self.rom_bank == 0 {
+            self.rom_bank += 1;
+        }
+    }
+
+    fn change_ram_bank(&mut self, data: u8) {
+        self.ram_bank = data & 0x3;
+    }
+
+    fn change_rom_ram_mode(&mut self, data: u8) {
+        let new_data = data & 0x1;
+        self.is_rom_banking_enabled = if new_data == 0 { true } else { false };
+        if self.is_rom_banking_enabled {
+            self.ram_bank = 0
+        }
+    }
+
+    fn write_memory(&mut self, address: u16, value: u8) {
+        let is_mbc_one_or_two = self.mbc == 1 || self.mbc == 2;
+        // do RAM enabling
+        if address < 0x2000 {
+            if is_mbc_one_or_two {
+                // DoRamBankEnable(address,data) ;
+                self.enable_ram_bank(address, value);
+            }
+        }
+        // do ROM bank change
+        else if (address >= 0x200) && (address < 0x4000) {
+            if is_mbc_one_or_two {
+                // DoChangeLoROMBank(data) ;
+                self.change_lo_rom_bank(value);
+            }
+        }
+        // do ROM or RAM bank change
+        else if (address >= 0x4000) && (address < 0x6000) {
+            // there is no rambank in mbc2 so always use rambank 0
+            if self.mbc == 1 {
+                if self.is_rom_banking_enabled {
+                    // DoChangeHiRomBank(data) ;
+                    self.change_lo_rom_bank(value);
+                } else {
+                    // DoRAMBankChange(data) ;
+                    self.change_ram_bank(value)
+                }
+            }
+        }
+        // this will change whether we are doing ROM banking
+        // or RAM banking with the above if statement
+        else if (address >= 0x6000) && (address < 0x8000) {
+            if self.mbc == 1 {
+                // DoChangeROMRAMMode(data) ;
+                self.change_rom_ram_mode(value);
+            }
+        } else if (address >= 0xA000) && (address < 0xC000) {
+            if self.is_ram_enabled {
+                let new_address = address - 0xA000;
+                self.ram_bank_memory[(new_address + (self.ram_bank as u16 * 0x2000)) as usize] =
+                    value;
+            }
+        }
+    }
+
+    fn read_memory(&self, address: u16) -> u8 {
+        // are we reading from the rom memory bank?
+        if (address >= 0x4000) && (address <= 0x7FFF) {
+            let new_address = address - 0x4000;
+            return self.cartridge[(new_address + (self.rom_bank as u16 * 0x4000)) as usize];
+        }
+        // are we reading from ram memory bank?
+        else if (address >= 0xA000) && (address <= 0xBFFF) {
+            let new_address = address - 0xA000;
+            return self.ram_bank_memory[(new_address + (self.ram_bank as u16 * 0x2000)) as usize];
+        }
 
         // else return memory
         return self.memory[address as usize];
@@ -6223,6 +6357,9 @@ impl Gameboy {
             _ => panic!("Failed initialize FmOsc"),
         };
 
+        let mut ram_bank_memory = Vec::new();
+        ram_bank_memory.resize(0x8000, 0);
+
         Gameboy {
             background_width: BACKGROUND_WIDTH,
             background_height: BACKGROUND_HEIGHT,
@@ -6231,7 +6368,6 @@ impl Gameboy {
             registers,
             fm_osc,
             image_data,
-            memory: full_memory,
             total_cycle_num: 0,
             vram_cycle_num: 0,
             timer_cycle_num: 0,
@@ -6243,6 +6379,14 @@ impl Gameboy {
             cpu_paused: false,
             should_draw: false,
             cartridge: cartridge_content.to_vec(),
+            // cartridge: test_content.to_vec(),
+            mbc: Gameboy::get_mbc_from_memory(&full_memory),
+            rom_bank: 1,
+            ram_bank: 0,
+            ram_bank_memory,
+            is_ram_enabled: false,
+            is_rom_banking_enabled: false,
+            memory: full_memory,
         }
     }
 
@@ -6319,6 +6463,9 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
     let cartridge_content = include_bytes!("cpu_instrs.gb");
     let cartridge = &cartridge_content[0x0..(cartridge_content.len())];
 
+    let mut ram_bank_memory = Vec::new();
+    ram_bank_memory.resize(0x8000, 0);
+
     let gameboy = Gameboy {
         // From serialized
         registers: serializeable.registers.clone(),
@@ -6328,7 +6475,6 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
         timer: serializeable.timer,
         cpu_clock: serializeable.cpu_clock,
         break_points: serializeable.break_points.clone(),
-        memory: full_memory,
         // Default, non-serializable values
         background_width: BACKGROUND_WIDTH,
         background_height: BACKGROUND_HEIGHT,
@@ -6341,6 +6487,13 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
         is_halt: false,
         cpu_paused: false,
         cartridge: cartridge.to_vec(),
+        mbc: Gameboy::get_mbc_from_memory(&full_memory),
+        rom_bank: 1,
+        ram_bank: 0,
+        ram_bank_memory,
+        is_ram_enabled: false,
+        is_rom_banking_enabled: false,
+        memory: full_memory,
     };
 
     gameboy
