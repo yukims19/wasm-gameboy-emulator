@@ -21,6 +21,7 @@ import {Debugger} from './debugControls.js';
 import {SoundDebugger} from './soundDebugger.js';
 import {BreakPointDebugger} from './breakPointDebugger.js';
 import {MbcDebugger} from './MbcDebugger.js';
+import {LcdDebugger} from './LcdDebugger.js';
 import {SaveStateManager} from './saveStateManager.js';
 import {square1, playSquare, playSquare1, playSquare2} from './channels.jsx';
 
@@ -43,7 +44,7 @@ var domContainer = document.querySelector('#memory-viewer');
 // var soundContainer = document.getElementById('sound-container');
 var breakPointContainer = document.getElementById('break-point-container');
 var mbcContainer = document.getElementById('mbc-container');
-
+var lcdContainer = document.getElementById('lcd-container');
 let tick = -1;
 const opLogMaxLength = 16;
 const opLog = [];
@@ -163,6 +164,15 @@ var render = function render(gameboy) {
   let isRamEnabled = gameboy.get_is_ram_enabled();
   let isRomEnabled = gameboy.get_is_rom_banking_enabled();
 
+  let isLdcDisplayEnabled = gameboy.is_lcd_display_enable();
+  let windowTileMapSelection = gameboy.get_window_tile_map_selection();
+  let isWindowDisplayEnabled = gameboy.is_window_display_enable();
+  let tileDataSelection = gameboy.get_tile_data_selection();
+  let bgTileMapSelection = gameboy.get_bg_tile_map_selection();
+  let objSizeSelection = gameboy.get_obj_size_selection();
+  let isObjDisplayEnabled = gameboy.is_obj_display_enable();
+  let isBgDisplay = gameboy.is_bg_display();
+
   // ReactDOM.render(
   //   React.createElement(SoundDebugger, {
   //     fullMemory: memoryBytes,
@@ -199,6 +209,20 @@ var render = function render(gameboy) {
       isRomEnabled,
     }),
     mbcContainer,
+  );
+
+  ReactDOM.render(
+    React.createElement(LcdDebugger, {
+      isLdcDisplayEnabled,
+      windowTileMapSelection,
+      isWindowDisplayEnabled,
+      tileDataSelection,
+      bgTileMapSelection,
+      objSizeSelection,
+      isObjDisplayEnabled,
+      isBgDisplay,
+    }),
+    lcdContainer,
   );
 
   const onTogglePlay = () => {

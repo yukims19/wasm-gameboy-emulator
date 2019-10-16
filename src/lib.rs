@@ -6182,16 +6182,56 @@ impl Gameboy {
         self.memory[0xff40] & 0x80 == 0x80
     }
 
+    pub fn get_window_tile_map_selection(&self) -> u8 {
+        if self.memory[0xff40] & 0b01000000 == 0b01000000 {
+            1
+        } else {
+            0
+        }
+    }
+
+    pub fn is_window_display_enable(&self) -> bool {
+        self.memory[0xff40] & 0x20 == 0x20
+    }
+
+    pub fn get_tile_data_selection(&self) -> u8 {
+        if self.memory[0xff40] & 0b00010000 == 0b00010000 {
+            1
+        } else {
+            0
+        }
+    }
+
+    pub fn get_bg_tile_map_selection(&self) -> u8 {
+        if self.memory[0xff40] & 0x08 == 0x08 {
+            1
+        } else {
+            0
+        }
+    }
+
+    pub fn get_obj_size_selection(&self) -> u8 {
+        if self.memory[0xff40] & 0b00000100 == 0b00000100 {
+            1
+        } else {
+            0
+        }
+    }
+
+    pub fn is_obj_display_enable(&self) -> bool {
+        self.memory[0xff40] & 0x00000010 == 0x00000010
+    }
+
+    pub fn is_bg_display(&self) -> bool {
+        self.memory[0xff40] & 0x00000001 == 0x00000001
+    }
+
     pub fn window_map(&self) -> Vec<u8> {
         if self.memory[0xff40] & 0x40 == 0x40 {
             return self.memory[0x9c00..0xa000].to_vec();
         } else {
             return self.memory[0x9800..0x9c00].to_vec();
         }
-    }
-
-    pub fn is_window_display_enable(&self) -> bool {
-        self.memory[0xff40] & 0x20 == 0x20
     }
 
     pub fn bg_window_char_map_bytes(&self) -> Vec<u8> {
