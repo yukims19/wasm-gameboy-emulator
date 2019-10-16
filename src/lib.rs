@@ -130,7 +130,7 @@ impl Canvases {
 
         for ele in background_map {
             // Generate Tile Image data
-            let tile_idx = if gameboy.get_tile_data_selection() == 0 {
+            let tile_idx: usize = if gameboy.get_tile_data_selection() == 1 {
                 ele as usize
             } else {
                 ((ele as i8) as i16 + 128) as usize
