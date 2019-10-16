@@ -86,8 +86,8 @@ impl Canvases {
             return;
         }
 
-        let background_map = gameboy.bg_map();
-        let char_map_vec = gameboy.bg_window_char_map_bytes();
+        let background_map = gameboy.bg_map(); //Tile index
+        let char_map_vec = gameboy.bg_window_char_map_bytes(); //Tile data
         let mut char_map_tiles_bytes = Vec::new();
 
         //Get Tiles
@@ -130,7 +130,13 @@ impl Canvases {
 
         for ele in background_map {
             // Generate Tile Image data
-            let tile_bytes = &mut char_map_tiles_bytes[ele as usize];
+            let tile_idx = if gameboy.get_tile_data_selection() == 0 {
+                ele as usize
+            } else {
+                ((ele as i8) as i16 + 128) as usize
+            };
+
+            let tile_bytes = &mut char_map_tiles_bytes[tile_idx];
             let clamped_image_source = wasm_bindgen::Clamped(&mut tile_bytes[..]);
 
             let tile_image_data =
