@@ -207,7 +207,12 @@ impl Canvases {
 
         let mut idx = 0;
         for ele in background_map {
-            let tile_start_idx = ele as usize * BYTES_PER_TILE;
+            let tile_idx: usize = if gameboy.get_tile_data_selection() == 1 {
+                ele as usize
+            } else {
+                ((ele as i8) as i16 + 128) as usize
+            };
+            let tile_start_idx = tile_idx as usize * BYTES_PER_TILE;
             let tile_end_idx = tile_start_idx + BYTES_PER_TILE;
 
             let tile_bytes = &char_map_vec[tile_start_idx..tile_end_idx];
