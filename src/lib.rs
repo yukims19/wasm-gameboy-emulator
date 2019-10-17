@@ -398,11 +398,11 @@ impl Canvases {
             for pixel_rgba in
                 (0..blank_screen_with_sprites_rgba_row.len()).step_by(IMAGE_DATA_LENGTH_PER_PIXEL)
             {
-                let r = pixel_rgba;
-                let g = pixel_rgba + 1;
-                let b = pixel_rgba + 2;
+                let r = blank_screen_with_sprites_rgba_row[pixel_rgba];
+                let g = blank_screen_with_sprites_rgba_row[pixel_rgba + 1];
+                let b = blank_screen_with_sprites_rgba_row[pixel_rgba + 2];
                 match (r, g, b) {
-                    (0, 0, 0) => {
+                    (255, 255, 255) => {
                         result.extend_from_slice(
                             &screen_row_rgba[pixel_rgba..pixel_rgba + IMAGE_DATA_LENGTH_PER_PIXEL],
                         );
@@ -415,6 +415,7 @@ impl Canvases {
                     }
                 }
             }
+
             let clamped_image_source = wasm_bindgen::Clamped(&mut result[..]);
 
             let pixel_row_image_data =
@@ -434,7 +435,7 @@ impl Canvases {
             SCREEN_WIDTH as usize * SCREEN_HEIGHT as usize * IMAGE_DATA_LENGTH_PER_PIXEL;
 
         let mut entire_screen_pixels_rgba = Vec::new();
-        entire_screen_pixels_rgba.resize_with(screen_rbga_vec_length, || 0);
+        entire_screen_pixels_rgba.resize_with(screen_rbga_vec_length, || 255);
 
         //Get Tiles
         for idx in (0..char_map_vec.len()).step_by(BYTES_PER_TILE) {
@@ -6911,7 +6912,8 @@ impl Gameboy {
             }
 
             if self.is_lcd_display_enable() && self.should_draw {
-                canvases.draw_screen_from_memory(self);
+                canvases.draw_screen_with_obj(self);
+                // canvases.draw_screen_from_memory(self);
                 self.should_draw = false;
                 let now = performance.now();
                 let elapsed = now - time_last_draw;
