@@ -21,6 +21,8 @@ const SCREEN_PIXEL_NUM_PER_ROW: usize = 160;
 const IMAGE_DATA_LENGTH_PER_PIXEL: usize = 4; //r,g,b,a
 const PIXEL_NUM_PER_TILE_COL: usize = 8;
 const BACKGROUND_PIXEL_NUM_PER_ROW: usize = 256;
+const BYTES_PER_SPRITE: usize = 4;
+const SPRITE_PIXEL_NUM_PER_ROW: usize = 8;
 
 #[macro_use]
 extern crate serde_derive;
@@ -41,6 +43,18 @@ enum CycleRegister {
 //     SearchOAM,
 //     DataTransfer,
 // }
+
+#[wasm_bindgen]
+struct Sprite {
+    y: u8,
+    x: u8,
+    pattern_num: u8,
+    attributes: u8,
+    priority: bool,
+    y_flip: bool,
+    x_flip: bool,
+    palette_num: bool,
+}
 
 #[wasm_bindgen]
 pub struct Canvases {
@@ -283,6 +297,200 @@ impl Canvases {
                 .put_image_data(&pixel_row_image_data, 0.0, screen_y as f64)
                 .unwrap();
         }
+    }
+
+    pub fn draw_screen_with_obj(&self, gameboy: &mut Gameboy) {
+        if !gameboy.is_vblank() {
+            return;
+        }
+
+        let is_lcd_enable = gameboy.is_lcd_display_enable();
+        if !is_lcd_enable {
+            return;
+        }
+
+        let background_map = gameboy.bg_map();
+        let char_map_vec = gameboy.bg_window_char_map_bytes();
+
+        //Generate background bytes from char map
+        let mut background_pixels_row_rgba: Vec<Vec<u8>> = Vec::new();
+        background_pixels_row_rgba.resize(256, Vec::new());
+
+        let mut idx = 0;
+        for ele in background_map {
+            let tile_idx: usize = if gameboy.get_tile_data_selection() == 1 {
+                ele as usize
+            } else {
+                ((ele as i8) as i16 + 128) as usize
+            };
+            let tile_start_idx = tile_idx as usize * BYTES_PER_TILE;
+            let tile_end_idx = tile_start_idx + BYTES_PER_TILE;
+
+            let tile_bytes = &char_map_vec[tile_start_idx..tile_end_idx];
+            for i in (0..tile_bytes.len()).step_by(BYTES_PER_8_PIXEL) {
+                let background_y = (idx / 32) * PIXEL_NUM_PER_TILE_COL + i / BYTES_PER_8_PIXEL;
+                let low_bits = BitVec::from_bytes(&[tile_bytes[i]]);
+                let high_bits = BitVec::from_bytes(&[tile_bytes[i + 1]]);
+
+                for pixel_index in 0..8 {
+                    let [r, g, b, a] = match (low_bits[pixel_index], high_bits[pixel_index]) {
+                        (false, false) => [255, 255, 255, 255],
+                        (false, true) => [191, 191, 191, 255],
+                        (true, false) => [64, 64, 64, 255],
+                        (true, true) => [0, 0, 0, 255],
+                    };
+
+                    background_pixels_row_rgba[background_y].push(r);
+                    background_pixels_row_rgba[background_y].push(g);
+                    background_pixels_row_rgba[background_y].push(b);
+                    background_pixels_row_rgba[background_y].push(a);
+                }
+            }
+            idx = idx + 1
+        }
+
+        let background_pixels_rgba_vec: Vec<u8> = background_pixels_row_rgba.concat();
+
+        //Get screen bytes from background bytes
+        let scroll_x = gameboy.get_scroll_x() as usize;
+        let scroll_y = gameboy.get_scroll_y() as usize;
+        let mut screen_pixels_rgba_vec: Vec<u8> = Vec::new();
+
+        for screen_y in 0..144 {
+            //TODO: need to handle x overflow
+            let x = scroll_x;
+            let y = if scroll_y + screen_y > 255 {
+                scroll_y + screen_y - 256
+            } else {
+                scroll_y + screen_y
+            };
+
+            let start = y * BACKGROUND_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL
+                + x * IMAGE_DATA_LENGTH_PER_PIXEL;
+            let end = start + SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
+
+            let screen_row_bytes = &background_pixels_rgba_vec[start..end];
+            screen_pixels_rgba_vec.extend_from_slice(&screen_row_bytes);
+        }
+
+        //Drawing screen
+        self.screen_canvas.clear_rect(
+            0.0,
+            0.0,
+            self.screen_canvas.canvas().unwrap().width() as f64,
+            self.screen_canvas.canvas().unwrap().height() as f64,
+        );
+
+        let blank_screen_with_sprites_rgba = self.get_blank_screen_pixel_with_sprites(gameboy);
+
+        for screen_y in 0..144 {
+            let start_row = screen_y * SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
+            let end_row = start_row + SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
+
+            let screen_row_rgba = &screen_pixels_rgba_vec[start_row..end_row];
+
+            let blank_screen_with_sprites_rgba_row =
+                &blank_screen_with_sprites_rgba[start_row..end_row];
+
+            let mut result: Vec<u8> = Vec::new();
+
+            //Overwrite screen with sprite rgb data
+            for pixel_rgba in
+                (0..blank_screen_with_sprites_rgba_row.len()).step_by(IMAGE_DATA_LENGTH_PER_PIXEL)
+            {
+                let r = pixel_rgba;
+                let g = pixel_rgba + 1;
+                let b = pixel_rgba + 2;
+                match (r, g, b) {
+                    (0, 0, 0) => {
+                        result.extend_from_slice(
+                            &screen_row_rgba[pixel_rgba..pixel_rgba + IMAGE_DATA_LENGTH_PER_PIXEL],
+                        );
+                    }
+                    _other => {
+                        result.extend_from_slice(
+                            &blank_screen_with_sprites_rgba_row
+                                [pixel_rgba..pixel_rgba + IMAGE_DATA_LENGTH_PER_PIXEL],
+                        );
+                    }
+                }
+            }
+            let clamped_image_source = wasm_bindgen::Clamped(&mut result[..]);
+
+            let pixel_row_image_data =
+                web_sys::ImageData::new_with_u8_clamped_array_and_sh(clamped_image_source, 160, 1)
+                    .unwrap();
+            self.screen_canvas
+                .put_image_data(&pixel_row_image_data, 0.0, screen_y as f64)
+                .unwrap();
+        }
+    }
+
+    fn get_blank_screen_pixel_with_sprites(&self, gameboy: &mut Gameboy) -> Vec<u8> {
+        let char_map_vec = gameboy.obj_char_map_bytes(); //Tile data
+        let mut tiles_rgba_vec = Vec::new();
+
+        let screen_rbga_vec_length =
+            SCREEN_WIDTH as usize * SCREEN_HEIGHT as usize * IMAGE_DATA_LENGTH_PER_PIXEL;
+
+        let mut entire_screen_pixels_rgba = Vec::new();
+        entire_screen_pixels_rgba.resize_with(screen_rbga_vec_length, || 0);
+
+        //Get Tiles
+        for idx in (0..char_map_vec.len()).step_by(BYTES_PER_TILE) {
+            let tile_bytes = &char_map_vec[idx..idx + BYTES_PER_TILE];
+            let mut image_data_source = Vec::new();
+            //Get Tile Pixel rgba data
+            for i in (0..tile_bytes.len()).step_by(BYTES_PER_8_PIXEL) {
+                let low_bits = BitVec::from_bytes(&[tile_bytes[i]]);
+                let high_bits = BitVec::from_bytes(&[tile_bytes[i + 1]]);
+
+                for pixel_index in 0..8 {
+                    let [r, g, b, a] = match (low_bits[pixel_index], high_bits[pixel_index]) {
+                        (false, false) => [255, 255, 255, 255],
+                        (false, true) => [191, 191, 191, 255],
+                        (true, false) => [64, 64, 64, 255],
+                        (true, true) => [0, 0, 0, 255],
+                    };
+
+                    image_data_source.push(r);
+                    image_data_source.push(g);
+                    image_data_source.push(b);
+                    image_data_source.push(a);
+                }
+            }
+
+            tiles_rgba_vec.push(image_data_source);
+        }
+
+        //Fill in sprites data in blank temp_screen
+        for obj in gameboy.all_sprites() {
+            let tile_idx = obj.pattern_num as usize;
+            let tile_rgba = &tiles_rgba_vec[tile_idx];
+
+            for obj_row in 0..8 {
+                let x = obj.x;
+                let y = obj.y + obj_row;
+
+                let start: usize =
+                    y as usize * SPRITE_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL
+                        + x as usize * IMAGE_DATA_LENGTH_PER_PIXEL;
+                let end: usize = start + SPRITE_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
+
+                //Filling sprite tile row
+                // entire_screen_pixels_rgba[start..end] =
+                //     tile_rgba[obj_row as usize..obj_row as usize + 8 * IMAGE_DATA_LENGTH_PER_PIXEL];
+
+                entire_screen_pixels_rgba.splice(
+                    start..end,
+                    tile_rgba[obj_row as usize..obj_row as usize + 8 * IMAGE_DATA_LENGTH_PER_PIXEL]
+                        .iter()
+                        .cloned(),
+                );
+            }
+        }
+
+        entire_screen_pixels_rgba
     }
 
     pub fn make_canvas(
@@ -6182,6 +6390,47 @@ impl Gameboy {
     }
     pub fn is_sound_1_on(&self) -> bool {
         self.memory[0xff26] & 0b00000001 == 0b10000001
+    }
+
+    // Sprites
+
+    fn obj_char_map_bytes(&self) -> Vec<u8> {
+        self.memory[0x8800..0x9800].to_vec()
+    }
+
+    fn get_oam(&self) -> Vec<u8> {
+        self.memory[0xfe00..0xfea0].to_vec()
+    }
+
+    fn all_sprites(&self) -> Vec<Sprite> {
+        let oam_vec = self.get_oam();
+        let mut all_sprites = Vec::new();
+
+        for idx in (0..oam_vec.len()).step_by(BYTES_PER_SPRITE) {
+            let y = oam_vec[idx];
+            let x = oam_vec[idx + 1];
+            let pattern_num = oam_vec[idx + 2];
+            let attributes = oam_vec[idx + 3];
+            let priority = attributes & 0b10000000 == 0b10000000;
+            let y_flip = attributes & 0b01000000 == 0b01000000;
+            let x_flip = attributes & 0b00100000 == 0b00100000;
+            let palette_num = attributes & 0b00010000 == 0b00010000;
+
+            let sprite = Sprite {
+                y,
+                x,
+                pattern_num,
+                attributes,
+                priority,
+                y_flip,
+                x_flip,
+                palette_num,
+            };
+
+            all_sprites.push(sprite);
+        }
+
+        all_sprites
     }
 
     //##LCD Control Register $0xff40
