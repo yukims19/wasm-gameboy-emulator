@@ -96,9 +96,9 @@ impl Canvases {
     }
 
     pub fn render_background_map_as_image_data(&mut self, gameboy: &mut Gameboy) {
-        if !gameboy.is_vblank() {
-            return;
-        }
+        // if !gameboy.is_vblank() {
+        //     return;
+        // }
 
         let background_map = gameboy.bg_map(); //Tile index
         let char_map_vec = gameboy.bg_window_char_map_bytes(); //Tile data
@@ -787,328 +787,6 @@ struct Registers {
 
 #[wasm_bindgen]
 impl Registers {
-    fn srl(
-        &mut self,
-        register_value: u8,
-        register_name: &str,
-        memory: &mut Vec<u8>,
-        hl_value: Option<u16>,
-    ) {
-        let mut flag_z = false;
-        let flag_n = false;
-        let flag_h = false;
-        let mut flag_c = false;
-
-        let result = register_value >> 1;
-        if result == 0 {
-            flag_z = true
-        }
-
-        if register_value & 0b00000001 == 0b00000001 {
-            flag_c = true
-        }
-
-        match register_name {
-            "a" => self.set_a(result),
-            "b" => self.set_b(result),
-            "c" => self.set_c(result),
-            "d" => self.set_d(result),
-            "e" => self.set_e(result),
-            "h" => self.set_h(result),
-            "l" => self.set_l(result),
-            "h_l" => memory[hl_value.unwrap() as usize] = result,
-            _ => {
-                println!("Invalid register name");
-                std::process::exit(1)
-            }
-        }
-
-        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-    }
-
-    fn sra(
-        &mut self,
-        register_value: u8,
-        register_name: &str,
-        memory: &mut Vec<u8>,
-        hl_value: Option<u16>,
-    ) {
-        let mut flag_z = false;
-        let flag_n = false;
-        let flag_h = false;
-        let mut flag_c = false;
-
-        let result = register_value >> 1 | (register_value & 0x80);
-        if result == 0 {
-            flag_z = true
-        }
-
-        if register_value & 0b00000001 == 0b00000001 {
-            flag_c = true
-        }
-        match register_name {
-            "a" => self.set_a(result),
-            "b" => self.set_b(result),
-            "c" => self.set_c(result),
-            "d" => self.set_d(result),
-            "e" => self.set_e(result),
-            "h" => self.set_h(result),
-            "l" => self.set_l(result),
-            "h_l" => memory[hl_value.unwrap() as usize] = result,
-            _ => {
-                println!("Invalid register name");
-                std::process::exit(1)
-            }
-        }
-
-        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-    }
-
-    fn swap(
-        &mut self,
-        register_value: u8,
-        register_name: &str,
-        memory: &mut Vec<u8>,
-        hl_value: Option<u16>,
-    ) {
-        let mut flag_z = false;
-        let flag_n = false;
-        let flag_h = false;
-        let flag_c = false;
-
-        let result = register_value << 4 | register_value >> 4;
-
-        if result == 0 {
-            flag_z = true;
-        }
-
-        match register_name {
-            "a" => self.set_a(result),
-            "b" => self.set_b(result),
-            "c" => self.set_c(result),
-            "d" => self.set_d(result),
-            "e" => self.set_e(result),
-            "h" => self.set_h(result),
-            "l" => self.set_l(result),
-            "h_l" => memory[hl_value.unwrap() as usize] = result,
-            _ => {
-                println!("Invalid register name");
-                std::process::exit(1)
-            }
-        }
-
-        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-    }
-
-    fn sla(
-        &mut self,
-        register_value: u8,
-        register_name: &str,
-        memory: &mut Vec<u8>,
-        hl_value: Option<u16>,
-    ) {
-        let mut flag_z = false;
-        let flag_n = false;
-        let flag_h = false;
-        let mut flag_c = false;
-
-        let result = register_value << 1;
-
-        if result == 0 {
-            flag_z = true
-        }
-
-        if register_value & 0b10000000 == 0b10000000 {
-            flag_c = true
-        }
-
-        match register_name {
-            "a" => self.set_a(result),
-            "b" => self.set_b(result),
-            "c" => self.set_c(result),
-            "d" => self.set_d(result),
-            "e" => self.set_e(result),
-            "h" => self.set_h(result),
-            "l" => self.set_l(result),
-            "h_l" => memory[hl_value.unwrap() as usize] = result,
-            _ => {
-                println!("Invalid register name");
-                std::process::exit(1)
-            }
-        }
-
-        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-    }
-
-    fn rr(
-        &mut self,
-        register_value: u8,
-        register_name: &str,
-        memory: &mut Vec<u8>,
-        hl_value: Option<u16>,
-    ) {
-        let mut flag_z = false;
-        let flag_n = false;
-        let flag_h = false;
-        let mut flag_c = false;
-
-        let shifted_value = register_value >> 1;
-        let result = shifted_value
-            | match self.f.c {
-                true => 0b10000000,
-                false => 0b00000000,
-            };
-
-        if result == 0 {
-            flag_z = true
-        }
-
-        if register_value & 0b00000001 == 1 {
-            flag_c = true
-        }
-
-        match register_name {
-            "a" => self.set_a(result),
-            "b" => self.set_b(result),
-            "c" => self.set_c(result),
-            "d" => self.set_d(result),
-            "e" => self.set_e(result),
-            "h" => self.set_h(result),
-            "l" => self.set_l(result),
-            "h_l" => memory[hl_value.unwrap() as usize] = result,
-            _ => {
-                println!("Invalid register name");
-                std::process::exit(1)
-            }
-        }
-
-        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-    }
-
-    fn rl(
-        &mut self,
-        register_value: u8,
-        register_name: &str,
-        memory: &mut Vec<u8>,
-        hl_value: Option<u16>,
-    ) {
-        let mut flag_z = false;
-        let flag_n = false;
-        let flag_h = false;
-        let mut flag_c = false;
-
-        let shifted_value = register_value << 1;
-        let result = shifted_value
-            | match self.f.c {
-                true => 0b00000001,
-                false => 0b00000000,
-            };
-
-        if result == 0 {
-            flag_z = true
-        }
-
-        if register_value & 0b10000000 == 0b10000000 {
-            flag_c = true
-        }
-
-        match register_name {
-            "a" => self.set_a(result),
-            "b" => self.set_b(result),
-            "c" => self.set_c(result),
-            "d" => self.set_d(result),
-            "e" => self.set_e(result),
-            "h" => self.set_h(result),
-            "l" => self.set_l(result),
-            "h_l" => memory[hl_value.unwrap() as usize] = result,
-            _ => {
-                println!("Invalid register name");
-                std::process::exit(1)
-            }
-        }
-
-        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-    }
-
-    fn rrc(
-        &mut self,
-        register_value: u8,
-        register_name: &str,
-        memory: &mut Vec<u8>,
-        hl_value: Option<u16>,
-    ) {
-        let mut flag_z = false;
-        let flag_n = false;
-        let flag_h = false;
-        let mut flag_c = false;
-
-        let cf = register_value << 7;
-        let result = register_value >> 1 | cf;
-
-        if result == 0 {
-            flag_z = true
-        }
-
-        if cf & 0b10000000 == 0b10000000 {
-            flag_c = true
-        }
-
-        match register_name {
-            "a" => self.set_a(result),
-            "b" => self.set_b(result),
-            "c" => self.set_c(result),
-            "d" => self.set_d(result),
-            "e" => self.set_e(result),
-            "h" => self.set_h(result),
-            "l" => self.set_l(result),
-            "h_l" => memory[hl_value.unwrap() as usize] = result,
-            _ => {
-                println!("Invalid register name");
-                std::process::exit(1)
-            }
-        }
-
-        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-    }
-
-    fn rlc(
-        &mut self,
-        register_value: u8,
-        register_name: &str,
-        memory: &mut Vec<u8>,
-        hl_value: Option<u16>,
-    ) {
-        let mut flag_z = false;
-        let flag_n = false;
-        let flag_h = false;
-
-        let cf = register_value >> 7;
-        let result = (register_value << 1) | cf;
-
-        if result == 0 {
-            flag_z = true
-        }
-
-        let flag_c = cf == 1;
-
-        match register_name {
-            "a" => self.set_a(result),
-            "b" => self.set_b(result),
-            "c" => self.set_c(result),
-            "d" => self.set_d(result),
-            "e" => self.set_e(result),
-            "h" => self.set_h(result),
-            "l" => self.set_l(result),
-            "h_l" => memory[hl_value.unwrap() as usize] = result,
-            _ => {
-                println!("Invalid register name");
-                std::process::exit(1)
-            }
-        }
-
-        self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-    }
-
     fn xor_a_n(&mut self, n: u8) {
         let mut flag_z = false;
         let flag_n = false;
@@ -1218,86 +896,6 @@ impl Registers {
         self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
     }
 
-    fn res_b_r(
-        &mut self,
-        bit_idx: u8,
-        register_value: u8,
-        register_name: &str,
-        memory: &mut Vec<u8>,
-        hl_value: Option<u16>,
-    ) {
-        let check_bits = match bit_idx {
-            0 => 0b11111110,
-            1 => 0b11111101,
-            2 => 0b11111011,
-            3 => 0b11110111,
-            4 => 0b11101111,
-            5 => 0b11011111,
-            6 => 0b10111111,
-            7 => 0b01111111,
-            _ => {
-                println!("Invalid bit index");
-                std::process::exit(1)
-            }
-        };
-
-        let value = register_value & check_bits;
-        match register_name {
-            "a" => self.set_a(value),
-            "b" => self.set_b(value),
-            "c" => self.set_c(value),
-            "d" => self.set_d(value),
-            "e" => self.set_e(value),
-            "h" => self.set_h(value),
-            "l" => self.set_l(value),
-            "h_l" => memory[hl_value.unwrap() as usize] = value,
-            _ => {
-                println!("Invalid register name");
-                std::process::exit(1)
-            }
-        }
-    }
-
-    fn set_b_r(
-        &mut self,
-        bit_idx: u8,
-        register_value: u8,
-        register_name: &str,
-        memory: &mut Vec<u8>,
-        hl_value: Option<u16>,
-    ) {
-        let check_bits = match bit_idx {
-            0 => 0b00000001,
-            1 => 0b00000010,
-            2 => 0b00000100,
-            3 => 0b00001000,
-            4 => 0b00010000,
-            5 => 0b00100000,
-            6 => 0b01000000,
-            7 => 0b10000000,
-            _ => {
-                println!("Invalid bit index");
-                std::process::exit(1)
-            }
-        };
-
-        let value = register_value | check_bits;
-        match register_name {
-            "a" => self.set_a(value),
-            "b" => self.set_b(value),
-            "c" => self.set_c(value),
-            "d" => self.set_d(value),
-            "e" => self.set_e(value),
-            "h" => self.set_h(value),
-            "l" => self.set_l(value),
-            "h_l" => memory[hl_value.unwrap() as usize] = value,
-            _ => {
-                println!("Invalid register name");
-                std::process::exit(1)
-            }
-        }
-    }
-
     fn add_signed_number(&self, unsigned: u16, signed: i8) -> u16 {
         let is_minus = signed.signum() == -1;
         let value = signed.abs() as u16;
@@ -1352,37 +950,6 @@ impl Registers {
 
     fn combine_two_bytes(&self, first_b: u8, second_b: u8) -> u16 {
         let two_bytes_value = ((first_b as u16) << 8) | second_b as u16;
-        two_bytes_value
-    }
-
-    fn push_stack(&mut self, memory: &mut Vec<u8>, value: u16) {
-        let value_byte_vec = value.to_be_bytes();
-        self.set_sp(self.sp - 1);
-        memory[self.sp as usize] = value_byte_vec[0];
-        self.set_sp(self.sp - 1);
-        memory[self.sp as usize] = value_byte_vec[1];
-    }
-
-    fn pop_stack(&mut self, memory: &Vec<u8>) -> u16 {
-        let second_byte = memory[self.sp as usize];
-        self.set_sp(self.sp + 1);
-        let firt_byte = memory[self.sp as usize];
-        self.set_sp(self.sp + 1);
-
-        let result = self.combine_two_bytes(firt_byte, second_byte);
-        result
-    }
-
-    fn following_byte(&mut self, address: usize, memory: &Vec<u8>) -> u8 {
-        let byte = memory[address + 1];
-        self.set_pc(&self.pc + 1);
-        byte
-    }
-
-    fn following_two_bytes(&mut self, address: usize, memory: &Vec<u8>) -> u16 {
-        let byte_vec = &memory[address + 1..address + 3];
-        let two_bytes_value = self.combine_two_bytes(byte_vec[1], byte_vec[0]);
-        self.set_pc(&self.pc + 2);
         two_bytes_value
     }
 
@@ -1454,11 +1021,6 @@ impl Registers {
         };
 
         self.f.set_flag(flag_z, flag_n, flag_h, flag_c);
-    }
-
-    fn set_two_bytes(&mut self, memory: &mut Vec<u8>, start_address: u16) {
-        memory[start_address as usize] = self.sp as u8;
-        memory[start_address.wrapping_add(1) as usize] = (self.sp >> 8) as u8;
     }
 
     fn set_sp(&mut self, value: u16) {
@@ -1573,7 +1135,7 @@ impl Gameboy {
 
         match opcode {
             0x0CB => {
-                match self.registers.following_byte(pointer, &self.memory) {
+                match self.following_byte(pointer) {
                     0x047 => {
                         //BIT b(0),A -> 8
                         let bit = self.registers.a & 0b00000001;
@@ -1656,7 +1218,7 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let value = self.memory[h_l as usize];
+                        let value = self.read_memory(h_l);
                         let bit = value & 0b00000001;
                         if bit == 0 {
                             flag_z = true;
@@ -1885,618 +1447,506 @@ impl Gameboy {
 
                     0x080 => {
                         //RES b(0),B -> 8
-                        self.registers
-                            .res_b_r(0, self.registers.b, "b", &mut self.memory, None);
+                        self.res_b_r(0, self.registers.b, "b", None);
                     }
 
                     0x081 => {
                         //RES b(0),C -> 8
-                        self.registers
-                            .res_b_r(0, self.registers.c, "c", &mut self.memory, None);
+                        self.res_b_r(0, self.registers.c, "c", None);
                     }
 
                     0x082 => {
                         //RES b(0),D -> 8
-                        self.registers
-                            .res_b_r(0, self.registers.d, "d", &mut self.memory, None);
+                        self.res_b_r(0, self.registers.d, "d", None);
                     }
 
                     0x083 => {
                         //RES b(0),E -> 8
-                        self.registers
-                            .res_b_r(0, self.registers.e, "e", &mut self.memory, None);
+                        self.res_b_r(0, self.registers.e, "e", None);
                     }
 
                     0x084 => {
                         //RES b(0),H -> 8
-                        self.registers
-                            .res_b_r(0, self.registers.h, "h", &mut self.memory, None);
+                        self.res_b_r(0, self.registers.h, "h", None);
                     }
 
                     0x085 => {
                         //RES b(0),L -> 8
-                        self.registers
-                            .res_b_r(0, self.registers.l, "l", &mut self.memory, None);
+                        self.res_b_r(0, self.registers.l, "l", None);
                     }
                     0x087 => {
                         //RES b(0),A -> 8
-                        self.registers
-                            .res_b_r(0, self.registers.a, "a", &mut self.memory, None);
+                        self.res_b_r(0, self.registers.a, "a", None);
                     }
 
                     0x088 => {
                         //RES b(1),B -> 8
-                        self.registers
-                            .res_b_r(1, self.registers.b, "b", &mut self.memory, None);
+                        self.res_b_r(1, self.registers.b, "b", None);
                     }
                     0x089 => {
                         //RES b(1),C -> 8
-                        self.registers
-                            .res_b_r(1, self.registers.c, "c", &mut self.memory, None);
+                        self.res_b_r(1, self.registers.c, "c", None);
                     }
                     0x08a => {
                         //RES b(1),D -> 8
-                        self.registers
-                            .res_b_r(1, self.registers.d, "d", &mut self.memory, None);
+                        self.res_b_r(1, self.registers.d, "d", None);
                     }
                     0x08b => {
                         //RES b(1),E -> 8
-                        self.registers
-                            .res_b_r(1, self.registers.e, "e", &mut self.memory, None);
+                        self.res_b_r(1, self.registers.e, "e", None);
                     }
                     0x08c => {
                         //RES b(1),H -> 8
-                        self.registers
-                            .res_b_r(1, self.registers.h, "h", &mut self.memory, None);
+                        self.res_b_r(1, self.registers.h, "h", None);
                     }
                     0x08d => {
                         //RES b(1),L -> 8
-                        self.registers
-                            .res_b_r(1, self.registers.l, "l", &mut self.memory, None);
+                        self.res_b_r(1, self.registers.l, "l", None);
                     }
                     0x08f => {
                         //RES b(1),A -> 8
-                        self.registers
-                            .res_b_r(1, self.registers.a, "a", &mut self.memory, None);
+                        self.res_b_r(1, self.registers.a, "a", None);
                     }
 
                     0x090 => {
                         //RES b(2),B -> 8
-                        self.registers
-                            .res_b_r(2, self.registers.b, "b", &mut self.memory, None);
+                        self.res_b_r(2, self.registers.b, "b", None);
                     }
 
                     0x091 => {
                         //RES b(2),C -> 8
-                        self.registers
-                            .res_b_r(2, self.registers.c, "c", &mut self.memory, None);
+                        self.res_b_r(2, self.registers.c, "c", None);
                     }
 
                     0x092 => {
                         //RES b(2),D -> 8
-                        self.registers
-                            .res_b_r(2, self.registers.d, "d", &mut self.memory, None);
+                        self.res_b_r(2, self.registers.d, "d", None);
                     }
 
                     0x093 => {
                         //RES b(2),E -> 8
-                        self.registers
-                            .res_b_r(2, self.registers.e, "e", &mut self.memory, None);
+                        self.res_b_r(2, self.registers.e, "e", None);
                     }
 
                     0x094 => {
                         //RES b(2),H -> 8
-                        self.registers
-                            .res_b_r(2, self.registers.h, "h", &mut self.memory, None);
+                        self.res_b_r(2, self.registers.h, "h", None);
                     }
 
                     0x095 => {
                         //RES b(2),L -> 8
-                        self.registers
-                            .res_b_r(2, self.registers.l, "l", &mut self.memory, None);
+                        self.res_b_r(2, self.registers.l, "l", None);
                     }
                     0x097 => {
                         //RES b(2),A -> 8
-                        self.registers
-                            .res_b_r(2, self.registers.a, "a", &mut self.memory, None);
+                        self.res_b_r(2, self.registers.a, "a", None);
                     }
 
                     0x098 => {
                         //RES b(3),B -> 8
-                        self.registers
-                            .res_b_r(3, self.registers.b, "b", &mut self.memory, None);
+                        self.res_b_r(3, self.registers.b, "b", None);
                     }
                     0x099 => {
                         //RES b(3),C -> 8
-                        self.registers
-                            .res_b_r(3, self.registers.c, "c", &mut self.memory, None);
+                        self.res_b_r(3, self.registers.c, "c", None);
                     }
                     0x09a => {
                         //RES b(3),D -> 8
-                        self.registers
-                            .res_b_r(3, self.registers.d, "d", &mut self.memory, None);
+                        self.res_b_r(3, self.registers.d, "d", None);
                     }
                     0x09b => {
                         //RES b(3),E -> 8
-                        self.registers
-                            .res_b_r(3, self.registers.e, "e", &mut self.memory, None);
+                        self.res_b_r(3, self.registers.e, "e", None);
                     }
                     0x09c => {
                         //RES b(3),H -> 8
-                        self.registers
-                            .res_b_r(3, self.registers.h, "h", &mut self.memory, None);
+                        self.res_b_r(3, self.registers.h, "h", None);
                     }
                     0x09d => {
                         //RES b(3),L -> 8
-                        self.registers
-                            .res_b_r(3, self.registers.l, "l", &mut self.memory, None);
+                        self.res_b_r(3, self.registers.l, "l", None);
                     }
                     0x09f => {
                         //RES b(3),A -> 8
-                        self.registers
-                            .res_b_r(3, self.registers.a, "a", &mut self.memory, None);
+                        self.res_b_r(3, self.registers.a, "a", None);
                     }
 
                     0x0a0 => {
                         //RES b(4),B -> 8
-                        self.registers
-                            .res_b_r(4, self.registers.b, "b", &mut self.memory, None);
+                        self.res_b_r(4, self.registers.b, "b", None);
                     }
 
                     0x0a1 => {
                         //RES b(4),C -> 8
-                        self.registers
-                            .res_b_r(4, self.registers.c, "c", &mut self.memory, None);
+                        self.res_b_r(4, self.registers.c, "c", None);
                     }
 
                     0x0a2 => {
                         //RES b(4),D -> 8
-                        self.registers
-                            .res_b_r(4, self.registers.d, "d", &mut self.memory, None);
+                        self.res_b_r(4, self.registers.d, "d", None);
                     }
 
                     0x0a3 => {
                         //RES b(4),E -> 8
-                        self.registers
-                            .res_b_r(4, self.registers.e, "e", &mut self.memory, None);
+                        self.res_b_r(4, self.registers.e, "e", None);
                     }
 
                     0x0a4 => {
                         //RES b(4),H -> 8
-                        self.registers
-                            .res_b_r(4, self.registers.h, "h", &mut self.memory, None);
+                        self.res_b_r(4, self.registers.h, "h", None);
                     }
 
                     0x0a5 => {
                         //RES b(4),L -> 8
-                        self.registers
-                            .res_b_r(4, self.registers.l, "l", &mut self.memory, None);
+                        self.res_b_r(4, self.registers.l, "l", None);
                     }
                     0x0a7 => {
                         //RES b(4),A -> 8
-                        self.registers
-                            .res_b_r(4, self.registers.a, "a", &mut self.memory, None);
+                        self.res_b_r(4, self.registers.a, "a", None);
                     }
 
                     0x0a8 => {
                         //RES b(5),B -> 8
-                        self.registers
-                            .res_b_r(5, self.registers.b, "b", &mut self.memory, None);
+                        self.res_b_r(5, self.registers.b, "b", None);
                     }
                     0x0a9 => {
                         //RES b(5),C -> 8
-                        self.registers
-                            .res_b_r(5, self.registers.c, "c", &mut self.memory, None);
+                        self.res_b_r(5, self.registers.c, "c", None);
                     }
                     0x0aa => {
                         //RES b(5),D -> 8
-                        self.registers
-                            .res_b_r(5, self.registers.d, "d", &mut self.memory, None);
+                        self.res_b_r(5, self.registers.d, "d", None);
                     }
                     0x0ab => {
                         //RES b(5),E -> 8
-                        self.registers
-                            .res_b_r(5, self.registers.e, "e", &mut self.memory, None);
+                        self.res_b_r(5, self.registers.e, "e", None);
                     }
                     0x0ac => {
                         //RES b(5),H -> 8
-                        self.registers
-                            .res_b_r(5, self.registers.h, "h", &mut self.memory, None);
+                        self.res_b_r(5, self.registers.h, "h", None);
                     }
                     0x0ad => {
                         //RES b(5),L -> 8
-                        self.registers
-                            .res_b_r(5, self.registers.l, "l", &mut self.memory, None);
+                        self.res_b_r(5, self.registers.l, "l", None);
                     }
                     0x0af => {
                         //RES b(5),A -> 8
-                        self.registers
-                            .res_b_r(5, self.registers.a, "a", &mut self.memory, None);
+                        self.res_b_r(5, self.registers.a, "a", None);
                     }
 
                     0x0b0 => {
                         //RES b(6),B -> 8
-                        self.registers
-                            .res_b_r(6, self.registers.b, "b", &mut self.memory, None);
+                        self.res_b_r(6, self.registers.b, "b", None);
                     }
 
                     0x0b1 => {
                         //RES b(6),C -> 8
-                        self.registers
-                            .res_b_r(6, self.registers.c, "c", &mut self.memory, None);
+                        self.res_b_r(6, self.registers.c, "c", None);
                     }
 
                     0x0b2 => {
                         //RES b(6),D -> 8
-                        self.registers
-                            .res_b_r(6, self.registers.d, "d", &mut self.memory, None);
+                        self.res_b_r(6, self.registers.d, "d", None);
                     }
 
                     0x0b3 => {
                         //RES b(6),E -> 8
-                        self.registers
-                            .res_b_r(6, self.registers.e, "e", &mut self.memory, None);
+                        self.res_b_r(6, self.registers.e, "e", None);
                     }
 
                     0x0b4 => {
                         //RES b(6),H -> 8
-                        self.registers
-                            .res_b_r(6, self.registers.h, "h", &mut self.memory, None);
+                        self.res_b_r(6, self.registers.h, "h", None);
                     }
 
                     0x0b5 => {
                         //RES b(6),L -> 8
-                        self.registers
-                            .res_b_r(6, self.registers.l, "l", &mut self.memory, None);
+                        self.res_b_r(6, self.registers.l, "l", None);
                     }
                     0x0b7 => {
                         //RES b(6),A -> 8
-                        self.registers
-                            .res_b_r(6, self.registers.a, "a", &mut self.memory, None);
+                        self.res_b_r(6, self.registers.a, "a", None);
                     }
 
                     0x0b8 => {
                         //RES b(7),B -> 8
-                        self.registers
-                            .res_b_r(7, self.registers.b, "b", &mut self.memory, None);
+                        self.res_b_r(7, self.registers.b, "b", None);
                     }
                     0x0b9 => {
                         //RES b(7),C -> 8
-                        self.registers
-                            .res_b_r(7, self.registers.c, "c", &mut self.memory, None);
+                        self.res_b_r(7, self.registers.c, "c", None);
                     }
                     0x0ba => {
                         //RES b(7),D -> 8
-                        self.registers
-                            .res_b_r(7, self.registers.d, "d", &mut self.memory, None);
+                        self.res_b_r(7, self.registers.d, "d", None);
                     }
                     0x0bb => {
                         //RES b(7),E -> 8
-                        self.registers
-                            .res_b_r(7, self.registers.e, "e", &mut self.memory, None);
+                        self.res_b_r(7, self.registers.e, "e", None);
                     }
                     0x0bc => {
                         //RES b(7),H -> 8
-                        self.registers
-                            .res_b_r(7, self.registers.h, "h", &mut self.memory, None);
+                        self.res_b_r(7, self.registers.h, "h", None);
                     }
                     0x0bd => {
                         //RES b(7),L -> 8
-                        self.registers
-                            .res_b_r(7, self.registers.l, "l", &mut self.memory, None);
+                        self.res_b_r(7, self.registers.l, "l", None);
                     }
                     0x0bf => {
                         //RES b(7),A -> 8
-                        self.registers
-                            .res_b_r(7, self.registers.a, "a", &mut self.memory, None);
+                        self.res_b_r(7, self.registers.a, "a", None);
                     }
 
                     0x0c0 => {
                         //SET b(0),B -> 8
-                        self.registers
-                            .set_b_r(0, self.registers.b, "b", &mut self.memory, None);
+                        self.set_b_r(0, self.registers.b, "b", None);
                     }
 
                     0x0c1 => {
                         //SET b(0),C -> 8
-                        self.registers
-                            .set_b_r(0, self.registers.c, "c", &mut self.memory, None);
+                        self.set_b_r(0, self.registers.c, "c", None);
                     }
 
                     0x0c2 => {
                         //SET b(0),D -> 8
-                        self.registers
-                            .set_b_r(0, self.registers.d, "d", &mut self.memory, None);
+                        self.set_b_r(0, self.registers.d, "d", None);
                     }
 
                     0x0c3 => {
                         //SET b(0),E -> 8
-                        self.registers
-                            .set_b_r(0, self.registers.e, "e", &mut self.memory, None);
+                        self.set_b_r(0, self.registers.e, "e", None);
                     }
 
                     0x0c4 => {
                         //SET b(0),H -> 8
-                        self.registers
-                            .set_b_r(0, self.registers.h, "h", &mut self.memory, None);
+                        self.set_b_r(0, self.registers.h, "h", None);
                     }
 
                     0x0c5 => {
                         //SET b(0),L -> 8
-                        self.registers
-                            .set_b_r(0, self.registers.l, "l", &mut self.memory, None);
+                        self.set_b_r(0, self.registers.l, "l", None);
                     }
                     0x0c7 => {
                         //SET b(0),A -> 8
-                        self.registers
-                            .set_b_r(0, self.registers.a, "a", &mut self.memory, None);
+                        self.set_b_r(0, self.registers.a, "a", None);
                     }
 
                     0x0c8 => {
                         //SET b(1),B -> 8
-                        self.registers
-                            .set_b_r(1, self.registers.b, "b", &mut self.memory, None);
+                        self.set_b_r(1, self.registers.b, "b", None);
                     }
                     0x0c9 => {
                         //SET b(1),C -> 8
-                        self.registers
-                            .set_b_r(1, self.registers.c, "c", &mut self.memory, None);
+                        self.set_b_r(1, self.registers.c, "c", None);
                     }
                     0x0ca => {
                         //SET b(1),D -> 8
-                        self.registers
-                            .set_b_r(1, self.registers.d, "d", &mut self.memory, None);
+                        self.set_b_r(1, self.registers.d, "d", None);
                     }
                     0x0cb => {
                         //SET b(1),E -> 8
-                        self.registers
-                            .set_b_r(1, self.registers.e, "e", &mut self.memory, None);
+                        self.set_b_r(1, self.registers.e, "e", None);
                     }
                     0x0cc => {
                         //SET b(1),H -> 8
-                        self.registers
-                            .set_b_r(1, self.registers.h, "h", &mut self.memory, None);
+                        self.set_b_r(1, self.registers.h, "h", None);
                     }
                     0x0cd => {
                         //SET b(1),L -> 8
-                        self.registers
-                            .set_b_r(1, self.registers.l, "l", &mut self.memory, None);
+                        self.set_b_r(1, self.registers.l, "l", None);
                     }
                     0x0cf => {
                         //SET b(1),A -> 8
-                        self.registers
-                            .set_b_r(1, self.registers.a, "a", &mut self.memory, None);
+                        self.set_b_r(1, self.registers.a, "a", None);
                     }
 
                     0x0d0 => {
                         //SET b(2),B -> 8
-                        self.registers
-                            .set_b_r(2, self.registers.b, "b", &mut self.memory, None);
+                        self.set_b_r(2, self.registers.b, "b", None);
                     }
 
                     0x0d1 => {
                         //SET b(2),C -> 8
-                        self.registers
-                            .set_b_r(2, self.registers.c, "c", &mut self.memory, None);
+                        self.set_b_r(2, self.registers.c, "c", None);
                     }
 
                     0x0d2 => {
                         //SET b(2),D -> 8
-                        self.registers
-                            .set_b_r(2, self.registers.d, "d", &mut self.memory, None);
+                        self.set_b_r(2, self.registers.d, "d", None);
                     }
 
                     0x0d3 => {
                         //SET b(2),E -> 8
-                        self.registers
-                            .set_b_r(2, self.registers.e, "e", &mut self.memory, None);
+                        self.set_b_r(2, self.registers.e, "e", None);
                     }
 
                     0x0d4 => {
                         //SET b(2),H -> 8
-                        self.registers
-                            .set_b_r(2, self.registers.h, "h", &mut self.memory, None);
+                        self.set_b_r(2, self.registers.h, "h", None);
                     }
 
                     0x0d5 => {
                         //SET b(2),L -> 8
-                        self.registers
-                            .set_b_r(2, self.registers.l, "l", &mut self.memory, None);
+                        self.set_b_r(2, self.registers.l, "l", None);
                     }
                     0x0d7 => {
                         //SET b(2),A -> 8
-                        self.registers
-                            .set_b_r(2, self.registers.a, "a", &mut self.memory, None);
+                        self.set_b_r(2, self.registers.a, "a", None);
                     }
 
                     0x0d8 => {
                         //SET b(3),B -> 8
-                        self.registers
-                            .set_b_r(3, self.registers.b, "b", &mut self.memory, None);
+                        self.set_b_r(3, self.registers.b, "b", None);
                     }
                     0x0d9 => {
                         //SET b(3),C -> 8
-                        self.registers
-                            .set_b_r(3, self.registers.c, "c", &mut self.memory, None);
+                        self.set_b_r(3, self.registers.c, "c", None);
                     }
                     0x0da => {
                         //SET b(3),D -> 8
-                        self.registers
-                            .set_b_r(3, self.registers.d, "d", &mut self.memory, None);
+                        self.set_b_r(3, self.registers.d, "d", None);
                     }
                     0x0db => {
                         //SET b(3),E -> 8
-                        self.registers
-                            .set_b_r(3, self.registers.e, "e", &mut self.memory, None);
+                        self.set_b_r(3, self.registers.e, "e", None);
                     }
                     0x0dc => {
                         //SET b(3),H -> 8
-                        self.registers
-                            .set_b_r(3, self.registers.h, "h", &mut self.memory, None);
+                        self.set_b_r(3, self.registers.h, "h", None);
                     }
                     0x0dd => {
                         //SET b(3),L -> 8
-                        self.registers
-                            .set_b_r(3, self.registers.l, "l", &mut self.memory, None);
+                        self.set_b_r(3, self.registers.l, "l", None);
                     }
                     0x0df => {
                         //SET b(3),A -> 8
-                        self.registers
-                            .set_b_r(3, self.registers.a, "a", &mut self.memory, None);
+                        self.set_b_r(3, self.registers.a, "a", None);
                     }
 
                     0x0e0 => {
                         //SET b(4),B -> 8
-                        self.registers
-                            .set_b_r(4, self.registers.b, "b", &mut self.memory, None);
+                        self.set_b_r(4, self.registers.b, "b", None);
                     }
 
                     0x0e1 => {
                         //SET b(4),C -> 8
-                        self.registers
-                            .set_b_r(4, self.registers.c, "c", &mut self.memory, None);
+                        self.set_b_r(4, self.registers.c, "c", None);
                     }
 
                     0x0e2 => {
                         //SET b(4),D -> 8
-                        self.registers
-                            .set_b_r(4, self.registers.d, "d", &mut self.memory, None);
+                        self.set_b_r(4, self.registers.d, "d", None);
                     }
 
                     0x0e3 => {
                         //SET b(4),E -> 8
-                        self.registers
-                            .set_b_r(4, self.registers.e, "e", &mut self.memory, None);
+                        self.set_b_r(4, self.registers.e, "e", None);
                     }
 
                     0x0e4 => {
                         //SET b(4),H -> 8
-                        self.registers
-                            .set_b_r(4, self.registers.h, "h", &mut self.memory, None);
+                        self.set_b_r(4, self.registers.h, "h", None);
                     }
 
                     0x0e5 => {
                         //SET b(4),L -> 8
-                        self.registers
-                            .set_b_r(4, self.registers.l, "l", &mut self.memory, None);
+                        self.set_b_r(4, self.registers.l, "l", None);
                     }
                     0x0e7 => {
                         //SET b(4),A -> 8
-                        self.registers
-                            .set_b_r(4, self.registers.a, "a", &mut self.memory, None);
+                        self.set_b_r(4, self.registers.a, "a", None);
                     }
 
                     0x0e8 => {
                         //SET b(5),B -> 8
-                        self.registers
-                            .set_b_r(5, self.registers.b, "b", &mut self.memory, None);
+                        self.set_b_r(5, self.registers.b, "b", None);
                     }
                     0x0e9 => {
                         //SET b(5),C -> 8
-                        self.registers
-                            .set_b_r(5, self.registers.c, "c", &mut self.memory, None);
+                        self.set_b_r(5, self.registers.c, "c", None);
                     }
                     0x0ea => {
                         //SET b(5),D -> 8
-                        self.registers
-                            .set_b_r(5, self.registers.d, "d", &mut self.memory, None);
+                        self.set_b_r(5, self.registers.d, "d", None);
                     }
                     0x0eb => {
                         //SET b(5),E -> 8
-                        self.registers
-                            .set_b_r(5, self.registers.e, "e", &mut self.memory, None);
+                        self.set_b_r(5, self.registers.e, "e", None);
                     }
                     0x0ec => {
                         //SET b(5),H -> 8
-                        self.registers
-                            .set_b_r(5, self.registers.h, "h", &mut self.memory, None);
+                        self.set_b_r(5, self.registers.h, "h", None);
                     }
                     0x0ed => {
                         //SET b(5),L -> 8
-                        self.registers
-                            .set_b_r(5, self.registers.l, "l", &mut self.memory, None);
+                        self.set_b_r(5, self.registers.l, "l", None);
                     }
                     0x0ef => {
                         //SET b(5),A -> 8
-                        self.registers
-                            .set_b_r(5, self.registers.a, "a", &mut self.memory, None);
+                        self.set_b_r(5, self.registers.a, "a", None);
                     }
                     0x0f0 => {
                         //SET b(6),B -> 8
-                        self.registers
-                            .set_b_r(6, self.registers.b, "b", &mut self.memory, None);
+                        self.set_b_r(6, self.registers.b, "b", None);
                     }
 
                     0x0f1 => {
                         //SET b(6),C -> 8
-                        self.registers
-                            .set_b_r(6, self.registers.c, "c", &mut self.memory, None);
+                        self.set_b_r(6, self.registers.c, "c", None);
                     }
 
                     0x0f2 => {
                         //SET b(6),D -> 8
-                        self.registers
-                            .set_b_r(6, self.registers.d, "d", &mut self.memory, None);
+                        self.set_b_r(6, self.registers.d, "d", None);
                     }
 
                     0x0f3 => {
                         //SET b(6),E -> 8
-                        self.registers
-                            .set_b_r(6, self.registers.e, "e", &mut self.memory, None);
+                        self.set_b_r(6, self.registers.e, "e", None);
                     }
 
                     0x0f4 => {
                         //SET b(6),H -> 8
-                        self.registers
-                            .set_b_r(6, self.registers.h, "h", &mut self.memory, None);
+                        self.set_b_r(6, self.registers.h, "h", None);
                     }
 
                     0x0f5 => {
                         //SET b(6),L -> 8
-                        self.registers
-                            .set_b_r(6, self.registers.l, "l", &mut self.memory, None);
+                        self.set_b_r(6, self.registers.l, "l", None);
                     }
                     0x0f7 => {
                         //SET b(6),A -> 8
-                        self.registers
-                            .set_b_r(6, self.registers.a, "a", &mut self.memory, None);
+                        self.set_b_r(6, self.registers.a, "a", None);
                     }
 
                     0x0f8 => {
                         //SET b(7),B -> 8
-                        self.registers
-                            .set_b_r(7, self.registers.b, "b", &mut self.memory, None);
+                        self.set_b_r(7, self.registers.b, "b", None);
                     }
                     0x0f9 => {
                         //SET b(7),C -> 8
-                        self.registers
-                            .set_b_r(7, self.registers.c, "c", &mut self.memory, None);
+                        self.set_b_r(7, self.registers.c, "c", None);
                     }
                     0x0fa => {
                         //SET b(7),D -> 8
-                        self.registers
-                            .set_b_r(7, self.registers.d, "d", &mut self.memory, None);
+                        self.set_b_r(7, self.registers.d, "d", None);
                     }
                     0x0fb => {
                         //SET b(7),E -> 8
-                        self.registers
-                            .set_b_r(7, self.registers.e, "e", &mut self.memory, None);
+                        self.set_b_r(7, self.registers.e, "e", None);
                     }
                     0x0fc => {
                         //SET b(7),H -> 8
-                        self.registers
-                            .set_b_r(7, self.registers.h, "h", &mut self.memory, None);
+                        self.set_b_r(7, self.registers.h, "h", None);
                     }
                     0x0fd => {
                         //SET b(7),L -> 8
-                        self.registers
-                            .set_b_r(7, self.registers.l, "l", &mut self.memory, None);
+                        self.set_b_r(7, self.registers.l, "l", None);
                     }
 
                     0x0ff => {
                         //SET b(7),A -> 8
-                        self.registers
-                            .set_b_r(7, self.registers.a, "a", &mut self.memory, None);
+                        self.set_b_r(7, self.registers.a, "a", None);
                     }
 
                     0x04e => {
@@ -2504,7 +1954,7 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
+                        let address_value = self.read_memory(h_l);
                         self.registers.bit_b_r(1, address_value);
                     }
 
@@ -2513,7 +1963,7 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
+                        let address_value = self.read_memory(h_l);
                         self.registers.bit_b_r(2, address_value);
                     }
 
@@ -2522,7 +1972,7 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
+                        let address_value = self.read_memory(h_l);
                         self.registers.bit_b_r(3, address_value);
                     }
 
@@ -2531,7 +1981,7 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
+                        let address_value = self.read_memory(h_l);
                         self.registers.bit_b_r(4, address_value);
                     }
 
@@ -2540,7 +1990,7 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
+                        let address_value = self.read_memory(h_l);
                         self.registers.bit_b_r(5, address_value);
                     }
 
@@ -2549,7 +1999,7 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
+                        let address_value = self.read_memory(h_l);
                         self.registers.bit_b_r(6, address_value);
                     }
 
@@ -2558,7 +2008,7 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
+                        let address_value = self.read_memory(h_l);
                         self.registers.bit_b_r(7, address_value);
                     }
 
@@ -2567,14 +2017,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.res_b_r(
-                            0,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.res_b_r(0, address_value, "h_l", Some(h_l));
                     }
 
                     0x08e => {
@@ -2582,14 +2026,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.res_b_r(
-                            1,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.res_b_r(1, address_value, "h_l", Some(h_l));
                     }
 
                     0x096 => {
@@ -2597,14 +2035,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.res_b_r(
-                            2,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.res_b_r(2, address_value, "h_l", Some(h_l));
                     }
 
                     0x09e => {
@@ -2612,14 +2044,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.res_b_r(
-                            3,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.res_b_r(3, address_value, "h_l", Some(h_l));
                     }
 
                     0x0a6 => {
@@ -2627,14 +2053,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.res_b_r(
-                            4,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.res_b_r(4, address_value, "h_l", Some(h_l));
                     }
 
                     0x0ae => {
@@ -2642,14 +2062,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.res_b_r(
-                            5,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.res_b_r(5, address_value, "h_l", Some(h_l));
                     }
 
                     0x0b6 => {
@@ -2657,14 +2071,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.res_b_r(
-                            6,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.res_b_r(6, address_value, "h_l", Some(h_l));
                     }
 
                     0x0be => {
@@ -2672,14 +2080,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.res_b_r(
-                            7,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.res_b_r(7, address_value, "h_l", Some(h_l));
                     }
 
                     0x0c6 => {
@@ -2687,14 +2089,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.set_b_r(
-                            0,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.set_b_r(0, address_value, "h_l", Some(h_l));
                     }
 
                     0x0ce => {
@@ -2702,14 +2098,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.set_b_r(
-                            1,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.set_b_r(1, address_value, "h_l", Some(h_l));
                     }
 
                     0x0d6 => {
@@ -2717,14 +2107,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.set_b_r(
-                            2,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.set_b_r(2, address_value, "h_l", Some(h_l));
                     }
 
                     0x0de => {
@@ -2732,14 +2116,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.set_b_r(
-                            3,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.set_b_r(3, address_value, "h_l", Some(h_l));
                     }
 
                     0x0e6 => {
@@ -2747,14 +2125,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.set_b_r(
-                            4,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.set_b_r(4, address_value, "h_l", Some(h_l));
                     }
 
                     0x0ee => {
@@ -2762,14 +2134,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.set_b_r(
-                            5,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.set_b_r(5, address_value, "h_l", Some(h_l));
                     }
 
                     0x0f6 => {
@@ -2777,14 +2143,8 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.set_b_r(
-                            6,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.set_b_r(6, address_value, "h_l", Some(h_l));
                     }
 
                     0x0fe => {
@@ -2792,371 +2152,303 @@ impl Gameboy {
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let address_value = self.memory[h_l as usize];
-                        self.registers.set_b_r(
-                            7,
-                            address_value,
-                            "h_l",
-                            &mut self.memory,
-                            Some(h_l),
-                        );
+                        let address_value = self.read_memory(h_l);
+                        self.set_b_r(7, address_value, "h_l", Some(h_l));
                     }
 
                     0x007 => {
                         //RLC A
-                        self.registers
-                            .rlc(self.registers.a, "a", &mut self.memory, None);
+                        self.rlc(self.registers.a, "a", None);
                     }
                     0x000 => {
                         //RLC B
-                        self.registers
-                            .rlc(self.registers.b, "b", &mut self.memory, None);
+                        self.rlc(self.registers.b, "b", None);
                     }
                     0x001 => {
                         //RLC C
-                        self.registers
-                            .rlc(self.registers.c, "c", &mut self.memory, None);
+                        self.rlc(self.registers.c, "c", None);
                     }
                     0x002 => {
                         //RLC D
-                        self.registers
-                            .rlc(self.registers.d, "d", &mut self.memory, None);
+                        self.rlc(self.registers.d, "d", None);
                     }
                     0x003 => {
                         //RLC E
-                        self.registers
-                            .rlc(self.registers.e, "e", &mut self.memory, None);
+                        self.rlc(self.registers.e, "e", None);
                     }
                     0x004 => {
                         //RLC H
-                        self.registers
-                            .rlc(self.registers.h, "h", &mut self.memory, None);
+                        self.rlc(self.registers.h, "h", None);
                     }
                     0x005 => {
                         //RLC L
-                        self.registers
-                            .rlc(self.registers.l, "l", &mut self.memory, None);
+                        self.rlc(self.registers.l, "l", None);
                     }
                     0x006 => {
                         //RLC (HL)
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let value = self.memory[h_l as usize];
-                        self.registers
-                            .rlc(value, "h_l", &mut self.memory, Some(h_l));
+                        let value = self.read_memory(h_l);
+                        self.rlc(value, "h_l", Some(h_l));
                     }
 
                     0x00f => {
                         //RRC A
-                        self.registers
-                            .rrc(self.registers.a, "a", &mut self.memory, None);
+                        self.rrc(self.registers.a, "a", None);
                     }
                     0x008 => {
                         //RRC B
-                        self.registers
-                            .rrc(self.registers.b, "b", &mut self.memory, None);
+                        self.rrc(self.registers.b, "b", None);
                     }
                     0x009 => {
                         //RRC C
-                        self.registers
-                            .rrc(self.registers.c, "c", &mut self.memory, None);
+                        self.rrc(self.registers.c, "c", None);
                     }
                     0x00a => {
                         //RRC D
-                        self.registers
-                            .rrc(self.registers.d, "d", &mut self.memory, None);
+                        self.rrc(self.registers.d, "d", None);
                     }
                     0x00b => {
                         //RRC E
-                        self.registers
-                            .rrc(self.registers.e, "e", &mut self.memory, None);
+                        self.rrc(self.registers.e, "e", None);
                     }
                     0x00c => {
                         //RRC H
-                        self.registers
-                            .rrc(self.registers.h, "h", &mut self.memory, None);
+                        self.rrc(self.registers.h, "h", None);
                     }
                     0x00d => {
                         //RRC L
-                        self.registers
-                            .rrc(self.registers.l, "l", &mut self.memory, None);
+                        self.rrc(self.registers.l, "l", None);
                     }
                     0x00e => {
                         //RRC (HL)
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let value = self.memory[h_l as usize];
-                        self.registers
-                            .rrc(value, "h_l", &mut self.memory, Some(h_l));
+                        let value = self.read_memory(h_l);
+                        self.rrc(value, "h_l", Some(h_l));
                     }
 
                     0x017 => {
                         //RL A
-                        self.registers
-                            .rl(self.registers.a, "a", &mut self.memory, None);
+                        self.rl(self.registers.a, "a", None);
                     }
                     0x010 => {
                         //RL B
-                        self.registers
-                            .rl(self.registers.b, "b", &mut self.memory, None);
+                        self.rl(self.registers.b, "b", None);
                     }
                     0x011 => {
                         //RL C
-                        self.registers
-                            .rl(self.registers.c, "c", &mut self.memory, None);
+                        self.rl(self.registers.c, "c", None);
                     }
                     0x012 => {
                         //RL D
-                        self.registers
-                            .rl(self.registers.d, "d", &mut self.memory, None);
+                        self.rl(self.registers.d, "d", None);
                     }
                     0x013 => {
                         //RL E
-                        self.registers
-                            .rl(self.registers.e, "e", &mut self.memory, None);
+                        self.rl(self.registers.e, "e", None);
                     }
                     0x014 => {
                         //RL H
-                        self.registers
-                            .rl(self.registers.h, "h", &mut self.memory, None);
+                        self.rl(self.registers.h, "h", None);
                     }
                     0x015 => {
                         //RL L
-                        self.registers
-                            .rl(self.registers.l, "l", &mut self.memory, None);
+                        self.rl(self.registers.l, "l", None);
                     }
                     0x016 => {
                         //RL (HL)
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let value = self.memory[h_l as usize];
-                        self.registers.rl(value, "h_l", &mut self.memory, Some(h_l));
+                        let value = self.read_memory(h_l);
+                        self.rl(value, "h_l", Some(h_l));
                     }
 
                     0x01f => {
                         //RR A
-                        self.registers
-                            .rr(self.registers.a, "a", &mut self.memory, None);
+                        self.rr(self.registers.a, "a", None);
                     }
                     0x018 => {
                         //RR B
-                        self.registers
-                            .rr(self.registers.b, "b", &mut self.memory, None);
+                        self.rr(self.registers.b, "b", None);
                     }
                     0x019 => {
                         //RR C
-                        self.registers
-                            .rr(self.registers.c, "c", &mut self.memory, None);
+                        self.rr(self.registers.c, "c", None);
                     }
                     0x01a => {
                         //RR D
-                        self.registers
-                            .rr(self.registers.d, "d", &mut self.memory, None);
+                        self.rr(self.registers.d, "d", None);
                     }
                     0x01b => {
                         //RR E
-                        self.registers
-                            .rr(self.registers.e, "e", &mut self.memory, None);
+                        self.rr(self.registers.e, "e", None);
                     }
                     0x01c => {
                         //RR H
-                        self.registers
-                            .rr(self.registers.h, "h", &mut self.memory, None);
+                        self.rr(self.registers.h, "h", None);
                     }
                     0x01d => {
                         //RR L
-                        self.registers
-                            .rr(self.registers.l, "l", &mut self.memory, None);
+                        self.rr(self.registers.l, "l", None);
                     }
                     0x01e => {
                         //RR (HL)
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let value = self.memory[h_l as usize];
-                        self.registers.rr(value, "h_l", &mut self.memory, Some(h_l));
+                        let value = self.read_memory(h_l);
+                        self.rr(value, "h_l", Some(h_l));
                     }
 
                     0x027 => {
                         //SLA A
-                        self.registers
-                            .sla(self.registers.a, "a", &mut self.memory, None);
+                        self.sla(self.registers.a, "a", None);
                     }
                     0x020 => {
                         //SLA B
-                        self.registers
-                            .sla(self.registers.b, "b", &mut self.memory, None);
+                        self.sla(self.registers.b, "b", None);
                     }
                     0x021 => {
                         //SLA C
-                        self.registers
-                            .sla(self.registers.c, "c", &mut self.memory, None);
+                        self.sla(self.registers.c, "c", None);
                     }
                     0x022 => {
                         //SLA D
-                        self.registers
-                            .sla(self.registers.d, "d", &mut self.memory, None);
+                        self.sla(self.registers.d, "d", None);
                     }
                     0x023 => {
                         //SLA E
-                        self.registers
-                            .sla(self.registers.e, "e", &mut self.memory, None);
+                        self.sla(self.registers.e, "e", None);
                     }
                     0x024 => {
                         //SLA H
-                        self.registers
-                            .sla(self.registers.h, "h", &mut self.memory, None);
+                        self.sla(self.registers.h, "h", None);
                     }
                     0x025 => {
                         //SLA L
-                        self.registers
-                            .sla(self.registers.l, "l", &mut self.memory, None);
+                        self.sla(self.registers.l, "l", None);
                     }
                     0x026 => {
                         //SLA (HL)
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let value = self.memory[h_l as usize];
-                        self.registers
-                            .sla(value, "h_l", &mut self.memory, Some(h_l));
+                        let value = self.read_memory(h_l);
+                        self.sla(value, "h_l", Some(h_l));
                     }
 
                     0x02f => {
                         //SRA A
-                        self.registers
-                            .sra(self.registers.a, "a", &mut self.memory, None);
+                        self.sra(self.registers.a, "a", None);
                     }
                     0x028 => {
                         //SRA B
-                        self.registers
-                            .sra(self.registers.b, "b", &mut self.memory, None);
+                        self.sra(self.registers.b, "b", None);
                     }
                     0x029 => {
                         //SRA C
-                        self.registers
-                            .sra(self.registers.c, "c", &mut self.memory, None);
+                        self.sra(self.registers.c, "c", None);
                     }
                     0x02a => {
                         //SRA D
-                        self.registers
-                            .sra(self.registers.d, "d", &mut self.memory, None);
+                        self.sra(self.registers.d, "d", None);
                     }
                     0x02b => {
                         //SRA E
-                        self.registers
-                            .sra(self.registers.e, "e", &mut self.memory, None);
+                        self.sra(self.registers.e, "e", None);
                     }
                     0x02c => {
                         //SRA H
-                        self.registers
-                            .sra(self.registers.h, "h", &mut self.memory, None);
+                        self.sra(self.registers.h, "h", None);
                     }
                     0x02d => {
                         //SRA L
-                        self.registers
-                            .sra(self.registers.l, "l", &mut self.memory, None);
+                        self.sra(self.registers.l, "l", None);
                     }
                     0x02e => {
                         //SRA (HL)
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let value = self.memory[h_l as usize];
-                        self.registers
-                            .sra(value, "h_l", &mut self.memory, Some(h_l));
+                        let value = self.read_memory(h_l);
+                        self.sra(value, "h_l", Some(h_l));
                     }
 
                     0x037 => {
                         //SWAP A
-                        self.registers
-                            .swap(self.registers.a, "a", &mut self.memory, None);
+                        self.swap(self.registers.a, "a", None);
                     }
                     0x030 => {
                         //SWAP B
-                        self.registers
-                            .swap(self.registers.b, "b", &mut self.memory, None);
+                        self.swap(self.registers.b, "b", None);
                     }
                     0x031 => {
                         //SWAP C
-                        self.registers
-                            .swap(self.registers.c, "c", &mut self.memory, None);
+                        self.swap(self.registers.c, "c", None);
                     }
                     0x032 => {
                         //SWAP D
-                        self.registers
-                            .swap(self.registers.d, "d", &mut self.memory, None);
+                        self.swap(self.registers.d, "d", None);
                     }
                     0x033 => {
                         //SWAP E
-                        self.registers
-                            .swap(self.registers.e, "e", &mut self.memory, None);
+                        self.swap(self.registers.e, "e", None);
                     }
                     0x034 => {
                         //SWAP H
-                        self.registers
-                            .swap(self.registers.h, "h", &mut self.memory, None);
+                        self.swap(self.registers.h, "h", None);
                     }
                     0x035 => {
                         //SWAP L
-                        self.registers
-                            .swap(self.registers.l, "l", &mut self.memory, None);
+                        self.swap(self.registers.l, "l", None);
                     }
                     0x036 => {
                         //SWAP (HL)
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let value = self.memory[h_l as usize];
-                        self.registers
-                            .swap(value, "h_l", &mut self.memory, Some(h_l));
+                        let value = self.read_memory(h_l);
+                        self.swap(value, "h_l", Some(h_l));
                     }
                     0x03f => {
                         //SRL A
-                        self.registers
-                            .srl(self.registers.a, "a", &mut self.memory, None);
+                        self.srl(self.registers.a, "a", None);
                     }
                     0x038 => {
                         //SRL B
-                        self.registers
-                            .srl(self.registers.b, "b", &mut self.memory, None);
+                        self.srl(self.registers.b, "b", None);
                     }
                     0x039 => {
                         //SRL C
-                        self.registers
-                            .srl(self.registers.c, "c", &mut self.memory, None);
+                        self.srl(self.registers.c, "c", None);
                     }
                     0x03a => {
                         //SRL D
-                        self.registers
-                            .srl(self.registers.d, "d", &mut self.memory, None);
+                        self.srl(self.registers.d, "d", None);
                     }
                     0x03b => {
                         //SRL E
-                        self.registers
-                            .srl(self.registers.e, "e", &mut self.memory, None);
+                        self.srl(self.registers.e, "e", None);
                     }
                     0x03c => {
                         //SRL H
-                        self.registers
-                            .srl(self.registers.h, "h", &mut self.memory, None);
+                        self.srl(self.registers.h, "h", None);
                     }
                     0x03d => {
                         //SRL L
-                        self.registers
-                            .srl(self.registers.l, "l", &mut self.memory, None);
+                        self.srl(self.registers.l, "l", None);
                     }
                     0x03e => {
                         //SRL (HL)
                         let h_l = self
                             .registers
                             .combine_two_bytes(self.registers.h, self.registers.l);
-                        let value = self.memory[h_l as usize];
-                        self.registers
-                            .srl(value, "h_l", &mut self.memory, Some(h_l));
+                        let value = self.read_memory(h_l);
+                        self.srl(value, "h_l", Some(h_l));
                     }
                 }
 
@@ -3165,16 +2457,14 @@ impl Gameboy {
 
             0x031 => {
                 //LD SP, nn
-                let value = self.registers.following_two_bytes(pointer, &self.memory);
+                let value = self.following_two_bytes(pointer);
                 self.registers.set_sp(value);
                 self.registers.inc_pc();
             }
 
             0x021 => {
                 //LD HL, *2bytes
-                let value = self
-                    .registers
-                    .following_two_bytes(self.registers.pc as usize, &self.memory);
+                let value = self.following_two_bytes(self.registers.pc as usize);
                 self.registers.set_hl(value);
                 self.registers.inc_pc();
             }
@@ -3188,43 +2478,43 @@ impl Gameboy {
             }
             0x011 => {
                 //LD DE,*16bit
-                let value = self.registers.following_two_bytes(pointer, &self.memory);
+                let value = self.following_two_bytes(pointer);
                 self.registers.set_de(value);
                 self.registers.inc_pc();
             }
             0x00E => {
                 //LD C, *1byte
-                let value = self.registers.following_byte(pointer, &self.memory);
+                let value = self.following_byte(pointer);
                 self.registers.set_c(value);
                 self.registers.inc_pc();
             }
             0x03E => {
                 //LD A, *1byte
-                let value = self.registers.following_byte(pointer, &self.memory);
+                let value = self.following_byte(pointer);
                 self.registers.set_a(value);
                 self.registers.inc_pc();
             }
             0x006 => {
                 //LD B, *1byte
-                let value = self.registers.following_byte(pointer, &self.memory);
+                let value = self.following_byte(pointer);
                 self.registers.set_b(value);
                 self.registers.inc_pc();
             }
             0x002e => {
                 //LD L, *1byte
-                let value = self.registers.following_byte(pointer, &self.memory);
+                let value = self.following_byte(pointer);
                 self.registers.set_l(value);
                 self.registers.inc_pc();
             }
             0x001e => {
                 //LD E, *1byte
-                let value = self.registers.following_byte(pointer, &self.memory);
+                let value = self.following_byte(pointer);
                 self.registers.set_e(value);
                 self.registers.inc_pc();
             }
             0x0016 => {
                 //LD D, *1byte
-                let value = self.registers.following_byte(pointer, &self.memory);
+                let value = self.following_byte(pointer);
                 self.registers.set_d(value);
                 self.registers.inc_pc();
             }
@@ -3279,7 +2569,7 @@ impl Gameboy {
             }
             0x0f0 => {
                 //LD A, ($ff00+n)
-                let following_byte = self.registers.following_byte(pointer, &self.memory);
+                let following_byte = self.following_byte(pointer);
                 let offset = 0xff00 + following_byte as u16;
                 let value = self.read_memory(offset);
                 self.registers.set_a(value);
@@ -3292,8 +2582,7 @@ impl Gameboy {
             }
             0x0E0 => {
                 //LD ($ff00+n), A
-                let memory_add =
-                    0xFF00 + self.registers.following_byte(pointer, &self.memory) as u16;
+                let memory_add = 0xFF00 + self.following_byte(pointer) as u16;
                 self.write_memory(memory_add, self.registers.a);
                 self.registers.inc_pc();
             }
@@ -3320,7 +2609,7 @@ impl Gameboy {
             0x020 => {
                 //JR NZ,*one byte
                 if !self.registers.f.z {
-                    let n_param = self.registers.following_byte(pointer, &self.memory);
+                    let n_param = self.following_byte(pointer);
                     self.registers.inc_pc();
                     let destination = self
                         .registers
@@ -3334,7 +2623,7 @@ impl Gameboy {
             0x028 => {
                 //JR Z,*
                 if self.registers.f.z {
-                    let value = self.registers.following_byte(pointer, &self.memory);
+                    let value = self.following_byte(pointer);
                     self.registers.inc_pc();
                     let address = self
                         .registers
@@ -3347,7 +2636,7 @@ impl Gameboy {
             }
             0x018 => {
                 //JR n
-                let value = self.registers.following_byte(pointer, &self.memory);
+                let value = self.following_byte(pointer);
                 self.registers.inc_pc();
                 let address = self
                     .registers
@@ -3385,15 +2674,14 @@ impl Gameboy {
             }
             0x0CD => {
                 //CALL
-                let next_two_bytes = self.registers.following_two_bytes(pointer, &self.memory);
+                let next_two_bytes = self.following_two_bytes(pointer);
                 let next_instruction_address = self.registers.pc + 1;
-                self.registers
-                    .push_stack(&mut &mut self.memory, next_instruction_address);
+                self.push_stack(next_instruction_address);
                 self.registers.set_pc(next_two_bytes);
             }
             0x0C9 => {
                 //RET
-                let address = self.registers.pop_stack(&self.memory);
+                let address = self.pop_stack();
                 self.registers.set_pc(address);
             }
 
@@ -3402,12 +2690,12 @@ impl Gameboy {
                 let bc_value = self
                     .registers
                     .combine_two_bytes(self.registers.b, self.registers.c);
-                self.registers.push_stack(&mut self.memory, bc_value);
+                self.push_stack(bc_value);
                 self.registers.inc_pc();
             }
             0x0C1 => {
                 //POP BC
-                let value = self.registers.pop_stack(&self.memory);
+                let value = self.pop_stack();
                 self.registers.set_bc(value);
                 self.registers.inc_pc();
             }
@@ -3522,7 +2810,7 @@ impl Gameboy {
 
             0x0EA => {
                 // LD (nn),A
-                let following_two_bytes = self.registers.following_two_bytes(pointer, &self.memory);
+                let following_two_bytes = self.following_two_bytes(pointer);
                 self.write_memory(following_two_bytes, self.registers.a);
                 self.registers.inc_pc();
             }
@@ -3556,11 +2844,10 @@ impl Gameboy {
 
             0x0CC => {
                 //CALL Z, nn - 12
-                let next_two_bytes = self.registers.following_two_bytes(pointer, &self.memory);
+                let next_two_bytes = self.following_two_bytes(pointer);
                 if self.registers.f.z {
                     let next_instruction_address = self.registers.pc + 1;
-                    self.registers
-                        .push_stack(&mut self.memory, next_instruction_address);
+                    self.push_stack(next_instruction_address);
                     self.registers.set_pc(next_two_bytes);
                 } else {
                     self.registers.inc_pc();
@@ -3598,8 +2885,8 @@ impl Gameboy {
 
             0x008 => {
                 //LD (nn), SP - 20
-                let address = self.registers.following_two_bytes(pointer, &&self.memory);
-                self.registers.set_two_bytes(&mut self.memory, address);
+                let address = self.following_two_bytes(pointer);
+                self.set_two_bytes(address);
                 self.registers.inc_pc();
             }
             0x01F => {
@@ -3631,7 +2918,7 @@ impl Gameboy {
                 self.registers.inc_pc();
             }
 
-            0x0dd => match self.registers.following_byte(pointer, &self.memory) {
+            0x0dd => match self.following_byte(pointer) {
                 0x0dd => {
                     info!("dd again, pc: {:x}", self.registers.pc);
                 }
@@ -3639,7 +2926,7 @@ impl Gameboy {
                 0x0D9 => {
                     //RETI
 
-                    let address = self.registers.pop_stack(&self.memory);
+                    let address = self.pop_stack();
                     self.registers.set_pc(address);
                     self.registers.f.set_ime(true);
                 }
@@ -3652,15 +2939,13 @@ impl Gameboy {
 
             0x0C3 => {
                 // JP nn - 12
-                let value = self.registers.following_two_bytes(pointer, &self.memory);
+                let value = self.following_two_bytes(pointer);
                 self.registers.set_pc(value)
             }
 
             0x036 => {
                 //LD (HL),n -> 12
-                let value = self
-                    .registers
-                    .following_byte(self.registers.pc as usize, &self.memory);
+                let value = self.following_byte(self.registers.pc as usize);
                 let h_l = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
@@ -3720,7 +3005,7 @@ impl Gameboy {
 
             0x0e1 => {
                 //POP HL -> 12
-                let value = self.registers.pop_stack(&self.memory);
+                let value = self.pop_stack();
                 self.registers.set_hl(value);
                 self.registers.inc_pc();
             }
@@ -3987,7 +3272,7 @@ impl Gameboy {
             0x038 => {
                 //JR C,*one byte -> 8
                 if self.registers.f.c {
-                    let n_param = self.registers.following_byte(pointer, &self.memory);
+                    let n_param = self.following_byte(pointer);
                     self.registers.inc_pc();
                     let destination = self
                         .registers
@@ -4001,7 +3286,7 @@ impl Gameboy {
 
             0x0c2 => {
                 //JP NZ,nn -> 12
-                let value = self.registers.following_two_bytes(pointer, &self.memory);
+                let value = self.following_two_bytes(pointer);
                 if !self.registers.f.z {
                     self.registers.set_pc(value);
                 } else {
@@ -4050,7 +3335,7 @@ impl Gameboy {
 
             0x0f1 => {
                 //POP AF -> 12
-                let value = self.registers.pop_stack(&self.memory);
+                let value = self.pop_stack();
                 self.registers.set_af(value);
                 self.registers.inc_pc();
             }
@@ -4099,12 +3384,11 @@ impl Gameboy {
             }
 
             0x0C4 => {
-                let next_two_bytes = self.registers.following_two_bytes(pointer, &self.memory);
+                let next_two_bytes = self.following_two_bytes(pointer);
                 if !self.registers.f.z {
                     //CALL NZ, nn -> 24
                     let next_instruction_address = self.registers.pc + 1;
-                    self.registers
-                        .push_stack(&mut self.memory, next_instruction_address);
+                    self.push_stack(next_instruction_address);
                     self.registers.set_pc(next_two_bytes);
                 } else {
                     //CALL NZ, nn -> 12
@@ -4120,7 +3404,7 @@ impl Gameboy {
 
             0x0D1 => {
                 //POP DE -> 12
-                let value = self.registers.pop_stack(&self.memory);
+                let value = self.pop_stack();
                 self.registers.set_de(value);
                 self.registers.inc_pc();
             }
@@ -4292,7 +3576,7 @@ impl Gameboy {
                 let value = self
                     .registers
                     .combine_two_bytes(self.registers.h, self.registers.l);
-                self.registers.push_stack(&mut self.memory, value);
+                self.push_stack(value);
                 self.registers.inc_pc();
             }
 
@@ -4301,7 +3585,7 @@ impl Gameboy {
                 let value = self
                     .registers
                     .combine_two_bytes(self.registers.a, self.registers.get_f_as_byte());
-                self.registers.push_stack(&mut self.memory, value);
+                self.push_stack(value);
                 self.registers.inc_pc();
             }
 
@@ -4310,24 +3594,20 @@ impl Gameboy {
                 let value = self
                     .registers
                     .combine_two_bytes(self.registers.d, self.registers.e);
-                self.registers.push_stack(&mut self.memory, value);
+                self.push_stack(value);
                 self.registers.inc_pc();
             }
 
             0x001 => {
                 //LD BC, nn -> 12
-                let value = self
-                    .registers
-                    .following_two_bytes(self.registers.pc as usize, &self.memory);
+                let value = self.following_two_bytes(self.registers.pc as usize);
                 self.registers.set_bc(value);
                 self.registers.inc_pc();
             }
 
             0x0fa => {
                 //LD A, (nn) -> 16
-                let address = self
-                    .registers
-                    .following_two_bytes(self.registers.pc as usize, &self.memory);
+                let address = self.following_two_bytes(self.registers.pc as usize);
                 let value = self.read_memory(address);
                 self.registers.set_a(value as u8);
                 self.registers.inc_pc();
@@ -4350,7 +3630,7 @@ impl Gameboy {
 
             0x0D6 => {
                 // SUB n -> 8
-                let following_byte = self.registers.following_byte(pointer, &self.memory);
+                let following_byte = self.following_byte(pointer);
                 let value = self.registers.a - following_byte;
 
                 if value == 0 {
@@ -4470,7 +3750,7 @@ impl Gameboy {
 
             0x026 => {
                 //LD H, *1byte -> 8
-                let value = self.registers.following_byte(pointer, &self.memory);
+                let value = self.following_byte(pointer);
                 self.registers.set_h(value);
                 self.registers.inc_pc();
             }
@@ -4478,7 +3758,7 @@ impl Gameboy {
             0x030 => {
                 //JR NC,*one byte -> 8
                 if !self.registers.f.c {
-                    let n_param = self.registers.following_byte(pointer, &self.memory); // as i8;
+                    let n_param = self.following_byte(pointer); // as i8;
                     self.registers.inc_pc();
                     let destination = self
                         .registers
@@ -4499,7 +3779,7 @@ impl Gameboy {
             0x0D0 => {
                 //RET NC -> 8
                 if !self.registers.f.c {
-                    let address = self.registers.pop_stack(&self.memory);
+                    let address = self.pop_stack();
                     self.registers.set_pc(address);
                 } else {
                     self.registers.inc_pc();
@@ -4509,7 +3789,7 @@ impl Gameboy {
             0x0C0 => {
                 //RET NZ -> 8
                 if !self.registers.f.z {
-                    let address = self.registers.pop_stack(&self.memory);
+                    let address = self.pop_stack();
                     self.registers.set_pc(address);
                 } else {
                     self.registers.inc_pc();
@@ -4519,7 +3799,7 @@ impl Gameboy {
             0x0C8 => {
                 //RET Z -> 8
                 if self.registers.f.z {
-                    let address = self.registers.pop_stack(&self.memory);
+                    let address = self.pop_stack();
                     self.registers.set_pc(address);
                 } else {
                     self.registers.inc_pc();
@@ -4529,7 +3809,7 @@ impl Gameboy {
             0x0D8 => {
                 //RET C -> 8
                 if self.registers.f.c {
-                    let address = self.registers.pop_stack(&self.memory);
+                    let address = self.pop_stack();
                     self.registers.set_pc(address);
                 } else {
                     self.registers.inc_pc();
@@ -4555,7 +3835,7 @@ impl Gameboy {
 
             0x0F6 => {
                 //OR n -> 8
-                let following_value = self.registers.following_byte(pointer, &self.memory);
+                let following_value = self.following_byte(pointer);
                 let value = following_value | self.registers.a;
                 self.registers.set_a(value);
 
@@ -4667,7 +3947,7 @@ impl Gameboy {
 
             0x0F8 => {
                 //LDHL SP,n
-                let following_byte = self.registers.following_byte(pointer, &self.memory);
+                let following_byte = self.following_byte(pointer);
                 let value = self
                     .registers
                     .add_signed_number(self.registers.sp, following_byte as i8);
@@ -4790,7 +4070,7 @@ impl Gameboy {
 
             0x0E8 => {
                 //ADD SP, n -> 16
-                let following_value = self.registers.following_byte(pointer, &self.memory);
+                let following_value = self.following_byte(pointer);
                 let value = self
                     .registers
                     .add_signed_number(self.registers.sp, following_value as i8);
@@ -4836,7 +4116,7 @@ impl Gameboy {
 
             0x0ca => {
                 //JP Z,nn -> 12
-                let value = self.registers.following_two_bytes(pointer, &self.memory);
+                let value = self.following_two_bytes(pointer);
                 if self.registers.f.z {
                     self.registers.set_pc(value);
                 } else {
@@ -4846,7 +4126,7 @@ impl Gameboy {
 
             0x0D2 => {
                 //JP NC,nn -> 12
-                let value = self.registers.following_two_bytes(pointer, &self.memory);
+                let value = self.following_two_bytes(pointer);
                 if !self.registers.f.c {
                     self.registers.set_pc(value);
                 } else {
@@ -4856,7 +4136,7 @@ impl Gameboy {
 
             0x0Da => {
                 //JP C,nn -> 12
-                let value = self.registers.following_two_bytes(pointer, &self.memory);
+                let value = self.following_two_bytes(pointer);
                 if self.registers.f.c {
                     self.registers.set_pc(value);
                 } else {
@@ -4866,11 +4146,10 @@ impl Gameboy {
 
             0x0D4 => {
                 //CALL NC, nn - 12
-                let next_two_bytes = self.registers.following_two_bytes(pointer, &self.memory);
+                let next_two_bytes = self.following_two_bytes(pointer);
                 if !self.registers.f.c {
                     let next_instruction_address = self.registers.pc + 1;
-                    self.registers
-                        .push_stack(&mut self.memory, next_instruction_address);
+                    self.push_stack(next_instruction_address);
                     self.registers.set_pc(next_two_bytes);
                 } else {
                     self.registers.inc_pc();
@@ -4879,11 +4158,10 @@ impl Gameboy {
 
             0x0DC => {
                 //CALL C, nn - 12
-                let next_two_bytes = self.registers.following_two_bytes(pointer, &self.memory);
+                let next_two_bytes = self.following_two_bytes(pointer);
                 if self.registers.f.c {
                     let next_instruction_address = self.registers.pc + 1;
-                    self.registers
-                        .push_stack(&mut self.memory, next_instruction_address);
+                    self.push_stack(next_instruction_address);
                     self.registers.set_pc(next_two_bytes);
                 } else {
                     self.registers.inc_pc();
@@ -4892,7 +4170,7 @@ impl Gameboy {
 
             0x0D9 => {
                 //RETI -> 8
-                let address = self.registers.pop_stack(&self.memory);
+                let address = self.pop_stack();
                 self.registers.set_pc(address);
                 //TODO:Endable interrupts
                 println!("IMPORTANT!! TODO: Enable interrupts");
@@ -5164,7 +4442,7 @@ impl Gameboy {
             }
             0x0FE => {
                 //CP #
-                let following_byte = self.registers.following_byte(pointer, &self.memory);
+                let following_byte = self.following_byte(pointer);
                 if self.registers.a == following_byte {
                     flag_z = true
                 }
@@ -5231,7 +4509,7 @@ impl Gameboy {
             }
             0x0C6 => {
                 //ADD A, #
-                let following_byte = self.registers.following_byte(pointer, &self.memory);
+                let following_byte = self.following_byte(pointer);
                 self.registers.add_a_n(following_byte);
                 self.registers.inc_pc();
             }
@@ -5282,7 +4560,7 @@ impl Gameboy {
             }
             0x0CE => {
                 //ADC A, #
-                let following_byte = self.registers.following_byte(pointer, &self.memory);
+                let following_byte = self.following_byte(pointer);
                 self.registers.adc_a_n(following_byte);
                 self.registers.inc_pc();
             }
@@ -5333,7 +4611,7 @@ impl Gameboy {
             }
             0x0de => {
                 //SBC A, #
-                let following_byte = self.registers.following_byte(pointer, &self.memory);
+                let following_byte = self.following_byte(pointer);
                 self.registers.sbc_a_n(following_byte);
                 self.registers.inc_pc();
             }
@@ -5385,7 +4663,7 @@ impl Gameboy {
             }
             0x0E6 => {
                 //AND #
-                let following_byte = self.registers.following_byte(pointer, &self.memory);
+                let following_byte = self.following_byte(pointer);
                 self.registers.and_a_n(following_byte);
                 self.registers.inc_pc();
             }
@@ -5444,7 +4722,7 @@ impl Gameboy {
 
             0x0EE => {
                 // XOR n
-                let following_byte = self.registers.following_byte(pointer, &self.memory);
+                let following_byte = self.following_byte(pointer);
                 self.registers.xor_a_n(following_byte);
                 self.registers.inc_pc();
             }
@@ -5476,50 +4754,42 @@ impl Gameboy {
 
             0x0c7 => {
                 //RST $00
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc + 1);
+                self.push_stack(self.registers.pc + 1);
                 self.registers.set_pc(0x00);
             }
             0x0cf => {
                 //RST $08
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc + 1);
+                self.push_stack(self.registers.pc + 1);
                 self.registers.set_pc(0x08);
             }
             0x0d7 => {
                 //RST $10
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc + 1);
+                self.push_stack(self.registers.pc + 1);
                 self.registers.set_pc(0x10);
             }
             0x0df => {
                 //RST $18
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc + 1);
+                self.push_stack(self.registers.pc + 1);
                 self.registers.set_pc(0x18);
             }
             0x0e7 => {
                 //RST $20
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc + 1);
+                self.push_stack(self.registers.pc + 1);
                 self.registers.set_pc(0x20);
             }
             0x0ef => {
                 //RST $28
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc + 1);
+                self.push_stack(self.registers.pc + 1);
                 self.registers.set_pc(0x28);
             }
             0x0f7 => {
                 //RST $30
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc + 1);
+                self.push_stack(self.registers.pc + 1);
                 self.registers.set_pc(0x30);
             }
             0x0ff => {
                 //RST $38
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc + 1);
+                self.push_stack(self.registers.pc + 1);
                 self.registers.set_pc(0x38);
             }
 
@@ -5545,8 +4815,9 @@ impl Gameboy {
 
             0x010 => {
                 info!("Need to implement STOP");
+                self.registers.inc_pc();
                 // std::process::exit(1);
-                // match self.registers.following_byte(pointer, &self.memory) {
+                // match self.following_byte(pointer) {
                 //     0x00 => self.registers.inc_pc(),
                 //     _other => self.registers.inc_pc(),
                 // }
@@ -5573,6 +4844,399 @@ impl Gameboy {
                 std::process::exit(1)
             }
         }
+    }
+
+    fn push_stack(&mut self, value: u16) {
+        let value_byte_vec = value.to_be_bytes();
+        self.registers.set_sp(self.registers.sp - 1);
+        self.write_memory(self.registers.sp, value_byte_vec[0]);
+        self.registers.set_sp(self.registers.sp - 1);
+        self.write_memory(self.registers.sp, value_byte_vec[1]);
+    }
+    fn pop_stack(&mut self) -> u16 {
+        let second_byte = self.read_memory(self.registers.sp);
+        self.write_memory(self.registers.sp, 0);
+        self.registers.set_sp(self.registers.sp + 1);
+
+        let firt_byte = self.read_memory(self.registers.sp);
+        self.write_memory(self.registers.sp, 0);
+        self.registers.set_sp(self.registers.sp + 1);
+
+        let result = self.registers.combine_two_bytes(firt_byte, second_byte);
+        result
+    }
+
+    fn following_byte(&mut self, address: usize) -> u8 {
+        let byte = self.read_memory(address as u16 + 1);
+        self.set_pc(&self.registers.pc + 1);
+        byte
+    }
+
+    fn following_two_bytes(&mut self, address: usize) -> u16 {
+        let byte_one = self.read_memory(address as u16 + 1);
+        let byte_two = self.read_memory(address as u16 + 2);
+        let two_bytes_value = self.registers.combine_two_bytes(byte_two, byte_one);
+        self.set_pc(&self.registers.pc + 2);
+        two_bytes_value
+    }
+    fn set_two_bytes(&mut self, start_address: u16) {
+        self.write_memory(start_address, self.registers.sp as u8);
+        self.write_memory(
+            start_address.wrapping_add(1),
+            (self.registers.sp >> 8) as u8,
+        );
+    }
+
+    fn res_b_r(
+        &mut self,
+        bit_idx: u8,
+        register_value: u8,
+        register_name: &str,
+        hl_value: Option<u16>,
+    ) {
+        let check_bits = match bit_idx {
+            0 => 0b11111110,
+            1 => 0b11111101,
+            2 => 0b11111011,
+            3 => 0b11110111,
+            4 => 0b11101111,
+            5 => 0b11011111,
+            6 => 0b10111111,
+            7 => 0b01111111,
+            _ => {
+                println!("Invalid bit index");
+                std::process::exit(1)
+            }
+        };
+
+        let value = register_value & check_bits;
+        match register_name {
+            "a" => self.registers.set_a(value),
+            "b" => self.registers.set_b(value),
+            "c" => self.registers.set_c(value),
+            "d" => self.registers.set_d(value),
+            "e" => self.registers.set_e(value),
+            "h" => self.registers.set_h(value),
+            "l" => self.registers.set_l(value),
+            "h_l" => self.write_memory(hl_value.unwrap(), value),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+    }
+
+    fn set_b_r(
+        &mut self,
+        bit_idx: u8,
+        register_value: u8,
+        register_name: &str,
+        hl_value: Option<u16>,
+    ) {
+        let check_bits = match bit_idx {
+            0 => 0b00000001,
+            1 => 0b00000010,
+            2 => 0b00000100,
+            3 => 0b00001000,
+            4 => 0b00010000,
+            5 => 0b00100000,
+            6 => 0b01000000,
+            7 => 0b10000000,
+            _ => {
+                println!("Invalid bit index");
+                std::process::exit(1)
+            }
+        };
+
+        let value = register_value | check_bits;
+        match register_name {
+            "a" => self.registers.set_a(value),
+            "b" => self.registers.set_b(value),
+            "c" => self.registers.set_c(value),
+            "d" => self.registers.set_d(value),
+            "e" => self.registers.set_e(value),
+            "h" => self.registers.set_h(value),
+            "l" => self.registers.set_l(value),
+            "h_l" => self.write_memory(hl_value.unwrap(), value),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+    }
+
+    fn srl(&mut self, register_value: u8, register_name: &str, hl_value: Option<u16>) {
+        let mut flag_z = false;
+        let flag_n = false;
+        let flag_h = false;
+        let mut flag_c = false;
+
+        let result = register_value >> 1;
+        if result == 0 {
+            flag_z = true
+        }
+
+        if register_value & 0b00000001 == 0b00000001 {
+            flag_c = true
+        }
+
+        match register_name {
+            "a" => self.registers.set_a(result),
+            "b" => self.registers.set_b(result),
+            "c" => self.registers.set_c(result),
+            "d" => self.registers.set_d(result),
+            "e" => self.registers.set_e(result),
+            "h" => self.registers.set_h(result),
+            "l" => self.registers.set_l(result),
+            "h_l" => self.write_memory(hl_value.unwrap(), result),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.registers.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn sra(&mut self, register_value: u8, register_name: &str, hl_value: Option<u16>) {
+        let mut flag_z = false;
+        let flag_n = false;
+        let flag_h = false;
+        let mut flag_c = false;
+
+        let result = register_value >> 1 | (register_value & 0x80);
+        if result == 0 {
+            flag_z = true
+        }
+
+        if register_value & 0b00000001 == 0b00000001 {
+            flag_c = true
+        }
+        match register_name {
+            "a" => self.registers.set_a(result),
+            "b" => self.registers.set_b(result),
+            "c" => self.registers.set_c(result),
+            "d" => self.registers.set_d(result),
+            "e" => self.registers.set_e(result),
+            "h" => self.registers.set_h(result),
+            "l" => self.registers.set_l(result),
+            "h_l" => self.write_memory(hl_value.unwrap(), result),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.registers.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn swap(&mut self, register_value: u8, register_name: &str, hl_value: Option<u16>) {
+        let mut flag_z = false;
+        let flag_n = false;
+        let flag_h = false;
+        let flag_c = false;
+
+        let result = register_value << 4 | register_value >> 4;
+
+        if result == 0 {
+            flag_z = true;
+        }
+
+        match register_name {
+            "a" => self.registers.set_a(result),
+            "b" => self.registers.set_b(result),
+            "c" => self.registers.set_c(result),
+            "d" => self.registers.set_d(result),
+            "e" => self.registers.set_e(result),
+            "h" => self.registers.set_h(result),
+            "l" => self.registers.set_l(result),
+            "h_l" => self.write_memory(hl_value.unwrap(), result),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.registers.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn sla(&mut self, register_value: u8, register_name: &str, hl_value: Option<u16>) {
+        let mut flag_z = false;
+        let flag_n = false;
+        let flag_h = false;
+        let mut flag_c = false;
+
+        let result = register_value << 1;
+
+        if result == 0 {
+            flag_z = true
+        }
+
+        if register_value & 0b10000000 == 0b10000000 {
+            flag_c = true
+        }
+
+        match register_name {
+            "a" => self.registers.set_a(result),
+            "b" => self.registers.set_b(result),
+            "c" => self.registers.set_c(result),
+            "d" => self.registers.set_d(result),
+            "e" => self.registers.set_e(result),
+            "h" => self.registers.set_h(result),
+            "l" => self.registers.set_l(result),
+            "h_l" => self.write_memory(hl_value.unwrap(), result),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.registers.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn rr(&mut self, register_value: u8, register_name: &str, hl_value: Option<u16>) {
+        let mut flag_z = false;
+        let flag_n = false;
+        let flag_h = false;
+        let mut flag_c = false;
+
+        let shifted_value = register_value >> 1;
+        let result = shifted_value
+            | match self.registers.f.c {
+                true => 0b10000000,
+                false => 0b00000000,
+            };
+
+        if result == 0 {
+            flag_z = true
+        }
+
+        if register_value & 0b00000001 == 1 {
+            flag_c = true
+        }
+
+        match register_name {
+            "a" => self.registers.set_a(result),
+            "b" => self.registers.set_b(result),
+            "c" => self.registers.set_c(result),
+            "d" => self.registers.set_d(result),
+            "e" => self.registers.set_e(result),
+            "h" => self.registers.set_h(result),
+            "l" => self.registers.set_l(result),
+            "h_l" => self.write_memory(hl_value.unwrap(), result),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.registers.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn rl(&mut self, register_value: u8, register_name: &str, hl_value: Option<u16>) {
+        let mut flag_z = false;
+        let flag_n = false;
+        let flag_h = false;
+        let mut flag_c = false;
+
+        let shifted_value = register_value << 1;
+        let result = shifted_value
+            | match self.registers.f.c {
+                true => 0b00000001,
+                false => 0b00000000,
+            };
+
+        if result == 0 {
+            flag_z = true
+        }
+
+        if register_value & 0b10000000 == 0b10000000 {
+            flag_c = true
+        }
+
+        match register_name {
+            "a" => self.registers.set_a(result),
+            "b" => self.registers.set_b(result),
+            "c" => self.registers.set_c(result),
+            "d" => self.registers.set_d(result),
+            "e" => self.registers.set_e(result),
+            "h" => self.registers.set_h(result),
+            "l" => self.registers.set_l(result),
+            "h_l" => self.write_memory(hl_value.unwrap(), result),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.registers.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn rrc(&mut self, register_value: u8, register_name: &str, hl_value: Option<u16>) {
+        let mut flag_z = false;
+        let flag_n = false;
+        let flag_h = false;
+        let mut flag_c = false;
+
+        let cf = register_value << 7;
+        let result = register_value >> 1 | cf;
+
+        if result == 0 {
+            flag_z = true
+        }
+
+        if cf & 0b10000000 == 0b10000000 {
+            flag_c = true
+        }
+
+        match register_name {
+            "a" => self.registers.set_a(result),
+            "b" => self.registers.set_b(result),
+            "c" => self.registers.set_c(result),
+            "d" => self.registers.set_d(result),
+            "e" => self.registers.set_e(result),
+            "h" => self.registers.set_h(result),
+            "l" => self.registers.set_l(result),
+            "h_l" => self.write_memory(hl_value.unwrap(), result),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.registers.f.set_flag(flag_z, flag_n, flag_h, flag_c);
+    }
+
+    fn rlc(&mut self, register_value: u8, register_name: &str, hl_value: Option<u16>) {
+        let mut flag_z = false;
+        let flag_n = false;
+        let flag_h = false;
+
+        let cf = register_value >> 7;
+        let result = (register_value << 1) | cf;
+
+        if result == 0 {
+            flag_z = true
+        }
+
+        let flag_c = cf == 1;
+
+        match register_name {
+            "a" => self.registers.set_a(result),
+            "b" => self.registers.set_b(result),
+            "c" => self.registers.set_c(result),
+            "d" => self.registers.set_d(result),
+            "e" => self.registers.set_e(result),
+            "h" => self.registers.set_h(result),
+            "l" => self.registers.set_l(result),
+            "h_l" => self.write_memory(hl_value.unwrap(), result),
+            _ => {
+                println!("Invalid register name");
+                std::process::exit(1)
+            }
+        }
+
+        self.registers.f.set_flag(flag_z, flag_n, flag_h, flag_c);
     }
 
     pub fn to_serializable(&self) -> SerializedGameboy {
@@ -5869,8 +5533,7 @@ impl Gameboy {
                 self.registers.f.set_ime(false);
 
                 self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00000001;
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc);
+                self.push_stack(self.registers.pc);
                 self.registers.set_pc(0x40);
             }
 
@@ -5879,8 +5542,7 @@ impl Gameboy {
                 self.registers.f.set_ime(false);
 
                 self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00000010;
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc);
+                self.push_stack(self.registers.pc);
                 self.registers.set_pc(0x48);
             }
 
@@ -5890,8 +5552,7 @@ impl Gameboy {
 
                 //#In Case of Vblank
                 self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00000100;
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc);
+                self.push_stack(self.registers.pc);
                 self.registers.set_pc(0x50);
             }
 
@@ -5901,8 +5562,7 @@ impl Gameboy {
 
                 //#In Case of Vblank
                 self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00001000;
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc);
+                self.push_stack(self.registers.pc);
                 self.registers.set_pc(0x58);
             }
 
@@ -5912,8 +5572,7 @@ impl Gameboy {
 
                 //#In Case of Vblank
                 self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00010000;
-                self.registers
-                    .push_stack(&mut self.memory, self.registers.pc);
+                self.push_stack(self.registers.pc);
                 self.registers.set_pc(0x60);
             }
         }
@@ -6038,7 +5697,7 @@ impl Gameboy {
             0x0f0 => 12,
             0x0E2 => 8,
             0x0E0 => 12,
-            0x0CB => match self.memory[self.registers.pc as usize + 1] {
+            0x0CB => match self.read_memory(self.registers.pc + 1) {
                 0x006 => 16,
                 0x01E => 16,
                 0x02E => 16,
@@ -6892,7 +6551,7 @@ impl Gameboy {
                 break;
             }
 
-            let instruction = self.memory[self.registers.pc as usize];
+            let instruction = self.read_memory(self.registers.pc);
             let _instruction2 = self.memory[self.registers.pc as usize + 1];
 
             // FIXME: Only do this on first time through when the bootrom unmaps itself
@@ -7019,8 +6678,8 @@ impl Gameboy {
         // let boot_rom_content = include_bytes!("test_rom.gb");
         // let cartridge_content = include_bytes!("cpu_instrs.gb");
         // let cartridge_content = include_bytes!("mario.gb");
-        let cartridge_content = include_bytes!("pokered.gbc");
-        // let cartridge_content = include_bytes!("tetris.gb");
+        // let cartridge_content = include_bytes!("pokered.gbc");
+        let cartridge_content = include_bytes!("tetris.gb");
         // let cartridge_content = include_bytes!("02-interrupts.gb"); //Passed
         // let cartridge_content = include_bytes!("01-special.gb"); //Passed
         // let cartridge_content = include_bytes!("11-op a,(hl).gb"); //Passed
