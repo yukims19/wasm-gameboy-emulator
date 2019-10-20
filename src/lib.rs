@@ -1122,6 +1122,7 @@ pub struct Gameboy {
     ram_bank_memory: Vec<u8>,
     is_ram_enabled: bool,
     is_rom_banking_enabled: bool,
+    joypad_state: u8,
 }
 
 #[wasm_bindgen]
@@ -5484,10 +5485,62 @@ impl Gameboy {
         else if (address >= 0xA000) && (address <= 0xBFFF) {
             let new_address = address - 0xA000;
             return self.ram_bank_memory[(new_address + (self.ram_bank as u16 * 0x2000)) as usize];
+        } else if 0xFF00 == address {
+            return self.get_joypad_state();
         }
 
         // else return memory
         return self.memory[address as usize];
+    }
+
+    fn get_joypad_state(&self) -> u8 {
+        let p1 = self.memory[0xFF00];
+
+        let result = p1 ^ 0xFF;
+
+        let is_standard_button = result & 0b00010000 == 0;
+        let is_directional_button = result & 0b00100000 == 0;
+
+        if is_standard_button {
+            let top_joypad = self.joypad_state >> 4;
+            return result & (top_joypad | 0xF0);
+        } else if is_directional_button {
+            let bottom_joypad = self.joypad_state & 0xF;
+            return result & (bottom_joypad | 0xF0);
+        }
+
+        result
+    }
+
+    pub fn joypad_key_pressed(&mut self, key: u8) {
+        info!("key pressed: {:x}", key);
+        // if setting from 1 to 0 we may have to request an interupt
+        let previously_unset = self.joypad_state & key == 0;
+
+        // remember if a keypressed its bit is 0 not 1
+        let new_joypad_state = self.joypad_state & (!key);
+        self.joypad_state = new_joypad_state;
+
+        let is_standard_button = key > 0b0000100; //or directional button
+
+        let p1 = self.memory[0xFF00];
+
+        let starndard_btn_listening = is_standard_button && (p1 & 0b00100000 == 0);
+        let directional_btn_listening = !is_standard_button && (p1 & 0b00010000 == 0);
+
+        if (starndard_btn_listening || directional_btn_listening) && !previously_unset {
+
+        } else {
+            info!("no request");
+        }
+
+        self.is_running = false;
+    }
+
+    pub fn joypad_key_released(&mut self, key: u8) {
+        info!("key released: {:x}", key);
+        let new_joypad_state = self.joypad_state | (key);
+        self.joypad_state = new_joypad_state;
     }
 
     //Timer
@@ -5522,6 +5575,18 @@ impl Gameboy {
             && (self.memory[0xffff] & 0b00010000 == 0b00010000);
 
         let any_interrupt = do_v_blank || do_lcd || do_timer || do_serial || do_joypad;
+        let temp_do_joypad = self.memory[0xff0f] & 0b00010000 == 0b00010000;
+
+        if temp_do_joypad {
+            info!("Joypad Interrupt");
+            self.is_halt = false;
+            self.registers.f.set_ime(false);
+
+            //#In Case of Vblank
+            self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00010000;
+            self.push_stack(self.registers.pc);
+            self.registers.set_pc(0x60);
+        }
 
         if any_interrupt {
             self.is_halt = false
@@ -5593,6 +5658,11 @@ impl Gameboy {
 
     pub fn request_timer_interrupt(&mut self) {
         self.memory[0xff0f] = self.memory[0xff0f] | 0b000000100;
+    }
+
+    pub fn request_joypad_interrupt(&mut self) {
+        info!("requested");
+        self.memory[0xff0f] = self.memory[0xff0f] | 0b00010000;
     }
 
     pub fn inc_ly(&mut self) {
@@ -6315,15 +6385,15 @@ impl Gameboy {
     }
 
     pub fn get_interrupt_enabled_vblank(&self) -> bool {
-        self.memory[0xffff] & 0b1000000 == 0b1000000
+        self.memory[0xffff] & 0b00000001 == 0b00000001
     }
 
     pub fn get_interrupt_enabled_lcd(&self) -> bool {
-        self.memory[0xffff] & 0b0100000 == 0b0100000
+        self.memory[0xffff] & 0b00000010 == 0b00000010
     }
 
     pub fn get_interrupt_enabled_timer(&self) -> bool {
-        self.memory[0xffff] & 0b00100000 == 0b00100000
+        self.memory[0xffff] & 0b00000100 == 0b00000100
     }
 
     pub fn get_interrupt_enabled_serial(&self) -> bool {
@@ -6331,7 +6401,7 @@ impl Gameboy {
     }
 
     pub fn get_interrupt_enabled_joypad(&self) -> bool {
-        self.memory[0xffff] & 0b0000100 == 0b0000100
+        self.memory[0xffff] & 0b00010000 == 0b00010000
     }
 
     pub fn set_a(&mut self, value: u8) -> u8 {
@@ -6750,6 +6820,7 @@ impl Gameboy {
             is_ram_enabled: false,
             is_rom_banking_enabled: false,
             memory: full_memory,
+            joypad_state: 0xff,
         }
     }
 
@@ -6857,6 +6928,7 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
         is_ram_enabled: false,
         is_rom_banking_enabled: false,
         memory: full_memory,
+        joypad_state: 0xff,
     };
 
     gameboy

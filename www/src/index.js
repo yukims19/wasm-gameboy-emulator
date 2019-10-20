@@ -50,6 +50,72 @@ const opLogMaxLength = 16;
 const opLog = [];
 var isRunning = false;
 
+document.addEventListener('keydown', event => {
+  let key;
+  switch (event.key) {
+    case 'ArrowUp':
+      key = parseInt('00000100', 2);
+      break;
+    case 'ArrowDown':
+      key = parseInt('00001000', 2);
+      break;
+    case 'ArrowLeft':
+      key = parseInt('00000010', 2);
+      break;
+    case 'ArrowRight':
+      key = parseInt('00000001', 2);
+      break;
+    case 'a':
+      key = parseInt('00010000', 2);
+      break;
+    case 's':
+      key = parseInt('00100000', 2);
+      break;
+    case 'Enter':
+      key = parseInt('10000000', 2);
+      break;
+    case 'Backspace':
+      key = parseInt('01000000', 2);
+      break;
+    default:
+      console.log('invalid key');
+  }
+  gameboyInst.joypad_key_pressed(key);
+});
+
+document.addEventListener('keyup', event => {
+  let key;
+  switch (event.key) {
+    case 'ArrowUp':
+      key = parseInt('00000100', 2);
+      break;
+    case 'ArrowDown':
+      key = parseInt('00001000', 2);
+      break;
+    case 'ArrowLeft':
+      key = parseInt('00000010', 2);
+      break;
+    case 'ArrowRight':
+      key = parseInt('00000001', 2);
+      break;
+    case 'a':
+      key = parseInt('00010000', 2);
+      break;
+    case 's':
+      key = parseInt('00100000', 2);
+      break;
+    case 'Enter':
+      key = parseInt('10000000', 2);
+      break;
+    case 'Backspace':
+      key = parseInt('01000000', 2);
+      break;
+    default:
+      console.log('invalid key');
+  }
+  gameboyInst.joypad_key_released(key);
+});
+
 var render = function render(gameboy) {
   var memoryPtr = gameboyInst.memory();
   var memoryBytes = new Uint8Array(memory.buffer, memoryPtr, 65535);
