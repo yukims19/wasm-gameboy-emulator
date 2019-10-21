@@ -5574,18 +5574,6 @@ impl Gameboy {
             && (self.memory[0xffff] & 0b00010000 == 0b00010000);
 
         let any_interrupt = do_v_blank || do_lcd || do_timer || do_serial || do_joypad;
-        let temp_do_joypad = self.memory[0xff0f] & 0b00010000 == 0b00010000;
-
-        if temp_do_joypad {
-            info!("Joypad Interrupt");
-            self.is_halt = false;
-            self.registers.f.set_ime(false);
-
-            //#In Case of Vblank
-            self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00010000;
-            self.push_stack(self.registers.pc);
-            self.registers.set_pc(0x60);
-        }
 
         if any_interrupt {
             self.is_halt = false
@@ -5614,7 +5602,6 @@ impl Gameboy {
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
 
-                //#In Case of Vblank
                 self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00000100;
                 self.push_stack(self.registers.pc);
                 self.registers.set_pc(0x50);
@@ -5624,7 +5611,6 @@ impl Gameboy {
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
 
-                //#In Case of Vblank
                 self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00001000;
                 self.push_stack(self.registers.pc);
                 self.registers.set_pc(0x58);
@@ -5634,7 +5620,6 @@ impl Gameboy {
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
 
-                //#In Case of Vblank
                 self.memory[0xff0f] = self.memory[0xff0f] ^ 0b00010000;
                 self.push_stack(self.registers.pc);
                 self.registers.set_pc(0x60);
@@ -6621,7 +6606,6 @@ impl Gameboy {
             }
 
             let instruction = self.read_memory(self.registers.pc);
-            let _instruction2 = self.memory[self.registers.pc as usize + 1];
 
             // FIXME: Only do this on first time through when the bootrom unmaps itself
             if self.registers.pc == 0xfe {
@@ -6680,10 +6664,8 @@ impl Gameboy {
 
             self.update_timer(instruction);
             self.execute_interuption();
-
             //quick find me
             if self.break_points.contains(&self.registers.pc)
-            // || (instruction == 0x038 && instruction2 == 0x01)
             // || instruction == 0x077
             // && self.total_cycle() > 1_000_000
             {
