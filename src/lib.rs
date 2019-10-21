@@ -4173,8 +4173,7 @@ impl Gameboy {
                 //RETI -> 8
                 let address = self.pop_stack();
                 self.registers.set_pc(address);
-                //TODO:Endable interrupts
-                println!("IMPORTANT!! TODO: Enable interrupts");
+                self.registers.f.set_ime(true);
             }
 
             0x0f2 => {
@@ -7133,7 +7132,7 @@ pub fn opcode_name(opcode: u8) -> String {
         0x0E9 => " JP (HL)",
         0x0F8 => "LDHL SP,n",
         0x062 => "LD H,D",
-        0x06B => "LD H,E",
+        0x06B => "LD L,E",
         0x012 => "LD (DE), A",
         0x01C => "INC E",
         0x014 => "INC D",
