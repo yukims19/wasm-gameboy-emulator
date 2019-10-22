@@ -31,13 +31,13 @@ module Registers = {
       <table>
         <thead>
           <tr>
-            <th> {string("Reg")} </th>
-            <th> {string("Hex")} </th>
-            <th> {string("Dec")} </th>
-            <th> {string("Bin")} </th>
+            <th> {ReasonReact.string("Reg")} </th>
+            <th> {ReasonReact.string("Hex")} </th>
+            <th> {ReasonReact.string("Dec")} </th>
+            <th> {ReasonReact.string("Bin")} </th>
           </tr>
         </thead>
-        <tbody> registersDisplay->array </tbody>
+        <tbody> registersDisplay->ReasonReact.array </tbody>
       </table>
     </ToolPanel>;
   };

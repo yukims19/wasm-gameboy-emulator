@@ -1,16 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>ReasonReact Examples</title>
-</head>
-<body>
-  Component 1:
-  <div id="index1"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Libations</title>
+    <style>
+      body {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      table {
+        border: 1px solid orange;
+        font-family: monospace;
+      }
 
-  Component 2:
-  <div id="index2"></div>
+      th {
+        padding: 5px 10px;
+      }
 
-  <script src="Index.js"></script>
-</body>
+      tr {
+        margin: 10px;
+      }
+
+      td {
+        padding: 0px 8px;
+      }
+
+      td:hover {
+        background: #cfcfcf;
+      }
+
+      #gameboy-background-canvas,
+      #gameboy-background-canvas-rust {
+        border: 2px solid black;
+      }
+
+      #gameboy-screen-canvas {
+        border: 2px solid red;
+      }
+
+      #gameboy-screen-canvas-rust {
+        border: 2px solid pink;
+      }
+
+      #char-map-debug-canvas-rust,
+      #char-map-debug-canvas {
+        border: 2px solid green;
+      }
+
+      .channel .binary-val {
+        letter-spacing: 4px;
+      }
+      .channel .binary-val i {
+        color: #cfcfcf;
+      }
+      .break-point-wrapper {
+        padding: 20px;
+        border: 1px solid blue;
+        margin: 20px 0px;
+        width: fit-content;
+        display: flex;
+        flex-flow: column;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sound-container"></div>
+    <div id="break-point-container"></div>
+    <canvas hidden id="char-map-actual-canvas-rust"></canvas>
+    <canvas id="char-map-debug-canvas-rust"></canvas>
+    <canvas id="gameboy-background-canvas-rust"></canvas>
+    <canvas id="gameboy-screen-canvas-rust"></canvas>
+    <pre id="serial-debug"></pre>
+    <div id="pc-counter"></div>
+    <div id="memory-viewer"></div>
+
+    <div id="app"></div>
+
+    <script src="Index.js"></script>
+  </body>
 </html>

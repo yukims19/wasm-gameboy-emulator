@@ -1,4 +1,5 @@
 /* State declaration */
+
 type state = {
   count: int,
   isRunning: bool,
@@ -12,7 +13,10 @@ type action =
 
 let count = 4_190_000;
 
-let gameboy = Libation.create();
+let gameboy = Libation.createGameboy();
+let canvases = Libation.createCanvases();
+
+let document = Webapi.Dom.Document.asEventTarget(Webapi.Dom.document);
 
 [@bs.val] external performanceNow: unit => float = "performance.now";
 
@@ -55,6 +59,26 @@ let make = () => {
   let isRunning = React.useRef(false);
   let registers = React.useRef(getRegisters());
 
+  let handleKey = event => {
+    let key = Webapi.Dom.KeyboardEvent.key(event);
+    let key_value =
+      switch (key) {
+      | "ArrowUp" => 4
+      | "ArrowDown" => 8
+      | "ArrowLeft" => 2
+      | "ArrowRight" => 1
+      | "a" => 16
+      | "s" => 32
+      | "Enter" => 128
+      | "Backspace" => 64
+      | _ => 16
+      };
+    Libation.joypadKeyPressed(gameboy, key_value);
+    ();
+  };
+  Webapi.Dom.EventTarget.addKeyDownEventListener(handleKey, document);
+  /* .addEventListener("keypress", handleKey, document); */
+
   let reducer = (state, action) =>
     switch (action) {
     | Click => {...state, count: state.count + 1}
@@ -85,7 +109,10 @@ let make = () => {
     <button onClick={_event => dispatch(Toggle)}>
       {ReasonReact.string(isRunning->React.Ref.current ? "Pause" : "Resume")}
     </button>
+    <button onClick={_event => Libation.drawObj(canvases, gameboy)}>
+      {ReasonReact.string("drawOBJ")}
+    </button>
     <Debugger.Registers registers=registers->React.Ref.current />
-    <Debugger.Breakpoints gameboy />
   </div>;
+  /* <Debugger.Breakpoints gameboy /> */
 };

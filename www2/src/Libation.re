@@ -3,11 +3,19 @@ type t;
 external bootRust: unit => t = "init";
 
 [@bs.module "wasm-gameboy-emulator/wasm_gameboy_emulator"]
+[@bs.scope "Canvases"]
+external createCanvases: unit => t = "new";
+[@bs.send] external drawObj: (t, t) => unit = "draw_obj";
+
+[@bs.module "wasm-gameboy-emulator/wasm_gameboy_emulator"]
 [@bs.scope "Gameboy"]
-external create: unit => t = "new";
+external createGameboy: unit => t = "new";
 
 [@bs.send]
 external executeOpcodesNoStop: (t, int) => unit = "execute_opcodes_no_stop";
+[@bs.send] external joypadKeyPressed: (t, int) => unit = "joypad_key_pressed";
+[@bs.send]
+external joypadKeyReleased: (t, int) => unit = "joypad_key_released";
 
 [@bs.send] external start: t => unit = "start_running";
 [@bs.send] external stop: t => unit = "stop_running";
