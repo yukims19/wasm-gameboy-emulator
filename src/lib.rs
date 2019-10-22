@@ -5530,16 +5530,19 @@ impl Gameboy {
 
         let p1 = self.memory[0xFF00];
 
-        let starndard_btn_listening = is_standard_button && (p1 & 0b00100000 == 0);
-        let directional_btn_listening = !is_standard_button && (p1 & 0b00010000 == 0);
+        let starndard_btn_listening = is_standard_button && (p1 & 0b00100000 == 0b00100000);
+        let directional_btn_listening = !is_standard_button && (p1 & 0b00010000 == 0b00010000);
 
         if (starndard_btn_listening || directional_btn_listening) && !previously_unset {
-
+            self.request_joypad_interrupt();
         } else {
             info!("no request");
         }
 
-        self.is_running = false;
+        info!(
+            "standard:{:?}, directioanal:{:?}, prevous:{:?}, p1:{:b}",
+            starndard_btn_listening, directional_btn_listening, previously_unset, p1
+        );
     }
 
     pub fn joypad_key_released(&mut self, key: u8) {
