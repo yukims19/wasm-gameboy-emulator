@@ -300,14 +300,14 @@ impl Canvases {
     }
 
     pub fn draw_screen_with_obj(&self, gameboy: &mut Gameboy) {
-        if !gameboy.is_vblank() {
-            return;
-        }
+        // if !gameboy.is_vblank() {
+        //     return;
+        // }
 
-        let is_lcd_enable = gameboy.is_lcd_display_enable();
-        if !is_lcd_enable {
-            return;
-        }
+        // let is_lcd_enable = gameboy.is_lcd_display_enable();
+        // if !is_lcd_enable {
+        //     return;
+        // }
 
         let background_map = gameboy.bg_map();
         let char_map_vec = gameboy.bg_window_char_map_bytes();
@@ -2570,7 +2570,11 @@ impl Gameboy {
             }
             0x0f0 => {
                 //LD A, ($ff00+n)
+
                 let following_byte = self.following_byte(pointer);
+                if (following_byte == 85) {
+                    info!("What's wroning?");
+                }
                 let offset = 0xff00 + following_byte as u16;
                 let value = self.read_memory(offset);
                 self.registers.set_a(value);
@@ -5469,6 +5473,8 @@ impl Gameboy {
             }
         } else if (address >= 0xFEA0) && (address < 0xFEFF) {
             //Nothing happens
+        } else if address == 0xFF44 {
+            self.memory[address as usize] = 0;
         } else {
             self.memory[address as usize] = value;
         }
@@ -5575,12 +5581,9 @@ impl Gameboy {
 
         let any_interrupt = do_v_blank || do_lcd || do_timer || do_serial || do_joypad;
 
-        if any_interrupt {
-            self.is_halt = false
-        }
-
         if self.registers.f.ime {
             if do_v_blank {
+                info!("execute vblank interrupt");
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
 
@@ -5590,6 +5593,7 @@ impl Gameboy {
             }
 
             if do_lcd {
+                info!("execute lcd interrupt");
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
 
@@ -5598,6 +5602,9 @@ impl Gameboy {
                 self.registers.set_pc(0x48);
             }
 
+            if (self.memory[0xff0f] & 0b00000010 == 0b00000010) {
+                info!("has lcd request")
+            }
             if do_timer {
                 self.is_halt = false;
                 self.registers.f.set_ime(false);
@@ -5625,6 +5632,11 @@ impl Gameboy {
                 self.registers.set_pc(0x60);
             }
         }
+
+        if any_interrupt {
+            //info!("an_interrupt, halt is false");
+            self.is_halt = false
+        }
     }
 
     pub fn set_vram_cycle(&mut self, value: u16) {
@@ -5638,6 +5650,11 @@ impl Gameboy {
     pub fn request_vblank(&mut self) {
         self.should_draw = true;
         self.memory[0xff0f] = self.memory[0xff0f] | 0b000000001;
+    }
+
+    pub fn request_lcd_interrupt(&mut self) {
+        self.should_draw = true;
+        self.memory[0xff0f] = self.memory[0xff0f] | 0b000000010;
     }
 
     pub fn request_timer_interrupt(&mut self) {
@@ -6278,6 +6295,71 @@ impl Gameboy {
         // info!("LCD Status: {:b}", self.memory[0xff41]);
     }
 
+    fn set_lcd_status(&mut self) {
+        let mut status = self.read_memory(0xFF41);
+        if (false == self.is_lcd_display_enable()) {
+            // set the mode to 1 during lcd disabled and reset scanline
+            self.vram_cycle_num = 456;
+            self.memory[0xFF44] = 0;
+            status = status & 252;
+            status = status | 0b00000001;
+            self.write_memory(0xFF41, status);
+            return;
+        }
+
+        let currentline = self.read_memory(0xFF44);
+        let currentmode = status & 0x3;
+
+        let mut mode = 0;
+        let mut reqInt = false;
+
+        // in vblank so set mode to 1
+        if currentline >= 144 {
+            mode = 1;
+            status = status | 0b00000001;
+            status = status & 0b11111101;
+            reqInt = status & 0b00010000 == 0b00010000;
+        } else {
+            let mode2bounds = 80;
+            let mode3bounds = mode2bounds + 172;
+
+            // mode 2
+            if (self.vram_cycle_num >= mode2bounds) {
+                mode = 2;
+                status = status | 0b00000010;
+                status = status & 0b11111110;
+                reqInt = status & 0b00100000 == 0b00100000;
+            }
+            // mode 3
+            else if (self.vram_cycle_num >= mode3bounds) {
+                mode = 3;
+                status = status | 0b00000011;
+            }
+            // mode 0
+            else {
+                mode = 0;
+                status = status & 0b11111100;
+                reqInt = status & 0b00001000 == 0b00001000;
+            }
+        }
+
+        // just entered a new mode so request interupt
+        if (reqInt && (mode != currentmode)) {
+            self.request_lcd_interrupt();
+        }
+
+        // check the conincidence flag
+        if (self.ly() == self.read_memory(0xFF45)) {
+            status = status | 0b000000100;
+            if (status & 0b01000000 == 0b01000000) {
+                self.request_lcd_interrupt();
+            }
+        } else {
+            status = status & 0b11111011;
+        }
+        self.write_memory(0xFF41, status);
+    }
+
     fn set_lcd_mode_to_vblank(&mut self) {
         //##This function is GPU emulation. Mode Flag is read only for gameboy
         let lcdc = self.memory[0xff41].clone();
@@ -6512,7 +6594,8 @@ impl Gameboy {
 
         if self.is_lcd_display_enable() {
             self.add_cycles(instruction, CycleRegister::VramCycle);
-            self.set_lcd_mode_with_gpu_cycle(self.vram_cycle_num);
+            self.set_lcd_status();
+            // self.set_lcd_mode_with_gpu_cycle(self.vram_cycle_num);
             if self.vram_cycle_num >= vram_cycle_per_ly_inc {
                 self.inc_ly();
                 //Resetting vram cycle here
@@ -6595,6 +6678,7 @@ impl Gameboy {
         let mut last_cycle_count = 0;
         let cycle_log_target = 50_000;
         let time_last_draw = performance.now();
+        let mut previsou_halt = false;
 
         loop {
             if self.cpu_paused || !self.is_running {
@@ -6623,50 +6707,45 @@ impl Gameboy {
                 }
             }
 
-            if self.is_lcd_display_enable() && self.should_draw {
-                canvases.draw_screen_with_obj(self);
-                // canvases.draw_screen_from_memory(self);
-                self.should_draw = false;
-                let now = performance.now();
-                let elapsed = now - time_last_draw;
-                let _time_to_sleep = 16.66 - elapsed;
-                // if time_to_sleep > 0.0 {
-                //     info!("Prepping timeout...!");
-                //     Timeout::new(time_to_sleep as u32, || {
-                //         info!("Timeout success!");
-                //         self.execute_opcodes_no_stop()
-                //     })
-                //     .forget();
-
-                //     // Timeout::new(time_to_sleep, || self.execute_opcodes_no_stop()).forget();
-                // }
-                break;
-            }
-
             if self.total_cycle() - last_cycle_count > cycle_log_target {
                 last_cycle_count = self.total_cycle();
             }
 
-            if !self.is_halt {
+            if self.is_halt {
+                self.add_cycles(0x00, CycleRegister::TimerCycle);
+                self.cycle_based_gpu_operation(instruction);
+                self.execute_interuption();
+            } else {
                 self.cycle_based_gpu_operation(instruction);
                 self.execute_instruction(instruction);
-            } else {
-                self.add_cycles(0x00, CycleRegister::TimerCycle);
             }
 
             self.add_cycles(instruction, CycleRegister::CpuCycle);
+            self.update_timer(instruction);
+            self.execute_interuption();
 
             if instruction == 0x076 {
                 //HALT: Pause CPU Until Interrupt
                 self.is_halt = true;
-                info!("Update halt to true");
+                if !self.ime() {
+                    let next_instruction = self.read_memory(self.registers.pc);
+                    self.registers.set_pc(self.registers.pc - 1);
+                    self.execute_instruction(next_instruction);
+                } else {
+                    // self.execute_instruction(0x00);
+                }
+                info!(
+                    "Update halt to true, pc:{:x}, instruction: {:x}",
+                    self.registers.pc,
+                    self.read_memory(self.registers.pc)
+                );
+
+                // break;
             }
 
-            self.update_timer(instruction);
-            self.execute_interuption();
             //quick find me
             if self.break_points.contains(&self.registers.pc)
-            // || instruction == 0x077
+            // || self.registers.pc == 0x040
             // && self.total_cycle() > 1_000_000
             {
                 self.is_running = false;
@@ -6682,6 +6761,26 @@ impl Gameboy {
                 self.debug_serial_value();
                 info!("PC: {:x}", self.registers.pc);
                 self.memory[0xff02] = 0x0;
+            }
+
+            if self.is_lcd_display_enable() && self.should_draw {
+                canvases.draw_screen_with_obj(self);
+                // canvases.draw_screen_from_memory(self);
+                self.should_draw = false;
+                // let now = performance.now();
+                // let elapsed = now - time_last_draw;
+                // let _time_to_sleep = 16.66 - elapsed;
+                // if time_to_sleep > 0.0 {
+                //     info!("Prepping timeout...!");
+                //     Timeout::new(time_to_sleep as u32, || {
+                //         info!("Timeout success!");
+                //         self.execute_opcodes_no_stop()
+                //     })
+                //     .forget();
+
+                //     // Timeout::new(time_to_sleep, || self.execute_opcodes_no_stop()).forget();
+                // }
+                break;
             }
         }
     }
@@ -6728,9 +6827,9 @@ impl Gameboy {
         let boot_rom_content = include_bytes!("boot-rom.gb");
         // let boot_rom_content = include_bytes!("test_rom.gb");
         // let cartridge_content = include_bytes!("cpu_instrs.gb");
-        // let cartridge_content = include_bytes!("mario.gb");
+        let cartridge_content = include_bytes!("mario.gb");
         // let cartridge_content = include_bytes!("pokered.gbc");
-        let cartridge_content = include_bytes!("tetris.gb");
+        // let cartridge_content = include_bytes!("tetris.gb");
         // let cartridge_content = include_bytes!("02-interrupts.gb"); //Passed
         // let cartridge_content = include_bytes!("01-special.gb"); //Passed
         // let cartridge_content = include_bytes!("11-op a,(hl).gb"); //Passed
