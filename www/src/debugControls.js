@@ -474,6 +474,8 @@ const Controls = props => {
     timerFrequency,
     cpuClock,
     onDrawScreen,
+    onDrawScreenWithObj,
+    onDrawObj,
     onDrawCharMap,
     onClear,
     onDrawBackground,
@@ -496,6 +498,10 @@ const Controls = props => {
           <th>
             <button onClick={onPlaySound}>Sound</button>
             <button onClick={() => onDrawScreen()}>Draw Screen</button>
+            <button onClick={() => onDrawScreenWithObj()}>
+              Draw ScreenOBJ
+            </button>
+            <button onClick={() => onDrawObj()}>Draw OBJ</button>
             <button onClick={() => onDrawCharMap()}>Draw CharMap</button>
             {toggleButton}
             {stepButton}
@@ -619,6 +625,8 @@ const Debugger = props => {
         <Controls
           fullMemory={props.fullMemory}
           onDrawScreen={props.onDrawScreen}
+          onDrawScreenWithObj={props.onDrawScreenWithObj}
+          onDrawObj={props.onDrawObj}
           onDrawCharMap={props.onDrawCharMap}
           onClear={props.onDrawCharMap}
           onDrawBackground={props.onDrawBackground}

@@ -36,7 +36,7 @@ const gameboyInst = Gameboy.new();
 const canvases = Canvases.new();
 
 const playSound = gameboy => {
-  // //TODO:Implement playsound
+  //TODO:Implement playsound
   console.log('js-playsound');
 };
 
@@ -331,6 +331,14 @@ var render = function render(gameboy) {
       onDrawScreen: () => {
         console.log('on draw screen');
         canvases.draw_screen_from_memory(gameboy);
+      },
+      onDrawScreenWithObj: () => {
+        console.log('on draw screen with obj');
+        canvases.draw_screen_with_obj(gameboy);
+      },
+      onDrawObj: () => {
+        console.log('on draw obj');
+        canvases.draw_obj(gameboy);
       },
       onDrawCharMap: () => {
         console.log('on draw charmap');
