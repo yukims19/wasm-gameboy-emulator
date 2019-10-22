@@ -5475,6 +5475,8 @@ impl Gameboy {
             //Nothing happens
         } else if address == 0xFF44 {
             self.memory[address as usize] = 0;
+        } else if address == 0xFF46 {
+            self.execute_dma_transfer(value);
         } else {
             self.memory[address as usize] = value;
         }
@@ -6128,16 +6130,26 @@ impl Gameboy {
 
     // Sprites
 
+    fn execute_dma_transfer(&mut self, data: u8) {
+        let address = (data as u16) << 8;
+        for i in 0..0xA0 {
+            let value = self.read_memory(address + i);
+            self.write_memory(0xFE00 + i, value);
+        }
+    }
+
     fn obj_char_map_bytes(&self) -> Vec<u8> {
         self.memory[0x8800..0x9800].to_vec()
     }
 
     fn get_oam(&self) -> Vec<u8> {
-        self.memory[0xfe00..0xfea0].to_vec()
+        let oam_vec = self.memory[0xfe00..0xfea0].to_vec();
+        oam_vec
     }
 
     fn all_sprites(&self) -> Vec<Sprite> {
         let oam_vec = self.get_oam();
+
         let mut all_sprites = Vec::new();
 
         for idx in (0..oam_vec.len()).step_by(BYTES_PER_SPRITE) {
