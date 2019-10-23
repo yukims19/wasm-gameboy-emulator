@@ -59,7 +59,7 @@ let make = () => {
   let isRunning = React.useRef(false);
   let registers = React.useRef(getRegisters());
 
-  let handleKey = event => {
+  let handleKeyDown = event => {
     let key = Webapi.Dom.KeyboardEvent.key(event);
     let key_value =
       switch (key) {
@@ -76,8 +76,26 @@ let make = () => {
     Libation.joypadKeyPressed(gameboy, key_value);
     ();
   };
-  Webapi.Dom.EventTarget.addKeyDownEventListener(handleKey, document);
-  /* .addEventListener("keypress", handleKey, document); */
+  Webapi.Dom.EventTarget.addKeyDownEventListener(handleKeyDown, document);
+
+  let handleKeyUp = event => {
+    let key = Webapi.Dom.KeyboardEvent.key(event);
+    let key_value =
+      switch (key) {
+      | "ArrowUp" => 4
+      | "ArrowDown" => 8
+      | "ArrowLeft" => 2
+      | "ArrowRight" => 1
+      | "a" => 16
+      | "s" => 32
+      | "Enter" => 128
+      | "Backspace" => 64
+      | _ => 16
+      };
+    Libation.joypadKeyReleased(gameboy, key_value);
+    ();
+  };
+  Webapi.Dom.EventTarget.addKeyUpEventListener(handleKeyUp, document);
 
   let reducer = (state, action) =>
     switch (action) {
