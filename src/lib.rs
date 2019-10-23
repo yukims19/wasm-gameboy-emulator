@@ -466,6 +466,12 @@ impl Canvases {
 
         //Fill in sprites data in blank temp_screen
         for obj in gameboy.all_sprites() {
+            let obj_in_screen = obj.y >= 0 && obj.y + 8 <= 160;
+            // && obj.x >= 0 && obj.x + 8 <= 0
+
+            if !obj_in_screen {
+                continue;
+            }
             let tile_idx = obj.pattern_num as usize;
             let tile_rgba = &tiles_rgba_vec[tile_idx];
 
