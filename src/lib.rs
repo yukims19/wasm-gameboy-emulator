@@ -474,7 +474,7 @@ impl Canvases {
                 let y = obj.y + obj_row;
 
                 let start: usize =
-                    y as usize * SPRITE_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL
+                    y as usize * SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL
                         + x as usize * IMAGE_DATA_LENGTH_PER_PIXEL;
                 let end: usize = start + SPRITE_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
 
@@ -482,15 +482,16 @@ impl Canvases {
                 // entire_screen_pixels_rgba[start..end] =
                 //     tile_rgba[obj_row as usize..obj_row as usize + 8 * IMAGE_DATA_LENGTH_PER_PIXEL];
 
-                entire_screen_pixels_rgba.splice(
-                    start..end,
-                    tile_rgba[obj_row as usize..obj_row as usize + 8 * IMAGE_DATA_LENGTH_PER_PIXEL]
-                        .iter()
-                        .cloned(),
-                );
+                let tile_start =
+                    obj_row as usize * SPRITE_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
+                let tile_end = tile_start + 8 * IMAGE_DATA_LENGTH_PER_PIXEL;
+
+                let _a = entire_screen_pixels_rgba
+                    .splice(start..end, tile_rgba[tile_start..tile_end].iter().cloned());
             }
         }
 
+        // info!("entier screen pixels: {:?}", entire_screen_pixels_rgba);
         entire_screen_pixels_rgba
     }
 
