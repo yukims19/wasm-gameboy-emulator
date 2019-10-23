@@ -1223,6 +1223,7 @@ pub struct Gameboy {
     is_ram_enabled: bool,
     is_rom_banking_enabled: bool,
     joypad_state: u8,
+    divide_register_cycle_counter: u16
 }
 
 #[wasm_bindgen]
@@ -2672,7 +2673,7 @@ impl Gameboy {
                 //LD A, ($ff00+n)
 
                 let following_byte = self.following_byte(pointer);
-                if (following_byte == 85) {
+                if following_byte == 85 {
                     info!("What's wroning?");
                 }
                 let offset = 0xff00 + following_byte as u16;
@@ -5707,7 +5708,7 @@ impl Gameboy {
                 self.registers.set_pc(0x48);
             }
 
-            if (self.memory[0xff0f] & 0b00000010 == 0b00000010) {
+            if self.memory[0xff0f] & 0b00000010 == 0b00000010 {
                 info!("has lcd request")
             }
             if do_timer {
@@ -5850,6 +5851,7 @@ impl Gameboy {
     fn add_cycles(&mut self, instruction: u8, cycle_register: CycleRegister) {
         let cycle = match instruction {
             0x031 => 12,
+
             0x0AF => 4,
             0x021 => 12,
             0x077 => 8,
@@ -6152,6 +6154,13 @@ impl Gameboy {
             }
         };
 
+        // The divide register is incremented 16384/s, or 256 cycles
+        self.divide_register_cycle_counter += cycle as u16;
+        if self.divide_register_cycle_counter >= 256 {
+           self.memory[0xff04] += 1;
+           self.divide_register_cycle_counter -= 256
+        }
+
         match cycle_register {
             CycleRegister::VramCycle => self.vram_cycle_num += cycle as u16,
             CycleRegister::TimerCycle => self.timer_cycle_num += cycle as usize,
@@ -6412,7 +6421,7 @@ impl Gameboy {
 
     fn set_lcd_status(&mut self) {
         let mut status = self.read_memory(0xFF41);
-        if (false == self.is_lcd_display_enable()) {
+        if false == self.is_lcd_display_enable() {
             // set the mode to 1 during lcd disabled and reset scanline
             self.vram_cycle_num = 456;
             self.memory[0xFF44] = 0;
@@ -6426,27 +6435,27 @@ impl Gameboy {
         let currentmode = status & 0x3;
 
         let mut mode = 0;
-        let mut reqInt = false;
+        let mut req_int = false;
 
         // in vblank so set mode to 1
         if currentline >= 144 {
             mode = 1;
             status = status | 0b00000001;
             status = status & 0b11111101;
-            reqInt = status & 0b00010000 == 0b00010000;
+            req_int = status & 0b00010000 == 0b00010000;
         } else {
             let mode2bounds = 80;
             let mode3bounds = mode2bounds + 172;
 
             // mode 2
-            if (self.vram_cycle_num >= mode2bounds) {
+            if self.vram_cycle_num >= mode2bounds {
                 mode = 2;
                 status = status | 0b00000010;
                 status = status & 0b11111110;
-                reqInt = status & 0b00100000 == 0b00100000;
+                req_int = status & 0b00100000 == 0b00100000;
             }
             // mode 3
-            else if (self.vram_cycle_num >= mode3bounds) {
+            else if self.vram_cycle_num >= mode3bounds {
                 mode = 3;
                 status = status | 0b00000011;
             }
@@ -6454,19 +6463,19 @@ impl Gameboy {
             else {
                 mode = 0;
                 status = status & 0b11111100;
-                reqInt = status & 0b00001000 == 0b00001000;
+                req_int = status & 0b00001000 == 0b00001000;
             }
         }
 
         // just entered a new mode so request interupt
-        if (reqInt && (mode != currentmode)) {
+        if req_int && (mode != currentmode) {
             self.request_lcd_interrupt();
         }
 
         // check the conincidence flag
-        if (self.ly() == self.read_memory(0xFF45)) {
+        if self.ly() == self.read_memory(0xFF45) {
             status = status | 0b000000100;
-            if (status & 0b01000000 == 0b01000000) {
+            if status & 0b01000000 == 0b01000000 {
                 self.request_lcd_interrupt();
             }
         } else {
@@ -7016,6 +7025,7 @@ impl Gameboy {
             is_rom_banking_enabled: false,
             memory: full_memory,
             joypad_state: 0xff,
+            divide_register_cycle_counter: 0
         }
     }
 
@@ -7124,6 +7134,7 @@ pub fn gameboy_from_serializable(serializeable: SerializedGameboy) -> Gameboy {
         is_rom_banking_enabled: false,
         memory: full_memory,
         joypad_state: 0xff,
+        divide_register_cycle_counter: 0
     };
 
     gameboy
