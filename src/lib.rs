@@ -427,8 +427,100 @@ impl Canvases {
         }
     }
 
+    pub fn draw_obj(&self, gameboy: &mut Gameboy) {
+        let background_map = gameboy.bg_map();
+        let char_map_vec = gameboy.bg_window_char_map_bytes();
+
+        //Generate background bytes from char map
+        let mut background_pixels_row_rgba: Vec<Vec<u8>> = Vec::new();
+        background_pixels_row_rgba.resize(256, Vec::new());
+
+        let mut idx = 0;
+        for ele in background_map {
+            let tile_idx: usize = if gameboy.get_tile_data_selection() == 1 {
+                ele as usize
+            } else {
+                ((ele as i8) as i16 + 128) as usize
+            };
+            let tile_start_idx = tile_idx as usize * BYTES_PER_TILE;
+            let tile_end_idx = tile_start_idx + BYTES_PER_TILE;
+
+            let tile_bytes = &char_map_vec[tile_start_idx..tile_end_idx];
+            for i in (0..tile_bytes.len()).step_by(BYTES_PER_8_PIXEL) {
+                let background_y = (idx / 32) * PIXEL_NUM_PER_TILE_COL + i / BYTES_PER_8_PIXEL;
+                let low_bits = BitVec::from_bytes(&[tile_bytes[i]]);
+                let high_bits = BitVec::from_bytes(&[tile_bytes[i + 1]]);
+
+                for pixel_index in 0..8 {
+                    let [r, g, b, a] = match (low_bits[pixel_index], high_bits[pixel_index]) {
+                        (false, false) => [255, 255, 255, 255],
+                        (false, true) => [191, 191, 191, 255],
+                        (true, false) => [64, 64, 64, 255],
+                        (true, true) => [0, 0, 0, 255],
+                    };
+
+                    background_pixels_row_rgba[background_y].push(r);
+                    background_pixels_row_rgba[background_y].push(g);
+                    background_pixels_row_rgba[background_y].push(b);
+                    background_pixels_row_rgba[background_y].push(a);
+                }
+            }
+            idx = idx + 1
+        }
+
+        let background_pixels_rgba_vec: Vec<u8> = background_pixels_row_rgba.concat();
+
+        //Get screen bytes from background bytes
+        let scroll_x = gameboy.get_scroll_x() as usize;
+        let scroll_y = gameboy.get_scroll_y() as usize;
+        let mut screen_pixels_rgba_vec: Vec<u8> = Vec::new();
+
+        for screen_y in 0..144 {
+            //TODO: need to handle x overflow
+            let x = scroll_x;
+            let y = if scroll_y + screen_y > 255 {
+                scroll_y + screen_y - 256
+            } else {
+                scroll_y + screen_y
+            };
+
+            let start = y * BACKGROUND_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL
+                + x * IMAGE_DATA_LENGTH_PER_PIXEL;
+            let end = start + SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
+
+            let screen_row_bytes = &background_pixels_rgba_vec[start..end];
+            screen_pixels_rgba_vec.extend_from_slice(&screen_row_bytes);
+        }
+
+        //Drawing screen
+        self.screen_canvas.clear_rect(
+            0.0,
+            0.0,
+            self.screen_canvas.canvas().unwrap().width() as f64,
+            self.screen_canvas.canvas().unwrap().height() as f64,
+        );
+
+        let mut blank_screen_with_sprites_rgba = self.get_blank_screen_pixel_with_sprites(gameboy);
+
+        for screen_y in 0..144 {
+            let start_row = screen_y * SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
+            let end_row = start_row + SCREEN_PIXEL_NUM_PER_ROW * IMAGE_DATA_LENGTH_PER_PIXEL;
+
+            let clamped_image_source =
+                wasm_bindgen::Clamped(&mut blank_screen_with_sprites_rgba[start_row..end_row]);
+
+            let pixel_row_image_data =
+                web_sys::ImageData::new_with_u8_clamped_array_and_sh(clamped_image_source, 160, 1)
+                    .unwrap();
+            self.screen_canvas
+                .put_image_data(&pixel_row_image_data, 0.0, screen_y as f64)
+                .unwrap();
+        }
+    }
+
     fn get_blank_screen_pixel_with_sprites(&self, gameboy: &mut Gameboy) -> Vec<u8> {
         let char_map_vec = gameboy.obj_char_map_bytes(); //Tile data
+
         let mut tiles_rgba_vec = Vec::new();
 
         let screen_rbga_vec_length =
@@ -464,7 +556,7 @@ impl Canvases {
             tiles_rgba_vec.push(image_data_source);
         }
 
-        //Fill in sprites data in blank temp_screen
+        // Fill in sprites data in blank temp_screen
         for obj in gameboy.all_sprites() {
             let obj_in_screen = obj.y >= 0 && obj.y + 8 <= 160;
             // && obj.x >= 0 && obj.x + 8 <= 0
@@ -472,6 +564,7 @@ impl Canvases {
             if !obj_in_screen {
                 continue;
             }
+
             let tile_idx = obj.pattern_num as usize;
             let tile_rgba = &tiles_rgba_vec[tile_idx];
 
@@ -6146,7 +6239,7 @@ impl Gameboy {
     }
 
     fn obj_char_map_bytes(&self) -> Vec<u8> {
-        self.memory[0x8800..0x9800].to_vec()
+        self.memory[0x8000..0x9000].to_vec()
     }
 
     fn get_oam(&self) -> Vec<u8> {
@@ -6160,8 +6253,8 @@ impl Gameboy {
         let mut all_sprites = Vec::new();
 
         for idx in (0..oam_vec.len()).step_by(BYTES_PER_SPRITE) {
-            let y = oam_vec[idx];
-            let x = oam_vec[idx + 1];
+            let y = oam_vec[idx] - 16;
+            let x = oam_vec[idx + 1] - 8;
             let pattern_num = oam_vec[idx + 2];
             let attributes = oam_vec[idx + 3];
             let priority = attributes & 0b10000000 == 0b10000000;
