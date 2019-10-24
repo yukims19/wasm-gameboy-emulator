@@ -5440,6 +5440,10 @@ impl Gameboy {
         self.rom_bank
     }
 
+    // pub fn get_rom_bank_memory(&self) -> Vec<u8> {
+    //     self.rom_bank_memory
+    // }
+
     pub fn get_ram_bank(&self) -> u8 {
         self.ram_bank
     }
@@ -6962,14 +6966,14 @@ impl Gameboy {
             h: 0,
             l: 0,
             sp: 0xffff,
-            pc: 0x000,
+            pc: 0x00,
         };
 
         let boot_rom_content = include_bytes!("boot-rom.gb");
         // let boot_rom_content = include_bytes!("test_rom.gb");
         // let cartridge_content = include_bytes!("cpu_instrs.gb");
-        let cartridge_content = include_bytes!("mario.gb");
-        // let cartridge_content = include_bytes!("pokered.gbc");
+        // let cartridge_content = include_bytes!("mario.gb");
+        let cartridge_content = include_bytes!("pokered.gbc");
         // let cartridge_content = include_bytes!("tetris.gb");
         // let cartridge_content = include_bytes!("02-interrupts.gb"); //Passed
         // let cartridge_content = include_bytes!("01-special.gb"); //Passed
@@ -6997,7 +7001,6 @@ impl Gameboy {
         full_memory.extend_from_slice(body);
 
         full_memory.resize_with(full_memory_capacity, || 0);
-        info!("memory size: {:x}", full_memory.len());
 
         // Vblank
         // full_memory[0xff44] = 0x90;
