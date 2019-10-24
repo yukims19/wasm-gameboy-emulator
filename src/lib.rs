@@ -5464,7 +5464,7 @@ impl Gameboy {
             3 => 1,
             5 => 2,
             6 => 2,
-            0x13 => 1,
+            0x13 => 3,
             _ => {
                 info!("Invalid mbc value: {:x} at $0x147", memory[0x0147]);
                 panic!("");
@@ -5530,19 +5530,25 @@ impl Gameboy {
     }
 
     fn write_memory(&mut self, address: u16, value: u8) {
+        let is_mbc_one_or_two_or_three = self.mbc == 1 || self.mbc == 2 || self.mbc == 3;
         let is_mbc_one_or_two = self.mbc == 1 || self.mbc == 2;
         // enable ram
         if address < 0x2000 {
-            if is_mbc_one_or_two {
+            if is_mbc_one_or_two_or_three {
                 // DoRamBankEnable(address,data) ;
                 self.enable_ram_bank(address, value);
             }
         }
         // change ROM bank
-        else if (address >= 0x200) && (address < 0x4000) {
+        else if (address >= 0x2000) && (address < 0x4000) {
             if is_mbc_one_or_two {
                 // DoChangeLoROMBank(data) ;
                 self.change_lo_rom_bank(value);
+            } else if self.mbc == 3 {
+                self.rom_bank = value;
+                if self.rom_bank == 0 {
+                    self.rom_bank += 1;
+                }
             }
         }
         // change ROM or RAM bank
@@ -5556,6 +5562,12 @@ impl Gameboy {
                     // DoRAMBankChange(data) ;
                     self.change_ram_bank(value)
                 }
+            } else if self.mbc == 3 {
+                if value <= 0x07 {
+                    self.ram_bank = value & 0x7;
+                } else if value >= 0x08 && value <= 0x0c {
+                    panic!("do someting about mbc here!!!");
+                }
             }
         }
         // this will change whether we are doing ROM banking
@@ -5564,12 +5576,26 @@ impl Gameboy {
             if self.mbc == 1 {
                 // DoChangeROMRAMMode(data) ;
                 self.change_rom_ram_mode(value);
+            } else if self.mbc == 3 {
+                if value == 0 || value == 1 {
+                    panic!("do RCT MBC!!");
+                }
             }
         } else if (address >= 0xA000) && (address < 0xC000) {
-            if self.is_ram_enabled {
-                let new_address = address - 0xA000;
-                self.ram_bank_memory[(new_address + (self.ram_bank as u16 * 0x2000)) as usize] =
-                    value;
+            if self.mbc == 1 {
+                if self.is_ram_enabled {
+                    let new_address = address - 0xA000;
+                    self.ram_bank_memory
+                        [(new_address + (self.ram_bank as u16 * 0x2000)) as usize] = value;
+                }
+            } else if self.mbc == 3 {
+                if value <= 0x03 && self.is_ram_enabled {
+                    let new_address = address - 0xA000;
+                    self.ram_bank_memory
+                        [(new_address + (self.ram_bank as u16 * 0x2000)) as usize] = value;
+                } else if value >= 08 && value <= 0x0c {
+                    panic!("RTC here")
+                }
             }
         } else if (address >= 0xFEA0) && (address < 0xFEFF) {
             //Nothing happens
